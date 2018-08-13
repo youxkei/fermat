@@ -1,0 +1,16 @@
+{application, fermat,
+ [{description, "An opinionated Erlang code formatter"},
+  {vsn, "0.0.0"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib,
+    getopt,
+    splay_tree
+   ]},
+  {env,[]},
+  {modules, []},
+  {maintainers, []},
+  {licenses, ["CC0-1.0"]},
+  {links, []}
+ ]}.

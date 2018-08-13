@@ -1,0 +1,8 @@
+[{<<"getopt">>,
+  {git,"git://github.com/jcomellas/getopt.git",
+       {ref,"fbd210550677114a6c96cdf66e340eb248908d93"}},
+  0},
+ {<<"splay_tree">>,
+  {git,"git://github.com/sile/erl-splay-tree.git",
+       {ref,"9b7635548029bf0ad53412f0fa0a403b95c81912"}},
+  0}].
