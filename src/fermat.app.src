@@ -5,8 +5,7 @@
   {applications,
    [kernel,
     stdlib,
-    getopt,
-    splay_tree
+    getopt
    ]},
   {env,[]},
   {modules, []},

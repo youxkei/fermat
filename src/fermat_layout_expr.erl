@@ -39,15 +39,15 @@ parse(Tokens) ->
 -spec text(string()) -> layout_expr().
 text(Text) -> {text, Text}.
 
--spec juxtaposition(layout_expr(), layout_expr()) -> layout_expr().
-juxtaposition(empty, Rhs) -> Rhs;
-juxtaposition(Lhs, empty) -> Lhs;
-juxtaposition(Lhs, Rhs) -> {juxtaposition, Lhs, Rhs}.
-
 -spec stacking(layout_expr(), layout_expr()) -> layout_expr().
 stacking(empty, Rhs) -> Rhs;
 stacking(Lhs, empty) -> Lhs;
 stacking(Lhs, Rhs) -> {stacking, Lhs, Rhs}.
+
+-spec juxtaposition(layout_expr(), layout_expr()) -> layout_expr().
+juxtaposition(empty, Rhs) -> Rhs;
+juxtaposition(Lhs, empty) -> Lhs;
+juxtaposition(Lhs, Rhs) -> {juxtaposition, Lhs, Rhs}.
 
 -spec choice(layout_expr(), layout_expr()) -> layout_expr().
 choice(empty, Rhs) -> Rhs;
