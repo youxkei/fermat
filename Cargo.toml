@@ -1,0 +1,6 @@
+[package]
+name = "fermat"
+version = "0.1.0"
+authors = ["Hisayuki Mima <youxkei@gmail.com>"]
+
+[dependencies]
