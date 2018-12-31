@@ -4,3 +4,8 @@ version = "0.1.0"
 authors = ["Hisayuki Mima <youxkei@gmail.com>"]
 
 [dependencies]
+serde = "1"
+serde_derive = "1"
+glob = "0.2"
+erl_tokenize = "0.3"
+structopt = "0.2"
