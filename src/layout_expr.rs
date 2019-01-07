@@ -23,6 +23,12 @@ pub enum LayoutExpr<'a> {
     Var(VarId),
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct Mode {
+    in_spec: bool,
+    in_paren: bool,
+}
+
 impl<'a> LayoutExpr<'a> {
     fn empty() -> Rc<LayoutExpr<'a>> {
         Rc::new(LayoutExpr::Empty)
@@ -73,24 +79,44 @@ pub fn parse(tokens: &[Token]) -> Rc<LayoutExpr> {
 fn parse_forms(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &[Token]) {
     let mut forms = vec![];
 
-    while tokens.len() > 1 {
-        let (stack, rest_tokens) = parse_stack(tokens);
+    while !tokens.is_empty() {
+        let mut mode = Mode {
+            in_spec: false,
+            in_paren: false,
+        };
+        if let [ref first, ref second, ..] = tokens {
+            match first.as_symbol_token() {
+                Some(symbol_token) => match symbol_token.value() {
+                    Symbol::Hyphen => match second.as_atom_token() {
+                        Some(atom_token) => match atom_token.value() {
+                            "spec" => mode.in_spec = true,
+                            _ => {}
+                        },
+                        _ => {}
+                    },
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
 
+        println!("parse_form {:?}, {:?}", tokens[0].text(), mode);
+
+        let (stack, rest_tokens) = parse_stack(tokens, mode);
         forms.push(stack);
-
         tokens = rest_tokens;
     }
 
     (LayoutExpr::stacking(forms), tokens)
 }
 
-fn parse_stack(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &[Token]) {
+fn parse_stack(mut tokens: &[Token], mode: Mode) -> (Rc<LayoutExpr>, &[Token]) {
     let mut lines = vec![];
 
-    while tokens.len() > 1 {
+    while !tokens.is_empty() {
         println!("parse_stack {:?}", tokens[0].text());
 
-        let (line_expr, terminator, rest_tokens) = parse_juxtaposition(tokens);
+        let (line_expr, terminator, rest_tokens) = parse_juxtaposition(tokens, mode);
 
         match terminator.as_symbol_token() {
             Some(symbol_token) => match symbol_token.value() {
@@ -99,7 +125,7 @@ fn parse_stack(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &[Token]) {
                     return (LayoutExpr::stacking(lines), rest_tokens);
                 }
                 Symbol::RightArrow => {
-                    let (stack_expr, rest_tokens) = parse_stack(rest_tokens);
+                    let (stack_expr, rest_tokens) = parse_stack(rest_tokens, mode);
 
                     let stacking_choice = LayoutExpr::stacking(vec![line_expr.clone(), LayoutExpr::indent(stack_expr.clone())]);
                     let juxtapositions_choice = LayoutExpr::juxtaposition(vec![line_expr.clone(), stack_expr.clone()]);
@@ -135,15 +161,19 @@ fn parse_stack(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &[Token]) {
     (LayoutExpr::stacking(lines), tokens)
 }
 
-fn parse_juxtaposition(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &Token, &[Token]) {
+fn parse_juxtaposition(mut tokens: &[Token], mode: Mode) -> (Rc<LayoutExpr>, &Token, &[Token]) {
     let mut line = vec![];
 
-    while tokens.len() > 1 {
-        println!("parse_juxtaposition {:?}", tokens[0].text());
+    while !tokens.is_empty() {
+        println!("parse_juxtaposition {:?}, {:?}", tokens[0].text(), mode);
 
         match tokens[0].as_symbol_token() {
             Some(symbol_token) => match symbol_token.value() {
-                Symbol::Dot | Symbol::Semicolon | Symbol::RightArrow => {
+                Symbol::Dot | Symbol::Semicolon => {
+                    line.push(LayoutExpr::text(tokens[0].text()));
+                    return (LayoutExpr::juxtaposition(line), &tokens[0], &tokens[1..]);
+                }
+                Symbol::RightArrow if !(mode.in_spec && mode.in_paren) => {
                     line.push(LayoutExpr::text(tokens[0].text()));
                     return (LayoutExpr::juxtaposition(line), &tokens[0], &tokens[1..]);
                 }
@@ -155,7 +185,13 @@ fn parse_juxtaposition(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &Token, &[Token
                     }
                 }
                 Symbol::OpenParen | Symbol::OpenBrace | Symbol::OpenSquare => {
-                    let (elements, rest_tokens) = parse_elements(&tokens[1..]);
+                    let (elements, rest_tokens) = parse_elements(
+                        &tokens[1..],
+                        Mode {
+                            in_paren: symbol_token.value() == Symbol::OpenParen,
+                            ..mode
+                        },
+                    );
 
                     if elements.is_empty() {
                         line.push(LayoutExpr::text(tokens[0].text()));
@@ -190,8 +226,8 @@ fn parse_juxtaposition(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &Token, &[Token
                     Keyword::End => {
                         return (LayoutExpr::juxtaposition(line), &tokens[0], tokens);
                     }
-                    Keyword::Fun => {
-                        let (stack_expr, rest_tokens) = parse_stack(&tokens[1..]);
+                    Keyword::Fun if !(mode.in_spec && mode.in_paren) => {
+                        let (stack_expr, rest_tokens) = parse_stack(&tokens[1..], mode);
                         let fun_expr = LayoutExpr::juxtaposition(vec![LayoutExpr::text(tokens[0].text()), stack_expr]);
                         let end_text = LayoutExpr::text(rest_tokens[0].text());
 
@@ -204,8 +240,8 @@ fn parse_juxtaposition(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &Token, &[Token
                     }
                     Keyword::Case => {
                         let case_text = LayoutExpr::text(tokens[0].text());
-                        let (case_line, _of_tokeen, rest_tokens) = parse_juxtaposition(&tokens[1..]);
-                        let (case_stack, rest_tokens) = parse_stack(rest_tokens);
+                        let (case_line, _of_tokeen, rest_tokens) = parse_juxtaposition(&tokens[1..], mode);
+                        let (case_stack, rest_tokens) = parse_stack(rest_tokens, mode);
                         let end_text = LayoutExpr::text(rest_tokens[0].text());
 
                         line.push(LayoutExpr::stacking(vec![
@@ -218,7 +254,7 @@ fn parse_juxtaposition(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &Token, &[Token
                     }
                     Keyword::If => {
                         let if_text = LayoutExpr::text(tokens[0].text());
-                        let (if_stack, rest_tokens) = parse_stack(&tokens[1..]);
+                        let (if_stack, rest_tokens) = parse_stack(&tokens[1..], mode);
                         let end_text = LayoutExpr::text(rest_tokens[0].text());
 
                         line.push(LayoutExpr::stacking(vec![if_text, LayoutExpr::indent(if_stack), end_text]));
@@ -241,13 +277,13 @@ fn parse_juxtaposition(mut tokens: &[Token]) -> (Rc<LayoutExpr>, &Token, &[Token
     (LayoutExpr::juxtaposition(line), &tokens[0], tokens)
 }
 
-fn parse_elements(mut tokens: &[Token]) -> (Vec<Rc<LayoutExpr>>, &[Token]) {
+fn parse_elements(mut tokens: &[Token], mode: Mode) -> (Vec<Rc<LayoutExpr>>, &[Token]) {
     let mut elements = vec![];
 
-    while tokens.len() > 1 {
+    while !tokens.is_empty() {
         println!("parse_elements {:?}", tokens[0].text());
 
-        let (element, terminator, rest_tokens) = parse_juxtaposition(tokens);
+        let (element, terminator, rest_tokens) = parse_juxtaposition(tokens, mode);
 
         match terminator.as_symbol_token() {
             Some(symbol_token) => match symbol_token.value() {

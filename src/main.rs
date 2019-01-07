@@ -34,7 +34,16 @@ fn main() {
                 let mut file = File::open(path).expect("Cannot open file");
                 file.read_to_string(&mut src).expect("Cannot read file");
 
-                let tokens = Tokenizer::new(&src).collect::<Result<Vec<_>, _>>().unwrap();
+                let tokens = Tokenizer::new(&src)
+                    .filter(|token| match token {
+                        Ok(token) => match token.as_whitespace_token() {
+                            Some(_) => false,
+                            _ => true,
+                        },
+                        _ => true,
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+                    .unwrap();
 
                 println!("{:?}", *fermat::layout_expr::parse(tokens.as_slice()));
             }

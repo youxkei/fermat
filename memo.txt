@@ -1,0 +1,22 @@
+文脈によってトークンの意味が変わるかどうか
+
+変わるトークン
+, : sentence delimiter, other delimiters
+-> : function definition、anonymous function definition, function type
+| : union type, or operator
+; : clause delimiter, guard delimiter
+: : delimiter of module and function, bit syntax, catch clause
+* : bit syntax, mult operator
+/ : bit syntax, delimiter of function and arity, div operator
+- : attribute head, bit syntax, sub and neg operator
+
+変わらないトークン
+()
+{}
+[]
+|| : comprehension
+<- : generator
+.. : range type
+# : map and record
+. : record delimiter
++ : add operator
