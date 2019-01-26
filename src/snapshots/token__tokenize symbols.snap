@@ -1,0 +1,553 @@
+---
+created: "2019-01-26T11:52:32.215428934+00:00"
+creator: insta@0.5.2
+expression: "Tokenizer::new(b\"( ) , -> { } [ ] | || <- ; : # . \\n / + - ++ -- == /= =< < >= \\r\\n > =:= =/= <= => := << >> ! = :: .. ...\").collect::<Result<Vec<_>,\n                                                                                                                                              _>>()"
+source: src/token.rs
+---
+Ok(
+    [
+        Token {
+            text: [
+                40
+            ],
+            position: Position {
+                offset: 0,
+                line: 1,
+                column: 1
+            },
+            token_type: Symbol(
+                OpenParen
+            )
+        },
+        Token {
+            text: [
+                41
+            ],
+            position: Position {
+                offset: 2,
+                line: 1,
+                column: 3
+            },
+            token_type: Symbol(
+                CloseParen
+            )
+        },
+        Token {
+            text: [
+                44
+            ],
+            position: Position {
+                offset: 4,
+                line: 1,
+                column: 5
+            },
+            token_type: Symbol(
+                Comma
+            )
+        },
+        Token {
+            text: [
+                45,
+                62
+            ],
+            position: Position {
+                offset: 6,
+                line: 1,
+                column: 7
+            },
+            token_type: Symbol(
+                HyphenGreater
+            )
+        },
+        Token {
+            text: [
+                123
+            ],
+            position: Position {
+                offset: 9,
+                line: 1,
+                column: 10
+            },
+            token_type: Symbol(
+                OpenBrace
+            )
+        },
+        Token {
+            text: [
+                125
+            ],
+            position: Position {
+                offset: 11,
+                line: 1,
+                column: 12
+            },
+            token_type: Symbol(
+                CloseBrace
+            )
+        },
+        Token {
+            text: [
+                91
+            ],
+            position: Position {
+                offset: 13,
+                line: 1,
+                column: 14
+            },
+            token_type: Symbol(
+                OpenBracket
+            )
+        },
+        Token {
+            text: [
+                93
+            ],
+            position: Position {
+                offset: 15,
+                line: 1,
+                column: 16
+            },
+            token_type: Symbol(
+                CloseBracket
+            )
+        },
+        Token {
+            text: [
+                124
+            ],
+            position: Position {
+                offset: 17,
+                line: 1,
+                column: 18
+            },
+            token_type: Symbol(
+                Bar
+            )
+        },
+        Token {
+            text: [
+                124,
+                124
+            ],
+            position: Position {
+                offset: 19,
+                line: 1,
+                column: 20
+            },
+            token_type: Symbol(
+                BarBar
+            )
+        },
+        Token {
+            text: [
+                60,
+                45
+            ],
+            position: Position {
+                offset: 22,
+                line: 1,
+                column: 23
+            },
+            token_type: Symbol(
+                LessHyphen
+            )
+        },
+        Token {
+            text: [
+                59
+            ],
+            position: Position {
+                offset: 25,
+                line: 1,
+                column: 26
+            },
+            token_type: Symbol(
+                Semicolon
+            )
+        },
+        Token {
+            text: [
+                58
+            ],
+            position: Position {
+                offset: 27,
+                line: 1,
+                column: 28
+            },
+            token_type: Symbol(
+                Colon
+            )
+        },
+        Token {
+            text: [
+                35
+            ],
+            position: Position {
+                offset: 29,
+                line: 1,
+                column: 30
+            },
+            token_type: Symbol(
+                NumberSign
+            )
+        },
+        Token {
+            text: [
+                46
+            ],
+            position: Position {
+                offset: 31,
+                line: 1,
+                column: 32
+            },
+            token_type: Symbol(
+                Dot
+            )
+        },
+        Token {
+            text: [
+                10
+            ],
+            position: Position {
+                offset: 33,
+                line: 1,
+                column: 34
+            },
+            token_type: Symbol(
+                NewLine
+            )
+        },
+        Token {
+            text: [
+                47
+            ],
+            position: Position {
+                offset: 35,
+                line: 2,
+                column: 2
+            },
+            token_type: Symbol(
+                Slash
+            )
+        },
+        Token {
+            text: [
+                43
+            ],
+            position: Position {
+                offset: 37,
+                line: 2,
+                column: 4
+            },
+            token_type: Symbol(
+                Plus
+            )
+        },
+        Token {
+            text: [
+                45
+            ],
+            position: Position {
+                offset: 39,
+                line: 2,
+                column: 6
+            },
+            token_type: Symbol(
+                Hyphen
+            )
+        },
+        Token {
+            text: [
+                43,
+                43
+            ],
+            position: Position {
+                offset: 41,
+                line: 2,
+                column: 8
+            },
+            token_type: Symbol(
+                PlusPlus
+            )
+        },
+        Token {
+            text: [
+                45,
+                45
+            ],
+            position: Position {
+                offset: 44,
+                line: 2,
+                column: 11
+            },
+            token_type: Symbol(
+                HyphenHyphen
+            )
+        },
+        Token {
+            text: [
+                61,
+                61
+            ],
+            position: Position {
+                offset: 47,
+                line: 2,
+                column: 14
+            },
+            token_type: Symbol(
+                EqualEqual
+            )
+        },
+        Token {
+            text: [
+                47,
+                61
+            ],
+            position: Position {
+                offset: 50,
+                line: 2,
+                column: 17
+            },
+            token_type: Symbol(
+                SlashEqual
+            )
+        },
+        Token {
+            text: [
+                61,
+                60
+            ],
+            position: Position {
+                offset: 53,
+                line: 2,
+                column: 20
+            },
+            token_type: Symbol(
+                EqualLess
+            )
+        },
+        Token {
+            text: [
+                60
+            ],
+            position: Position {
+                offset: 56,
+                line: 2,
+                column: 23
+            },
+            token_type: Symbol(
+                Less
+            )
+        },
+        Token {
+            text: [
+                62,
+                61
+            ],
+            position: Position {
+                offset: 58,
+                line: 2,
+                column: 25
+            },
+            token_type: Symbol(
+                GreaterEqual
+            )
+        },
+        Token {
+            text: [
+                13,
+                10
+            ],
+            position: Position {
+                offset: 61,
+                line: 2,
+                column: 28
+            },
+            token_type: Symbol(
+                NewLine
+            )
+        },
+        Token {
+            text: [
+                62
+            ],
+            position: Position {
+                offset: 64,
+                line: 3,
+                column: 2
+            },
+            token_type: Symbol(
+                Greater
+            )
+        },
+        Token {
+            text: [
+                61,
+                58,
+                61
+            ],
+            position: Position {
+                offset: 66,
+                line: 3,
+                column: 4
+            },
+            token_type: Symbol(
+                EqualColonEqual
+            )
+        },
+        Token {
+            text: [
+                61,
+                47,
+                61
+            ],
+            position: Position {
+                offset: 70,
+                line: 3,
+                column: 8
+            },
+            token_type: Symbol(
+                EqualSlashEqual
+            )
+        },
+        Token {
+            text: [
+                60,
+                61
+            ],
+            position: Position {
+                offset: 74,
+                line: 3,
+                column: 12
+            },
+            token_type: Symbol(
+                LessEqual
+            )
+        },
+        Token {
+            text: [
+                61,
+                62
+            ],
+            position: Position {
+                offset: 77,
+                line: 3,
+                column: 15
+            },
+            token_type: Symbol(
+                EqualGreater
+            )
+        },
+        Token {
+            text: [
+                58,
+                61
+            ],
+            position: Position {
+                offset: 80,
+                line: 3,
+                column: 18
+            },
+            token_type: Symbol(
+                ColonEqual
+            )
+        },
+        Token {
+            text: [
+                60,
+                60
+            ],
+            position: Position {
+                offset: 83,
+                line: 3,
+                column: 21
+            },
+            token_type: Symbol(
+                LessLess
+            )
+        },
+        Token {
+            text: [
+                62,
+                62
+            ],
+            position: Position {
+                offset: 86,
+                line: 3,
+                column: 24
+            },
+            token_type: Symbol(
+                GreaterGreater
+            )
+        },
+        Token {
+            text: [
+                33
+            ],
+            position: Position {
+                offset: 89,
+                line: 3,
+                column: 27
+            },
+            token_type: Symbol(
+                Exclamation
+            )
+        },
+        Token {
+            text: [
+                61
+            ],
+            position: Position {
+                offset: 91,
+                line: 3,
+                column: 29
+            },
+            token_type: Symbol(
+                Equal
+            )
+        },
+        Token {
+            text: [
+                58,
+                58
+            ],
+            position: Position {
+                offset: 93,
+                line: 3,
+                column: 31
+            },
+            token_type: Symbol(
+                ColonColon
+            )
+        },
+        Token {
+            text: [
+                46,
+                46
+            ],
+            position: Position {
+                offset: 96,
+                line: 3,
+                column: 34
+            },
+            token_type: Symbol(
+                DotDot
+            )
+        },
+        Token {
+            text: [
+                46,
+                46,
+                46
+            ],
+            position: Position {
+                offset: 99,
+                line: 3,
+                column: 37
+            },
+            token_type: Symbol(
+                DotDotDot
+            )
+        }
+    ]
+)

@@ -9,3 +9,6 @@ serde_derive = "1"
 glob = "0.2"
 erl_tokenize = "0.3"
 structopt = "0.2"
+
+[dev-dependencies]
+insta = "0.5.2"
