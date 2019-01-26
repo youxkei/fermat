@@ -21,8 +21,8 @@ pub enum Symbol {
     CloseBrace,
     OpenBracket,
     CloseBracket,
-    VerticalBar,
-    DoubleVerticalBar,
+    Bar,
+    BarBar,
     LessHyphen,
     Semicolon,
     Colon,
@@ -110,11 +110,18 @@ pub struct Tokenizer<'a> {
 }
 
 impl<'a> Tokenizer<'a> {
-    fn new(src: &'a [u8]) -> Self {
+    pub fn new(src: &'a [u8]) -> Self {
         Tokenizer {
             src,
             current_position: Position { offset: 0, line: 1, column: 1 },
         }
+    }
+
+    fn tokenize_symbol(&mut self, length: usize, symbol: Symbol, rest: &'a [u8]) -> Option<Result<Token<'a>, Error>>{
+        let position = self.current_position;
+        self.src = rest;
+        self.current_position.forward(length);
+        Some(Ok(Token { text: &self.src[0..length], position, token_type: TokenType::Symbol(symbol) }))
     }
 }
 
@@ -122,47 +129,46 @@ impl<'a> Iterator for Tokenizer<'a> {
     type Item = Result<Token<'a>, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        #[rustfmt::skip]
         match self.src {
             &[] => None,
 
-            &[b'=', b':', b'=', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(3); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::EqualColonEqual) })) },
-            &[b'=', b'/', b'=', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(3); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::EqualSlashEqual) })) },
-            &[b'.', b'.', b'.', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(3); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::DotDotDot) })) },
+            &[b'=', b':', b'=', ref rest..] => self.tokenize_symbol(3, Symbol::EqualColonEqual, rest),
+            &[b'=', b'/', b'=', ref rest..] => self.tokenize_symbol(3, Symbol::EqualSlashEqual, rest),
+            &[b'.', b'.', b'.', ref rest..] => self.tokenize_symbol(3, Symbol::DotDotDot, rest),
 
-            &[b'-', b'>', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::HyphenGreater) })) },
-            &[b'|', b'|', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::DoubleVerticalBar) })) },
-            &[b'<', b'-', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::LessHyphen) })) },
-            &[b'+', b'+', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::PlusPlus) })) },
-            &[b'-', b'-', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::HyphenHyphen) })) },
-            &[b'=', b'=', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::EqualEqual) })) },
-            &[b'/', b'=', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::SlashEqual) })) },
-            &[b'=', b'<', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::SlashEqual) })) },
-            &[b'>', b'=', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::GreaterEqual) })) },
-            &[b'<', b'=', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::LessEqual) })) },
-            &[b'=', b'>', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::EqualGreater) })) },
-            &[b':', b'=', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::ColonEqual) })) },
-            &[b'.', b'.', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(2); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::DotDot) })) },
+            &[b'-', b'>', ref rest..] => self.tokenize_symbol(2, Symbol::HyphenGreater, rest),
+            &[b'|', b'|', ref rest..] => self.tokenize_symbol(2, Symbol::BarBar, rest),
+            &[b'<', b'-', ref rest..] => self.tokenize_symbol(2, Symbol::LessHyphen, rest),
+            &[b'+', b'+', ref rest..] => self.tokenize_symbol(2, Symbol::PlusPlus, rest),
+            &[b'-', b'-', ref rest..] => self.tokenize_symbol(2, Symbol::HyphenHyphen, rest),
+            &[b'=', b'=', ref rest..] => self.tokenize_symbol(2, Symbol::EqualEqual, rest),
+            &[b'/', b'=', ref rest..] => self.tokenize_symbol(2, Symbol::SlashEqual, rest),
+            &[b'=', b'<', ref rest..] => self.tokenize_symbol(2, Symbol::SlashEqual, rest),
+            &[b'>', b'=', ref rest..] => self.tokenize_symbol(2, Symbol::GreaterEqual, rest),
+            &[b'<', b'=', ref rest..] => self.tokenize_symbol(2, Symbol::LessEqual, rest),
+            &[b'=', b'>', ref rest..] => self.tokenize_symbol(2, Symbol::EqualGreater, rest),
+            &[b':', b'=', ref rest..] => self.tokenize_symbol(2, Symbol::ColonEqual, rest),
+            &[b'.', b'.', ref rest..] => self.tokenize_symbol(2, Symbol::DotDot, rest),
 
-            &[b'(', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::OpenParen) })) },
-            &[b')', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::CloseParen) })) },
-            &[b',', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Comma) })) },
-            &[b'{', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::OpenBrace) })) },
-            &[b'}', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::CloseBrace) })) },
-            &[b'[', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::OpenBracket) })) },
-            &[b']', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::CloseBracket) })) },
-            &[b'|', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::VerticalBar) })) },
-            &[b';', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Semicolon) })) },
-            &[b':', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Colon) })) },
-            &[b'#', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Numbersign) })) },
-            &[b'.', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Dot) })) },
-            &[b'*', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Asterisk) })) },
-            &[b'/', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Slash) })) },
-            &[b'+', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Plus) })) },
-            &[b'-', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Hyphen) })) },
-            &[b'!', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Exclamation) })) },
-            &[b'=', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Equal) })) },
-            &[b'?', ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(1); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Symbol(Symbol::Question) })) },
+            &[b'(', ref rest..] => self.tokenize_symbol(1, Symbol::OpenParen, rest),
+            &[b')', ref rest..] => self.tokenize_symbol(1, Symbol::CloseParen, rest),
+            &[b',', ref rest..] => self.tokenize_symbol(1, Symbol::Comma, rest),
+            &[b'{', ref rest..] => self.tokenize_symbol(1, Symbol::OpenBrace, rest),
+            &[b'}', ref rest..] => self.tokenize_symbol(1, Symbol::CloseBrace, rest),
+            &[b'[', ref rest..] => self.tokenize_symbol(1, Symbol::OpenBracket, rest),
+            &[b']', ref rest..] => self.tokenize_symbol(1, Symbol::CloseBracket, rest),
+            &[b'|', ref rest..] => self.tokenize_symbol(1, Symbol::Bar, rest),
+            &[b';', ref rest..] => self.tokenize_symbol(1, Symbol::Semicolon, rest),
+            &[b':', ref rest..] => self.tokenize_symbol(1, Symbol::Colon, rest),
+            &[b'#', ref rest..] => self.tokenize_symbol(1, Symbol::Numbersign, rest),
+            &[b'.', ref rest..] => self.tokenize_symbol(1, Symbol::Dot, rest),
+            &[b'*', ref rest..] => self.tokenize_symbol(1, Symbol::Asterisk, rest),
+            &[b'/', ref rest..] => self.tokenize_symbol(1, Symbol::Slash, rest),
+            &[b'+', ref rest..] => self.tokenize_symbol(1, Symbol::Plus, rest),
+            &[b'-', ref rest..] => self.tokenize_symbol(1, Symbol::Hyphen, rest),
+            &[b'!', ref rest..] => self.tokenize_symbol(1, Symbol::Exclamation, rest),
+            &[b'=', ref rest..] => self.tokenize_symbol(1, Symbol::Equal, rest),
+            &[b'?', ref rest..] => self.tokenize_symbol(1, Symbol::Question, rest),
 
             // TODO: handle utf8 correctly
             &[b'$', b'\\', _, ref rest..] => { let position = self.current_position; self.src = rest; self.current_position.forward(3); Some(Ok(Token { text: &self.src[0..1], position, token_type: TokenType::Integer })) },
@@ -195,7 +201,8 @@ impl<'a> Iterator for Tokenizer<'a> {
                         self.current_position.forward(size);
 
                         Some(Ok(Token { text, position, token_type: TokenType::Integer }))
-                    }
+                    },
+                    _ => panic!("")
                 }
             },
 
