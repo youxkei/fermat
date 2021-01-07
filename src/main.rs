@@ -40,9 +40,7 @@ struct KindIds {
     string: u16,
     comment: u16,
     line_comment: u16,
-    newline: u16,
     multiple_newlines: u16,
-    spaces: u16,
 }
 
 struct FieldIds {
@@ -87,9 +85,7 @@ fn main() {
             string: language.id_for_node_kind("string", true),
             comment: language.id_for_node_kind("comment", true),
             line_comment: language.id_for_node_kind("line_comment", true),
-            newline: language.id_for_node_kind("newline", true),
             multiple_newlines: language.id_for_node_kind("multiple_newlines", true),
-            spaces: language.id_for_node_kind("spaces", true),
         },
         field: FieldIds {
             name: language.field_id_for_name("name").unwrap(),
@@ -137,8 +133,6 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
             || kind_id == ids.kind.line_comment
         {
             text!(&source_code[node.start_byte()..node.end_byte()])
-        } else if kind_id == ids.kind.spaces {
-            text!(" ")
         } else if kind_id == ids.kind.function_clause {
             let mut before_body = unit!();
             let mut body = unit!();
@@ -187,9 +181,6 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
                                 before_body,
                                 stack!(traverse(child, ids, source_code), text!(""))
                             )
-                        } else if child.kind_id() == ids.kind.spaces {
-                            before_body =
-                                apposition!(before_body, traverse(child, ids, source_code))
                         } else {
                             body = stack!(body, traverse(child, ids, source_code));
 

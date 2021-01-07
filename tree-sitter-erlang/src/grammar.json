@@ -503,7 +503,7 @@
         "value": "%%.*"
       }
     },
-    "newline": {
+    "_newline": {
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
@@ -517,11 +517,11 @@
         "value": "\\n\\n+"
       }
     },
-    "spaces": {
+    "_spaces": {
       "type": "TOKEN",
       "content": {
         "type": "PATTERN",
-        "value": "[ \\t]+"
+        "value": "[ \\t\\r]"
       }
     }
   },
@@ -536,7 +536,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "newline"
+      "name": "_newline"
     },
     {
       "type": "SYMBOL",
@@ -544,7 +544,7 @@
     },
     {
       "type": "SYMBOL",
-      "name": "spaces"
+      "name": "_spaces"
     }
   ],
   "conflicts": [],

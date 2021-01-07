@@ -42,9 +42,9 @@ module.exports = grammar({
   extras: ($) => [
     $.comment,
     $.line_comment,
-    $.newline,
+    $._newline,
     $.multiple_newlines,
-    $.spaces,
+    $._spaces,
   ],
 
   rules: {
@@ -145,9 +145,9 @@ module.exports = grammar({
 
     comment: (_) => token(/%[^%].*/),
     line_comment: (_) => token(/%%.*/),
-    newline: (_) => token(/\n/),
+    _newline: (_) => token(/\n/),
     multiple_newlines: (_) => token(/\n\n+/),
-    spaces: (_) => token(/[ \t]+/),
+    _spaces: (_) => token(/[ \t\r]/),
   },
 });
 // vim: ts=2 sw=2 sts=2

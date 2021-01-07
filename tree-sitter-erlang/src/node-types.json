@@ -381,14 +381,6 @@
     "named": true
   },
   {
-    "type": "newline",
-    "named": true
-  },
-  {
-    "type": "spaces",
-    "named": true
-  },
-  {
     "type": "when",
     "named": false
   }
