@@ -1,0 +1,366 @@
+---
+source: src/layout_fun.rs
+expression: "LayoutFun::from_layout_expr(&*expr, config).to_vec()"
+---
+[
+    (
+        0,
+        Layout {
+            layout_expr: Apposition(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        " ",
+                    ),
+                    Apposition(
+                        Text(
+                            "#record{",
+                        ),
+                        Apposition(
+                            Text(
+                                "field = 1",
+                            ),
+                            Text(
+                                "}",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 30,
+            cost: 0,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        2,
+        Layout {
+            layout_expr: Apposition(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        " ",
+                    ),
+                    Apposition(
+                        Text(
+                            "#record{",
+                        ),
+                        Apposition(
+                            Text(
+                                "field = 1",
+                            ),
+                            Text(
+                                "}",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 30,
+            cost: 0,
+            cost_gradient: 100,
+        },
+    ),
+    (
+        3,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Apposition(
+                        Text(
+                            "#record{",
+                        ),
+                        Apposition(
+                            Text(
+                                "field = 1",
+                            ),
+                            Text(
+                                "}",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 22,
+            cost: 1,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        10,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Apposition(
+                        Text(
+                            "#record{",
+                        ),
+                        Apposition(
+                            Text(
+                                "field = 1",
+                            ),
+                            Text(
+                                "}",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 22,
+            cost: 1,
+            cost_gradient: 100,
+        },
+    ),
+    (
+        11,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Stack(
+                        Text(
+                            "#record{",
+                        ),
+                        Stack(
+                            Apposition(
+                                Text(
+                                    "   ",
+                                ),
+                                Text(
+                                    "field = 1",
+                                ),
+                            ),
+                            Apposition(
+                                Text(
+                                    "  ",
+                                ),
+                                Text(
+                                    "}",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 7,
+            cost: 3,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        16,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Stack(
+                        Text(
+                            "#record{",
+                        ),
+                        Stack(
+                            Apposition(
+                                Text(
+                                    "   ",
+                                ),
+                                Text(
+                                    "field = 1",
+                                ),
+                            ),
+                            Apposition(
+                                Text(
+                                    "  ",
+                                ),
+                                Text(
+                                    "}",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 7,
+            cost: 3,
+            cost_gradient: 100,
+        },
+    ),
+    (
+        20,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Stack(
+                        Text(
+                            "#record{",
+                        ),
+                        Stack(
+                            Apposition(
+                                Text(
+                                    "   ",
+                                ),
+                                Text(
+                                    "field = 1",
+                                ),
+                            ),
+                            Apposition(
+                                Text(
+                                    "  ",
+                                ),
+                                Text(
+                                    "}",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 7,
+            cost: 403,
+            cost_gradient: 200,
+        },
+    ),
+    (
+        21,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Stack(
+                        Text(
+                            "#record{",
+                        ),
+                        Stack(
+                            Apposition(
+                                Text(
+                                    "   ",
+                                ),
+                                Text(
+                                    "field = 1",
+                                ),
+                            ),
+                            Apposition(
+                                Text(
+                                    "  ",
+                                ),
+                                Text(
+                                    "}",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 7,
+            cost: 603,
+            cost_gradient: 300,
+        },
+    ),
+    (
+        25,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Stack(
+                        Text(
+                            "#record{",
+                        ),
+                        Stack(
+                            Apposition(
+                                Text(
+                                    "   ",
+                                ),
+                                Text(
+                                    "field = 1",
+                                ),
+                            ),
+                            Apposition(
+                                Text(
+                                    "  ",
+                                ),
+                                Text(
+                                    "}",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 7,
+            cost: 1803,
+            cost_gradient: 400,
+        },
+    ),
+    (
+        26,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Foobarbaz =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Apposition(
+                        Text(
+                            "#record{",
+                        ),
+                        Apposition(
+                            Text(
+                                "field = 1",
+                            ),
+                            Text(
+                                "}",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            span: 22,
+            cost: 2101,
+            cost_gradient: 200,
+        },
+    ),
+]

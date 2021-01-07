@@ -1,0 +1,35 @@
+---
+source: src/avltree.rs
+expression: "AvlTree::new().insert(1, '1').insert(2, '2').insert(3, '3')"
+---
+Node(
+    Node {
+        key: 2,
+        value: '2',
+        height: 2,
+        min_key: 1,
+        max_key: 3,
+        left: Node(
+            Node {
+                key: 1,
+                value: '1',
+                height: 1,
+                min_key: 1,
+                max_key: 1,
+                left: Empty,
+                right: Empty,
+            },
+        ),
+        right: Node(
+            Node {
+                key: 3,
+                value: '3',
+                height: 1,
+                min_key: 3,
+                max_key: 3,
+                left: Empty,
+                right: Empty,
+            },
+        ),
+    },
+)

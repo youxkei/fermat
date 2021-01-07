@@ -1,0 +1,28 @@
+---
+source: src/layout_fun.rs
+expression: "LayoutFun::from_layout_expr(&LayoutExpr::Let(1,\n                                             Rc::new(LayoutExpr::Text(\"foo\")),\n                                             Rc::new(LayoutExpr::Var(1))),\n                            config).to_vec()"
+---
+[
+    (
+        0,
+        Layout {
+            layout_expr: Text(
+                "foo",
+            ),
+            span: 3,
+            cost: 0,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        2,
+        Layout {
+            layout_expr: Text(
+                "foo",
+            ),
+            span: 3,
+            cost: 0,
+            cost_gradient: 100,
+        },
+    ),
+]

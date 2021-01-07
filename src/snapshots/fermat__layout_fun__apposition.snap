@@ -1,0 +1,54 @@
+---
+source: src/layout_fun.rs
+expression: "LayoutFun::apposition(LayoutFun::text(\"foo\", config),\n                      LayoutFun::text(\"bar\", config), config).to_vec()"
+---
+[
+    (
+        0,
+        Layout {
+            layout_expr: Apposition(
+                Text(
+                    "foo",
+                ),
+                Text(
+                    "bar",
+                ),
+            ),
+            span: 6,
+            cost: 0,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        2,
+        Layout {
+            layout_expr: Apposition(
+                Text(
+                    "foo",
+                ),
+                Text(
+                    "bar",
+                ),
+            ),
+            span: 6,
+            cost: 0,
+            cost_gradient: 100,
+        },
+    ),
+    (
+        5,
+        Layout {
+            layout_expr: Apposition(
+                Text(
+                    "foo",
+                ),
+                Text(
+                    "bar",
+                ),
+            ),
+            span: 6,
+            cost: 300,
+            cost_gradient: 100,
+        },
+    ),
+]

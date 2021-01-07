@@ -1,0 +1,40 @@
+=============
+Hello, world!
+=============
+
+-module(hello).
+-export([main/0]).
+
+main() ->
+    io:format("Hello, world!~n").
+
+---
+
+(source_file
+  (form
+    (function_
+      (function_clauses
+        (function_clause
+          (atom)
+          (clause_args
+            (pat_argument_list))
+          (clause_guard)
+          (clause_body
+            (exprs
+              (expr
+                (function_call
+                  (expr_remote
+                    (expr_max
+                      (atomic
+                        (atom)))
+                    (expr_max
+                      (atomic
+                        (atom))))
+                  (argument_list
+                    (exprs
+                      (expr
+                        (expr_remote
+                          (expr_max
+                            (atomic
+                              (strings
+                                (string)))))))))))))))))

@@ -1,0 +1,75 @@
+---
+source: src/avltree.rs
+expression: "left_right_rotation(Node{key: 6,\n                         value: 6,\n                         min_key: 1,\n                         max_key: 7,\n                         height: 4,\n                         left:\n                             box\n                                 AVLTree::Node(Node{key: 2,\n                                                    value: 2,\n                                                    min_key: 1,\n                                                    max_key: 5,\n                                                    height: 3,\n                                                    left:\n                                                        box\n                                                            AVLTree::new().insert(1,\n                                                                                  1),\n                                                    right:\n                                                        box\n                                                            AVLTree::Node(Node{key:\n                                                                                   4,\n                                                                               value:\n                                                                                   4,\n                                                                               min_key:\n                                                                                   3,\n                                                                               max_key:\n                                                                                   5,\n                                                                               height:\n                                                                                   2,\n                                                                               left:\n                                                                                   box\n                                                                                       AVLTree::new().insert(3,\n                                                                                                             3),\n                                                                               right:\n                                                                                   box\n                                                                                       AVLTree::new().insert(5,\n                                                                                                             5),}),}),\n                         right: box AVLTree::new().insert(7, 7),})"
+---
+Node(
+    Node {
+        key: 4,
+        value: 4,
+        height: 3,
+        min_key: 1,
+        max_key: 7,
+        left: Node(
+            Node {
+                key: 2,
+                value: 2,
+                height: 2,
+                min_key: 1,
+                max_key: 3,
+                left: Node(
+                    Node {
+                        key: 1,
+                        value: 1,
+                        height: 1,
+                        min_key: 1,
+                        max_key: 1,
+                        left: Empty,
+                        right: Empty,
+                    },
+                ),
+                right: Node(
+                    Node {
+                        key: 3,
+                        value: 3,
+                        height: 1,
+                        min_key: 3,
+                        max_key: 3,
+                        left: Empty,
+                        right: Empty,
+                    },
+                ),
+            },
+        ),
+        right: Node(
+            Node {
+                key: 6,
+                value: 6,
+                height: 2,
+                min_key: 5,
+                max_key: 7,
+                left: Node(
+                    Node {
+                        key: 5,
+                        value: 5,
+                        height: 1,
+                        min_key: 5,
+                        max_key: 5,
+                        left: Empty,
+                        right: Empty,
+                    },
+                ),
+                right: Node(
+                    Node {
+                        key: 7,
+                        value: 7,
+                        height: 1,
+                        min_key: 7,
+                        max_key: 7,
+                        left: Empty,
+                        right: Empty,
+                    },
+                ),
+            },
+        ),
+    },
+)

@@ -1,0 +1,76 @@
+---
+source: src/layout_fun.rs
+expression: "LayoutFun::choice(LayoutFun::text(Rc::new(LayoutExpr::Text(\"if(foo) bar();\")),\n                                  config),\n                  LayoutFun::stack(LayoutFun::text(Rc::new(LayoutExpr::Text(\"if(foo)\")),\n                                                   config),\n                                   LayoutFun::text(Rc::new(LayoutExpr::Text(\"    bar();\")),\n                                                   config), config)).to_vec()"
+---
+[
+    (
+        0,
+        Layout {
+            layout_expr: Text(
+                "if(foo) bar();",
+            ),
+            span: 14,
+            cost: 0,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        2,
+        Layout {
+            layout_expr: Text(
+                "if(foo) bar();",
+            ),
+            span: 14,
+            cost: 0,
+            cost_gradient: 100,
+        },
+    ),
+    (
+        3,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "if(foo)",
+                ),
+                Text(
+                    "    bar();",
+                ),
+            ),
+            span: 10,
+            cost: 1,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        6,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "if(foo)",
+                ),
+                Text(
+                    "    bar();",
+                ),
+            ),
+            span: 10,
+            cost: 1,
+            cost_gradient: 100,
+        },
+    ),
+    (
+        9,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "if(foo)",
+                ),
+                Text(
+                    "    bar();",
+                ),
+            ),
+            span: 10,
+            cost: 301,
+            cost_gradient: 200,
+        },
+    ),
+]
