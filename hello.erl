@@ -4,5 +4,7 @@
 
 
 %% ハローワールド
-main() -> % comment
+main % after main
+() % after ()
+-> % after ->
     io:format("Hello, world!").

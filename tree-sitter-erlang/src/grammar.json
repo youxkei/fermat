@@ -186,36 +186,24 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "FIELD",
-          "name": "name",
-          "content": {
-            "type": "SYMBOL",
-            "name": "atom"
-          }
+          "type": "SYMBOL",
+          "name": "atom"
         },
         {
-          "type": "FIELD",
-          "name": "args",
-          "content": {
-            "type": "SYMBOL",
-            "name": "pat_argument_list"
-          }
+          "type": "SYMBOL",
+          "name": "pat_argument_list"
         },
         {
-          "type": "FIELD",
-          "name": "guard",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "clause_guard"
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          }
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "clause_guard"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         },
         {
           "type": "FIELD",
@@ -226,12 +214,8 @@
           }
         },
         {
-          "type": "FIELD",
-          "name": "body",
-          "content": {
-            "type": "SYMBOL",
-            "name": "exprs"
-          }
+          "type": "SYMBOL",
+          "name": "exprs"
         }
       ]
     },

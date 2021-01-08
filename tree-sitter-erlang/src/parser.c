@@ -12,7 +12,7 @@
 #define ALIAS_COUNT 0
 #define TOKEN_COUNT 25
 #define EXTERNAL_TOKEN_COUNT 0
-#define FIELD_COUNT 5
+#define FIELD_COUNT 1
 #define MAX_ALIAS_SEQUENCE_LENGTH 8
 
 enum {
@@ -384,39 +384,24 @@ static const TSSymbolMetadata ts_symbol_metadata[] = {
 };
 
 enum {
-  field_args = 1,
-  field_arrow = 2,
-  field_body = 3,
-  field_guard = 4,
-  field_name = 5,
+  field_arrow = 1,
 };
 
 static const char *ts_field_names[] = {
   [0] = NULL,
-  [field_args] = "args",
   [field_arrow] = "arrow",
-  [field_body] = "body",
-  [field_guard] = "guard",
-  [field_name] = "name",
 };
 
 static const TSFieldMapSlice ts_field_map_slices[3] = {
-  [1] = {.index = 0, .length = 4},
-  [2] = {.index = 4, .length = 5},
+  [1] = {.index = 0, .length = 1},
+  [2] = {.index = 1, .length = 1},
 };
 
 static const TSFieldMapEntry ts_field_map_entries[] = {
   [0] =
-    {field_args, 1},
     {field_arrow, 2},
-    {field_body, 3},
-    {field_name, 0},
-  [4] =
-    {field_args, 1},
+  [1] =
     {field_arrow, 3},
-    {field_body, 4},
-    {field_guard, 2},
-    {field_name, 0},
 };
 
 static TSSymbol ts_alias_sequences[3][MAX_ALIAS_SEQUENCE_LENGTH] = {

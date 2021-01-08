@@ -44,11 +44,7 @@ struct KindIds {
 }
 
 struct FieldIds {
-    name: u16,
-    args: u16,
-    guard: u16,
     arrow: u16,
-    body: u16,
 }
 
 struct Ids {
@@ -88,11 +84,7 @@ fn main() {
             multiple_newlines: language.id_for_node_kind("multiple_newlines", true),
         },
         field: FieldIds {
-            name: language.field_id_for_name("name").unwrap(),
-            args: language.field_id_for_name("args").unwrap(),
-            guard: language.field_id_for_name("guard").unwrap(),
             arrow: language.field_id_for_name("arrow").unwrap(),
-            body: language.field_id_for_name("body").unwrap(),
         },
     };
 
@@ -116,14 +108,15 @@ fn main() {
     );
 
     let layout_fun = LayoutFun::from_layout_expr(&*layout_expr, &config);
-    layout_fun.at(0).layout_expr.print(0);
+    let layout_expr = layout_fun.at(0).layout_expr;
+
+    layout_expr.print(0);
 }
 
 fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
     if !node.is_named() {
         text!(&source_code[node.start_byte()..node.end_byte()])
     } else {
-        println!("{:?}", node.kind());
         let kind_id = node.kind_id();
 
         if kind_id == ids.kind.atom
@@ -157,6 +150,7 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
                         if child.kind_id() == ids.kind.comment {
                             before_body = apposition!(
                                 before_body,
+                                text!(" "),
                                 stack!(traverse(child, ids, source_code), text!(""))
                             )
                         } else if child.kind_id() == ids.kind.line_comment {
@@ -165,8 +159,11 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
                                 stack!(text!(""), traverse(child, ids, source_code), text!(""))
                             )
                         } else if cursor.field_id() == Some(ids.field.arrow) {
-                            before_body =
-                                apposition!(before_body, traverse(child, ids, source_code));
+                            before_body = apposition!(
+                                before_body,
+                                text!(" "),
+                                traverse(child, ids, source_code)
+                            );
 
                             phase = Phase::AfterArrow
                         } else {
@@ -179,13 +176,14 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
                         if child.kind_id() == ids.kind.comment {
                             before_body = apposition!(
                                 before_body,
-                                stack!(traverse(child, ids, source_code), text!(""))
+                                text!(" "),
+                                traverse(child, ids, source_code),
                             )
                         } else {
                             body = stack!(body, traverse(child, ids, source_code));
-
-                            phase = Phase::InBody
                         }
+
+                        phase = Phase::InBody
                     }
 
                     Phase::InBody => {

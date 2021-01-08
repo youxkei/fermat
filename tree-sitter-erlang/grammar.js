@@ -79,11 +79,11 @@ module.exports = grammar({
 
     function_clause: ($) =>
       seq(
-        field("name", $.atom),
-        field("args", $.pat_argument_list),
-        field("guard", optional($.clause_guard)),
+        $.atom,
+        $.pat_argument_list,
+        optional($.clause_guard),
         field("arrow", "->"),
-        field("body", $.exprs)
+        $.exprs
       ),
 
     pat_argument_list: ($) => seq("(", /*repeatComma($.pat_expr),*/ ")"),

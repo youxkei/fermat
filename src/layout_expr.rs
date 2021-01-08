@@ -19,9 +19,9 @@ impl<'a> LayoutExpr<'a> {
         match self {
             LayoutExpr::Unit => panic!("Unit should not be occured"),
 
-            LayoutExpr::Text(str) => {
-                print!("{}", str);
-                indent + str.len()
+            LayoutExpr::Text(text) => {
+                print!("{}", text);
+                indent + text.len()
             }
 
             LayoutExpr::Stack(lhs, rhs) => {
@@ -32,7 +32,7 @@ impl<'a> LayoutExpr<'a> {
 
             LayoutExpr::Apposition(lhs, rhs) => {
                 let width = lhs.print(indent);
-                rhs.print(indent + width) + width
+                rhs.print(width)
             }
 
             LayoutExpr::Choice(_, _) => panic!("Choice should no be occered: {:?}", self),
