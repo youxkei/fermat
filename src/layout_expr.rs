@@ -40,6 +40,35 @@ impl<'a> LayoutExpr<'a> {
             LayoutExpr::Var(_) => panic!("Var should no be occered: {:?}", self),
         }
     }
+
+    pub fn format(&self, indent: usize) -> (String, usize) {
+        match self {
+            LayoutExpr::Unit => panic!("Unit should not be occured"),
+
+            LayoutExpr::Text(text) => (text.to_string(), indent + text.len()),
+
+            LayoutExpr::Stack(lhs, rhs) => {
+                let (lhs_text, _) = lhs.format(indent);
+                let indent_spaces = repeat(' ').take(indent).collect::<String>();
+                let (rhs_text, rhs_width) = rhs.format(indent);
+
+                (
+                    format!("{}\n{}{}", lhs_text, indent_spaces, rhs_text),
+                    rhs_width,
+                )
+            }
+
+            LayoutExpr::Apposition(lhs, rhs) => {
+                let (lhs_text, lhs_width) = lhs.format(indent);
+                let (rhs_text, rhs_width) = rhs.format(lhs_width);
+                (format!("{}{}", lhs_text, rhs_text), rhs_width)
+            }
+
+            LayoutExpr::Choice(lhs, _) => lhs.format(indent),
+            LayoutExpr::Let(_, _, _) => panic!("Let should no be occered: {:?}", self),
+            LayoutExpr::Var(_) => panic!("Var should no be occered: {:?}", self),
+        }
+    }
 }
 
 macro_rules! layout_expr_helper {

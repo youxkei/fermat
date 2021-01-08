@@ -162,7 +162,18 @@
   {
     "type": "function",
     "named": true,
-    "fields": {},
+    "fields": {
+      "semicolon": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": ";",
+            "named": false
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
       "required": true,

@@ -45,6 +45,7 @@ struct KindIds {
 
 struct FieldIds {
     arrow: u16,
+    semicolon: u16,
 }
 
 struct Ids {
@@ -53,6 +54,29 @@ struct Ids {
 }
 
 fn main() {
+    let source_code = fs::read_to_string("hello.erl").unwrap();
+    let layout_expr = parse(&source_code);
+
+    let config = Config {
+        right_margin: 36,
+        newline_cost: 1,
+        beyond_right_margin_cost: 100,
+    };
+
+    println!(
+        "{}|",
+        repeat(' ')
+            .take((config.right_margin - 1) as usize)
+            .collect::<String>()
+    );
+
+    let layout_fun = LayoutFun::from_layout_expr(&*layout_expr, &config);
+    let layout_expr = layout_fun.at(0).layout_expr;
+
+    layout_expr.print(0);
+}
+
+fn parse<'a>(source_code: &'a str) -> Rc<LayoutExpr<'a>> {
     let mut parser = Parser::new();
 
     let language = unsafe { tree_sitter_erlang() };
@@ -85,35 +109,17 @@ fn main() {
         },
         field: FieldIds {
             arrow: language.field_id_for_name("arrow").unwrap(),
+            semicolon: language.field_id_for_name("semicolon").unwrap(),
         },
     };
 
-    let source_code = fs::read_to_string("hello.erl").unwrap();
-    let tree = parser.parse(&source_code, None).unwrap();
+    let tree = parser.parse(source_code, None).unwrap();
     let root_node = tree.root_node();
 
-    let layout_expr = traverse(root_node, &ids, &source_code);
-
-    let config = Config {
-        right_margin: 36,
-        newline_cost: 1,
-        beyond_right_margin_cost: 100,
-    };
-
-    println!(
-        "{}|",
-        repeat(' ')
-            .take((config.right_margin - 1) as usize)
-            .collect::<String>()
-    );
-
-    let layout_fun = LayoutFun::from_layout_expr(&*layout_expr, &config);
-    let layout_expr = layout_fun.at(0).layout_expr;
-
-    layout_expr.print(0);
+    traverse(&root_node, &ids, source_code)
 }
 
-fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
+fn traverse<'a, 'b>(node: &Node<'b>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
     if !node.is_named() {
         text!(&source_code[node.start_byte()..node.end_byte()])
     } else {
@@ -151,24 +157,24 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
                             before_body = apposition!(
                                 before_body,
                                 text!(" "),
-                                stack!(traverse(child, ids, source_code), text!(""))
+                                stack!(traverse(&child, ids, source_code), text!(""))
                             )
                         } else if child.kind_id() == ids.kind.line_comment {
                             before_body = apposition!(
                                 before_body,
-                                stack!(text!(""), traverse(child, ids, source_code), text!(""))
+                                stack!(text!(""), traverse(&child, ids, source_code), text!(""))
                             )
                         } else if cursor.field_id() == Some(ids.field.arrow) {
                             before_body = apposition!(
                                 before_body,
                                 text!(" "),
-                                traverse(child, ids, source_code)
+                                traverse(&child, ids, source_code)
                             );
 
                             phase = Phase::AfterArrow
                         } else {
                             before_body =
-                                apposition!(before_body, traverse(child, ids, source_code),)
+                                apposition!(before_body, traverse(&child, ids, source_code),)
                         }
                     }
 
@@ -177,10 +183,10 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
                             before_body = apposition!(
                                 before_body,
                                 text!(" "),
-                                traverse(child, ids, source_code),
+                                traverse(&child, ids, source_code),
                             )
                         } else {
-                            body = stack!(body, traverse(child, ids, source_code));
+                            body = stack!(body, traverse(&child, ids, source_code));
                         }
 
                         phase = Phase::InBody
@@ -188,9 +194,9 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
 
                     Phase::InBody => {
                         if child.kind_id() == ids.kind.comment {
-                            body = apposition!(body, traverse(child, ids, source_code))
+                            body = apposition!(body, traverse(&child, ids, source_code))
                         } else {
-                            body = stack!(body, traverse(child, ids, source_code))
+                            body = stack!(body, traverse(&child, ids, source_code))
                         }
                     }
                 }
@@ -212,11 +218,16 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
             let mut line = unit!();
 
             let mut cursor = node.walk();
+            cursor.goto_first_child();
 
-            for child in node.children(&mut cursor) {
-                if !child.is_named() {
-                    // ";"
-                    result = stack!(result, apposition!(line, traverse(child, ids, source_code)));
+            loop {
+                let child = cursor.node();
+
+                if cursor.field_id() == Some(ids.field.semicolon) {
+                    result = stack!(
+                        result,
+                        apposition!(line, traverse(&child, ids, source_code))
+                    );
                     line = unit!();
                 } else {
                     let child_kind_id = child.kind_id();
@@ -225,10 +236,14 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
                         || child_kind_id == ids.kind.function_clause
                     {
                         result = stack!(result, line);
-                        line = traverse(child, ids, source_code);
+                        line = traverse(&child, ids, source_code);
                     } else {
                         panic!("node {} cannot be occured here", child.kind())
                     }
+                }
+
+                if !cursor.goto_next_sibling() {
+                    break;
                 }
             }
 
@@ -244,7 +259,7 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
                 if child.kind_id() == ids.kind.multiple_newlines {
                     result = stack!(result, text!(""))
                 } else {
-                    result = stack!(result, traverse(child, ids, source_code))
+                    result = stack!(result, traverse(&child, ids, source_code))
                 }
             }
 
@@ -255,10 +270,41 @@ fn traverse<'a>(node: Node<'a>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExp
             let mut cursor = node.walk();
 
             for child in node.children(&mut cursor) {
-                result = apposition!(result, traverse(child, ids, source_code));
+                result = apposition!(result, traverse(&child, ids, source_code));
             }
 
             result
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use indoc::indoc;
+    use insta::assert_debug_snapshot;
+
+    macro_rules! assert_parse {
+        ($text:expr) => {
+            let text = $text;
+            assert_eq!(text, parse(text).format(0).0 + "\n")
+        };
+    }
+
+    #[test]
+    fn function_clause_test() {
+        assert_parse!(indoc! {r#"
+            main() ->
+                io:format("Hello, world!").
+        "#});
+
+        assert_parse!(indoc! {r#"
+            main % after main
+                 () % after ()
+                     -> % after ->
+                %% line comment 1
+                %% line comment 2
+                io:format("Hello, world!").
+        "#});
     }
 }

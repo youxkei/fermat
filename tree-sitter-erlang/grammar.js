@@ -75,7 +75,7 @@ module.exports = grammar({
 
     _function_or_macro: ($) => choice($["function"] /*, $.macro*/),
 
-    ["function"]: ($) => repeatSep1($.function_clause, ";"),
+    ["function"]: ($) => repeatSep1($.function_clause, field("semicolon", ";")),
 
     function_clause: ($) =>
       seq(
