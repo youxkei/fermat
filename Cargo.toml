@@ -5,13 +5,19 @@ authors = ["Hisayuki Mima <youxkei@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-tree-sitter = "0.17.1"
-itertools = "0.9.0"
-rpds = "0.7.0"
+tree-sitter = "0.17"
+itertools = "0.9"
+rpds = "0.7"
+tree-sitter-id = { path = "tree-sitter-id" }
 
 [build-dependencies]
 cc = "1.0"
 
 [dev-dependencies]
-insta = "0.16.1"
+insta = "0.16"
 indoc = "1.0"
+
+[workspace]
+members = [
+    "tree-sitter-id"
+]

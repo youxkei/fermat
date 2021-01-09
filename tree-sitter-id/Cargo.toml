@@ -1,0 +1,15 @@
+[package]
+name = "tree-sitter-id"
+version = "0.1.0"
+authors = ["youxkei <youxkei@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[build-dependencies]
+cc = "1.0"
+
+[dependencies]
+quote = "1.0"
+tree-sitter = "0.17"
