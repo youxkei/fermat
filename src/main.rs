@@ -18,44 +18,7 @@ extern "C" {
     fn tree_sitter_erlang() -> Language;
 }
 
-struct KindIds {
-    source_file: u16,
-    form: u16,
-    module_attributes: u16,
-    export_attributes: u16,
-    export_mfa: u16,
-    function: u16,
-    function_clause: u16,
-    pat_argument_list: u16,
-    clause_guard: u16,
-    exprs: u16,
-    expr: u16,
-    function_call: u16,
-    expr_remote: u16,
-    argument_list: u16,
-    atomic: u16,
-    atom: u16,
-    integer: u16,
-    strings: u16,
-    string: u16,
-    comment: u16,
-    line_comment: u16,
-    multiple_newlines: u16,
-}
-
-struct FieldIds {
-    arrow: u16,
-    semicolon: u16,
-}
-
-struct Ids {
-    kind: KindIds,
-    field: FieldIds,
-}
-
-use tree_sitter_id::kind_id_enum;
-
-kind_id_enum!();
+tree_sitter_id::define_kind_id!();
 
 fn main() {
     let source_code = fs::read_to_string("hello.erl").unwrap();
@@ -86,228 +49,239 @@ fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
     let language = unsafe { tree_sitter_erlang() };
     parser.set_language(language).unwrap();
 
-    println!(
-        "{:?}",
-        language.node_kind_is_visible(KindId::_ESCAPE_SEQUENCE as u16)
-    );
-
-    let ids = Ids {
-        kind: KindIds {
-            source_file: language.id_for_node_kind("source_file", true),
-            form: language.id_for_node_kind("form", true),
-            module_attributes: language.id_for_node_kind("module_attributes", true),
-            export_attributes: language.id_for_node_kind("export_attributes", true),
-            export_mfa: language.id_for_node_kind("export_mfa", true),
-            function: language.id_for_node_kind("function", true),
-            function_clause: language.id_for_node_kind("function_clause", true),
-            pat_argument_list: language.id_for_node_kind("pat_argument_list", true),
-            clause_guard: language.id_for_node_kind("clause_guard", true),
-            exprs: language.id_for_node_kind("exprs", true),
-            expr: language.id_for_node_kind("expr", true),
-            function_call: language.id_for_node_kind("function_call", true),
-            expr_remote: language.id_for_node_kind("expr_remote", true),
-            argument_list: language.id_for_node_kind("argument_list", true),
-            atomic: language.id_for_node_kind("atomic", true),
-            atom: language.id_for_node_kind("atom", true),
-            integer: language.id_for_node_kind("integer", true),
-            strings: language.id_for_node_kind("strings", true),
-            string: language.id_for_node_kind("string", true),
-            comment: language.id_for_node_kind("comment", true),
-            line_comment: language.id_for_node_kind("line_comment", true),
-            multiple_newlines: language.id_for_node_kind("multiple_newlines", true),
-        },
-        field: FieldIds {
-            arrow: language.field_id_for_name("arrow").unwrap(),
-            semicolon: language.field_id_for_name("semicolon").unwrap(),
-        },
-    };
-
     let tree = parser.parse(source_code, None).unwrap();
     let root_node = tree.root_node();
 
-    node_to_layout_expr(root_node, &ids, source_code)
+    node_to_layout_expr(root_node, source_code)
 }
 
-fn node_to_layout_expr<'a>(node: Node<'_>, ids: &Ids, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
-    if !node.is_named() {
-        text!(&source_code[node.start_byte()..node.end_byte()])
-    } else {
-        let kind_id: KindId = unsafe { std::mem::transmute(node.kind_id()) };
+fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
+    match kind_id(node) {
+        KindId::SOURCE_FILE => {
+            let mut result = unit!();
 
-        match kind_id {
-            KindId::ATOM
-            | KindId::INTEGER
-            | KindId::STRING
-            | KindId::COMMENT
-            | KindId::LINE_COMMENT => {
-                text!(&source_code[node.start_byte()..node.end_byte()])
+            let mut cursor = node.walk();
+
+            for child in node.children(&mut cursor) {
+                result = stack!(result, node_to_layout_expr(child, source_code))
             }
 
-            KindId::MULTIPLE_NEWLINES => text!(""),
-
-            KindId::FUNCTION_CLAUSE => {
-                let mut before_body = unit!();
-                let mut body = unit!();
-
-                enum Phase {
-                    BeforeArrow,
-                    AfterArrow,
-                    InBody,
-                }
-                let mut phase = Phase::BeforeArrow;
-
-                let mut cursor = node.walk();
-                assert!(
-                    cursor.goto_first_child(),
-                    "{:?} should have its children",
-                    node
-                );
-
-                loop {
-                    let child = cursor.node();
-
-                    match phase {
-                        Phase::BeforeArrow => {
-                            if child.kind_id() == ids.kind.comment {
-                                before_body = apposition!(
-                                    before_body,
-                                    text!(" "),
-                                    stack!(node_to_layout_expr(child, ids, source_code), text!(""))
-                                )
-                            } else if child.kind_id() == ids.kind.line_comment {
-                                before_body = apposition!(
-                                    before_body,
-                                    stack!(
-                                        text!(""),
-                                        node_to_layout_expr(child, ids, source_code),
-                                        text!("")
-                                    )
-                                )
-                            } else if cursor.field_id() == Some(ids.field.arrow) {
-                                before_body = apposition!(
-                                    before_body,
-                                    text!(" "),
-                                    node_to_layout_expr(child, ids, source_code)
-                                );
-
-                                phase = Phase::AfterArrow
-                            } else {
-                                before_body = apposition!(
-                                    before_body,
-                                    node_to_layout_expr(child, ids, source_code),
-                                )
-                            }
-                        }
-
-                        Phase::AfterArrow => {
-                            if child.kind_id() == ids.kind.comment {
-                                before_body = apposition!(
-                                    before_body,
-                                    text!(" "),
-                                    node_to_layout_expr(child, ids, source_code),
-                                )
-                            } else {
-                                body = stack!(body, node_to_layout_expr(child, ids, source_code));
-                            }
-
-                            phase = Phase::InBody
-                        }
-
-                        Phase::InBody => {
-                            if child.kind_id() == ids.kind.comment {
-                                body =
-                                    apposition!(body, node_to_layout_expr(child, ids, source_code))
-                            } else {
-                                body = stack!(body, node_to_layout_expr(child, ids, source_code))
-                            }
-                        }
-                    }
-
-                    if !cursor.goto_next_sibling() {
-                        break;
-                    }
-                }
-
-                choice!(
-                    stack!(
-                        before_body.clone(),
-                        apposition!(text!("    "), body.clone())
-                    ),
-                    apposition!(before_body, text!(" "), body),
-                )
-            }
-
-            KindId::FUNCTION => {
-                let mut result = unit!();
-                let mut line = unit!();
-
-                let mut cursor = node.walk();
-                assert!(
-                    cursor.goto_first_child(),
-                    "{:?} should have its children",
-                    node
-                );
-
-                loop {
-                    let child = cursor.node();
-
-                    if cursor.field_id() == Some(ids.field.semicolon) {
-                        result = stack!(
-                            result,
-                            apposition!(line, node_to_layout_expr(child, ids, source_code))
-                        );
-                        line = unit!();
-                    } else {
-                        let child_kind_id = child.kind_id();
-
-                        if child_kind_id == ids.kind.comment
-                            || child_kind_id == ids.kind.function_clause
-                        {
-                            result = stack!(result, line);
-                            line = node_to_layout_expr(child, ids, source_code);
-                        } else {
-                            panic!("node {} cannot be occured here", child.kind())
-                        }
-                    }
-
-                    if !cursor.goto_next_sibling() {
-                        break;
-                    }
-                }
-
-                result = stack!(result, line);
-
-                result
-            }
-
-            KindId::SOURCE_FILE => {
-                let mut result = unit!();
-
-                let mut cursor = node.walk();
-
-                for child in node.children(&mut cursor) {
-                    result = stack!(result, node_to_layout_expr(child, ids, source_code))
-                }
-
-                result
-            }
-            _ => {
-                let mut result = unit!();
-
-                let mut cursor = node.walk();
-
-                for child in node.children(&mut cursor) {
-                    result = apposition!(result, node_to_layout_expr(child, ids, source_code));
-                }
-
-                result
-            }
+            result
         }
+
+        KindId::FUNCTION => {
+            let mut result = unit!();
+            let mut line = unit!();
+
+            let mut cursor = node.walk();
+
+            for child in node.children(&mut cursor) {
+                match kind_id(child) {
+                    KindId::COMMENT => {
+                        line =
+                            apposition!(line, text!(" "), node_to_layout_expr(child, source_code));
+                    }
+
+                    KindId::SEMI => {
+                        line = apposition!(line, node_to_layout_expr(child, source_code));
+                    }
+
+                    KindId::FUNCTION_CLAUSE | KindId::LINE_COMMENT | KindId::MULTIPLE_NEWLINES => {
+                        result = stack!(result, line);
+                        line = node_to_layout_expr(child, source_code);
+                    }
+
+                    _ => {
+                        panic!("{:?} should not have {:?}", node, child)
+                    }
+                }
+            }
+
+            stack!(result, line)
+        }
+
+        KindId::FUNCTION_CLAUSE => {
+            let mut before_body = unit!();
+            let mut body = unit!();
+
+            enum Phase {
+                BeforeArrow,
+                AfterArrow,
+                InBody,
+            }
+            let mut phase = Phase::BeforeArrow;
+
+            let mut cursor = node.walk();
+
+            for child in node.children(&mut cursor) {
+                match phase {
+                    Phase::BeforeArrow => match kind_id(child) {
+                        KindId::COMMENT => {
+                            before_body = apposition!(
+                                before_body,
+                                text!(" "),
+                                stack!(node_to_layout_expr(child, source_code), text!(""))
+                            )
+                        }
+
+                        KindId::LINE_COMMENT => {
+                            before_body = apposition!(
+                                before_body,
+                                stack!(
+                                    text!(""),
+                                    node_to_layout_expr(child, source_code),
+                                    text!("")
+                                )
+                            )
+                        }
+
+                        KindId::DASH_GT => {
+                            before_body = apposition!(
+                                before_body,
+                                text!(" "),
+                                node_to_layout_expr(child, source_code)
+                            );
+
+                            phase = Phase::AfterArrow
+                        }
+
+                        _ => {
+                            before_body =
+                                apposition!(before_body, node_to_layout_expr(child, source_code),)
+                        }
+                    },
+
+                    Phase::AfterArrow => {
+                        match kind_id(child) {
+                            KindId::COMMENT => {
+                                before_body = apposition!(
+                                    before_body,
+                                    text!(" "),
+                                    node_to_layout_expr(child, source_code),
+                                )
+                            }
+
+                            _ => {
+                                body = stack!(body, node_to_layout_expr(child, source_code));
+                            }
+                        }
+
+                        phase = Phase::InBody
+                    }
+
+                    Phase::InBody => match kind_id(child) {
+                        KindId::COMMENT => {
+                            body = apposition!(body, node_to_layout_expr(child, source_code))
+                        }
+
+                        _ => body = stack!(body, node_to_layout_expr(child, source_code)),
+                    },
+                }
+            }
+
+            choice!(
+                stack!(
+                    before_body.clone(),
+                    apposition!(text!("    "), body.clone())
+                ),
+                apposition!(before_body, text!(" "), body),
+            )
+        }
+
+        KindId::EXPRS => {
+            let mut result = unit!();
+            let mut line = unit!();
+
+            let mut cursor = node.walk();
+
+            for child in node.children(&mut cursor) {
+                match kind_id(child) {
+                    KindId::COMMA => {
+                        line = apposition!(line, node_to_layout_expr(child, source_code));
+                    }
+
+                    KindId::COMMENT => {
+                        line =
+                            apposition!(line, text!(" "), node_to_layout_expr(child, source_code));
+                    }
+
+                    KindId::LINE_COMMENT | KindId::EXPR => {
+                        result = stack!(result, line);
+                        line = node_to_layout_expr(child, source_code);
+                    }
+
+                    _ => {
+                        panic!("{:?} should not have {:?}", node, child)
+                    }
+                }
+            }
+
+            stack!(result, line)
+        }
+
+        KindId::STRINGS => {
+            let mut result = unit!();
+
+            let mut cursor = node.walk();
+
+            for child in node.children(&mut cursor) {
+                result = stack!(result, node_to_layout_expr(child, source_code));
+            }
+
+            result
+        }
+
+        KindId::FORM
+        | KindId::MODULE_ATTRIBUTE
+        | KindId::EXPORT_ATTRIBUTE
+        | KindId::EXPORT_MFA
+        | KindId::PAT_ARGUMENT_LIST
+        | KindId::CLAUSE_GUARD
+        | KindId::EXPR
+        | KindId::FUNCTION_CALL
+        | KindId::EXPR_REMOTE
+        | KindId::EXPR_MAX
+        | KindId::ARGUMENT_LIST => {
+            let mut result = unit!();
+
+            let mut cursor = node.walk();
+
+            for child in node.children(&mut cursor) {
+                result = apposition!(result, node_to_layout_expr(child, source_code));
+            }
+
+            result
+        }
+
+        KindId::DASH_GT
+        | KindId::LPAREN
+        | KindId::RPAREN
+        | KindId::LBRACK
+        | KindId::RBARKC
+        | KindId::COMMA
+        | KindId::DOT
+        | KindId::DASH
+        | KindId::SLASH
+        | KindId::SEMI
+        | KindId::COLON
+        | KindId::DQUOTE
+        | KindId::MODULE
+        | KindId::EXPORT
+        | KindId::WHEN
+        | KindId::ATOM
+        | KindId::INTEGER
+        | KindId::STRING
+        | KindId::COMMENT
+        | KindId::LINE_COMMENT => {
+            text!(&source_code[node.start_byte()..node.end_byte()])
+        }
+
+        KindId::MULTIPLE_NEWLINES => text!(""),
     }
 }
 
 #[cfg(test)]
-mod test {
+mod node_to_layout_expr_test {
     use super::*;
     use indoc::indoc;
 
@@ -319,7 +293,7 @@ mod test {
     }
 
     #[test]
-    fn function_clause_test() {
+    fn function_clause() {
         assert_parse!(indoc! {r#"
             main() ->
                 io:format("Hello, world!").
@@ -336,12 +310,19 @@ mod test {
     }
 
     #[test]
-    fn function_test() {
+    fn function() {
         assert_parse!(indoc! {r#"
-            f() ->
+            f() -> % comment 1
                 foo;
-            f() ->
+
+            %% line comment
+
+            f() -> % comment 2
                 bar.
         "#});
     }
+}
+
+fn kind_id(node: Node<'_>) -> KindId {
+    unsafe { std::mem::transmute(node.kind_id()) }
 }

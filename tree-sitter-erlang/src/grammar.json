@@ -170,12 +170,8 @@
             "type": "SEQ",
             "members": [
               {
-                "type": "FIELD",
-                "name": "semicolon",
-                "content": {
-                  "type": "STRING",
-                  "value": ";"
-                }
+                "type": "STRING",
+                "value": ";"
               },
               {
                 "type": "SYMBOL",
@@ -210,12 +206,8 @@
           ]
         },
         {
-          "type": "FIELD",
-          "name": "arrow",
-          "content": {
-            "type": "STRING",
-            "value": "->"
-          }
+          "type": "STRING",
+          "value": "->"
         },
         {
           "type": "SYMBOL",
@@ -331,7 +323,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "atomic"
+          "name": "_atomic"
         }
       ]
     },
@@ -360,7 +352,7 @@
         }
       ]
     },
-    "atomic": {
+    "_atomic": {
       "type": "CHOICE",
       "members": [
         {

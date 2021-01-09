@@ -75,16 +75,10 @@ module.exports = grammar({
 
     _function_or_macro: ($) => choice($["function"] /*, $.macro*/),
 
-    ["function"]: ($) => repeatSep1($.function_clause, field("semicolon", ";")),
+    ["function"]: ($) => repeatSep1($.function_clause, ";"),
 
     function_clause: ($) =>
-      seq(
-        $.atom,
-        $.pat_argument_list,
-        optional($.clause_guard),
-        field("arrow", "->"),
-        $.exprs
-      ),
+      seq($.atom, $.pat_argument_list, optional($.clause_guard), "->", $.exprs),
 
     pat_argument_list: ($) => seq("(", /*repeatComma($.pat_expr),*/ ")"),
 
@@ -110,7 +104,7 @@ module.exports = grammar({
         prec.nonassoc(PREC.colon, seq($.expr_max, ":", $.expr_max))
       ),
 
-    expr_max: ($) => choice($.atomic),
+    expr_max: ($) => choice($._atomic),
 
     argument_list: ($) => seq("(", optional($.exprs), ")"),
 
@@ -123,7 +117,7 @@ module.exports = grammar({
     //    $.pat_expr_max
     //  ),
 
-    atomic: ($) => choice($.atom, $.strings),
+    _atomic: ($) => choice($.atom, $.strings),
 
     atom: (_) => token(choice(/'(\\.|[^'])*'/, /[a-z][a-zA-Z0-9_@]*/)),
 
