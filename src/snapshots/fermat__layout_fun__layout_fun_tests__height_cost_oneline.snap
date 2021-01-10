@@ -1,6 +1,6 @@
 ---
 source: src/layout_fun.rs
-expression: "LayoutFun::text(Rc::new(LayoutExpr::Text(\"foo\")),\n                Config{right_margin: 5,\n                       newline_cost: 1,\n                       beyond_right_margin_cost: 100,\n                       full_indent: 0,\n                       half_indent: 0,}).to_vec()"
+expression: "LayoutFun::height_cost(LayoutFun::text(\"foo\", config), config).to_vec()"
 ---
 [
     (
@@ -10,17 +10,19 @@ expression: "LayoutFun::text(Rc::new(LayoutExpr::Text(\"foo\")),\n              
                 "foo",
             ),
             span: 3,
+            height: 1,
             cost: 0,
             cost_gradient: 0,
         },
     ),
     (
-        2,
+        1,
         Layout {
             layout_expr: Text(
                 "foo",
             ),
             span: 3,
+            height: 1,
             cost: 0,
             cost_gradient: 100,
         },

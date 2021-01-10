@@ -1,6 +1,6 @@
 ---
 source: src/layout_fun.rs
-expression: "LayoutFun::stack(LayoutFun::text(Rc::new(LayoutExpr::Text(\"foobar\")), config),\n                 LayoutFun::text(Rc::new(LayoutExpr::Text(\"baz\")), config),\n                 config).to_vec()"
+expression: "LayoutFun::stack(LayoutFun::text(\"foobar\", config),\n                 LayoutFun::text(\"baz\", config), config).to_vec()"
 ---
 [
     (
@@ -15,6 +15,7 @@ expression: "LayoutFun::stack(LayoutFun::text(Rc::new(LayoutExpr::Text(\"foobar\
                 ),
             ),
             span: 3,
+            height: 2,
             cost: 1,
             cost_gradient: 0,
         },
@@ -31,6 +32,7 @@ expression: "LayoutFun::stack(LayoutFun::text(Rc::new(LayoutExpr::Text(\"foobar\
                 ),
             ),
             span: 3,
+            height: 2,
             cost: 1,
             cost_gradient: 100,
         },
@@ -47,6 +49,7 @@ expression: "LayoutFun::stack(LayoutFun::text(Rc::new(LayoutExpr::Text(\"foobar\
                 ),
             ),
             span: 3,
+            height: 2,
             cost: 301,
             cost_gradient: 200,
         },

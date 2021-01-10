@@ -1,6 +1,6 @@
 ---
 source: src/layout_fun.rs
-expression: "LayoutFun::choice(LayoutFun::text(Rc::new(LayoutExpr::Text(\"if(foo) bar();\")),\n                                  config),\n                  LayoutFun::stack(LayoutFun::text(Rc::new(LayoutExpr::Text(\"if(foo)\")),\n                                                   config),\n                                   LayoutFun::text(Rc::new(LayoutExpr::Text(\"    bar();\")),\n                                                   config), config)).to_vec()"
+expression: "LayoutFun::choice(LayoutFun::text(\"if(foo) bar();\", config),\n                  LayoutFun::stack(LayoutFun::text(\"if(foo)\", config),\n                                   LayoutFun::text(\"    bar();\", config),\n                                   config)).to_vec()"
 ---
 [
     (
@@ -10,6 +10,7 @@ expression: "LayoutFun::choice(LayoutFun::text(Rc::new(LayoutExpr::Text(\"if(foo
                 "if(foo) bar();",
             ),
             span: 14,
+            height: 1,
             cost: 0,
             cost_gradient: 0,
         },
@@ -21,6 +22,7 @@ expression: "LayoutFun::choice(LayoutFun::text(Rc::new(LayoutExpr::Text(\"if(foo
                 "if(foo) bar();",
             ),
             span: 14,
+            height: 1,
             cost: 0,
             cost_gradient: 100,
         },
@@ -37,6 +39,7 @@ expression: "LayoutFun::choice(LayoutFun::text(Rc::new(LayoutExpr::Text(\"if(foo
                 ),
             ),
             span: 10,
+            height: 2,
             cost: 1,
             cost_gradient: 0,
         },
@@ -53,6 +56,7 @@ expression: "LayoutFun::choice(LayoutFun::text(Rc::new(LayoutExpr::Text(\"if(foo
                 ),
             ),
             span: 10,
+            height: 2,
             cost: 1,
             cost_gradient: 100,
         },
@@ -69,6 +73,7 @@ expression: "LayoutFun::choice(LayoutFun::text(Rc::new(LayoutExpr::Text(\"if(foo
                 ),
             ),
             span: 10,
+            height: 2,
             cost: 301,
             cost_gradient: 200,
         },

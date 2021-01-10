@@ -1,6 +1,3 @@
-#[cfg(test)]
-use insta::assert_debug_snapshot;
-
 use std::cmp::max;
 use std::collections::{BTreeSet, HashSet};
 use std::rc::Rc;
@@ -16,6 +13,7 @@ pub struct Config {
     pub right_margin: i32,
     pub newline_cost: i32,
     pub beyond_right_margin_cost: i32,
+    pub height_cost: i32,
 }
 
 type Position = i32;
@@ -24,6 +22,7 @@ type Position = i32;
 pub struct Layout<'a> {
     pub layout_expr: LayoutExpr<'a>,
     pub span: i32,
+    pub height: i32,
     pub cost: i32,
     pub cost_gradient: i32,
 }
@@ -44,12 +43,14 @@ impl<'a> LayoutFun<'a> {
                     Layout {
                         layout_expr,
                         span,
+                        height,
                         cost,
                         cost_gradient,
                     },
                 )) => Layout {
                     layout_expr: layout_expr.clone(),
                     span: *span,
+                    height: *height,
                     cost: cost + cost_gradient * (position - knot),
                     cost_gradient: *cost_gradient,
                 },
@@ -95,6 +96,10 @@ impl<'a> LayoutFun<'a> {
                 Self::from_layout_expr_with_trailing(lhs, trailing_layout_fun.clone(), env, config),
                 Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, env, config),
             ),
+            LayoutExpr::HeightCost(expr) => Self::height_cost(
+                Self::from_layout_expr_with_trailing(expr, trailing_layout_fun, env, config),
+                config,
+            ),
             LayoutExpr::Let(var, def, body) => {
                 let def_fun =
                     Self::from_layout_expr_with_trailing(def, LayoutFun::Unit, env, config);
@@ -127,6 +132,7 @@ impl<'a> LayoutFun<'a> {
                         Layout {
                             layout_expr: layout_expr.clone(),
                             span,
+                            height: 1,
                             cost: 0,
                             cost_gradient: 0,
                         },
@@ -136,6 +142,7 @@ impl<'a> LayoutFun<'a> {
                         Layout {
                             layout_expr,
                             span,
+                            height: 1,
                             cost: 0,
                             cost_gradient: config.beyond_right_margin_cost,
                         },
@@ -147,6 +154,7 @@ impl<'a> LayoutFun<'a> {
                 Layout {
                     layout_expr: LayoutExpr::Text(text),
                     span,
+                    height: 1,
                     cost: (span - config.right_margin),
                     cost_gradient: config.beyond_right_margin_cost,
                 },
@@ -176,6 +184,7 @@ impl<'a> LayoutFun<'a> {
                                 Rc::new(lhs_layout.layout_expr),
                                 Rc::new(rhs_layout.layout_expr),
                             ),
+                            height: lhs_layout.height + rhs_layout.height,
                             span: rhs_layout.span,
                             cost: lhs_layout.cost + rhs_layout.cost + config.newline_cost,
                             cost_gradient: lhs_layout.cost_gradient + rhs_layout.cost_gradient,
@@ -234,6 +243,7 @@ impl<'a> LayoutFun<'a> {
                                 Rc::new(rhs_layout.layout_expr),
                             ),
                             span: lhs_layout.span + rhs_layout.span,
+                            height: lhs_layout.height + rhs_layout.height - 1,
                             cost: lhs_layout.cost + rhs_layout.cost
                                 - config.beyond_right_margin_cost
                                     * max(rhs_position - config.right_margin, 0),
@@ -310,6 +320,28 @@ impl<'a> LayoutFun<'a> {
         }
     }
 
+    fn height_cost(expr: Self, config: &Config) -> Self {
+        match &expr {
+            LayoutFun::Unit => LayoutFun::Unit,
+            LayoutFun::Fun(tree) => LayoutFun::Fun(Rc::new(
+                tree.iter()
+                    .map(move |(knot, layout)| {
+                        (
+                            knot,
+                            Layout {
+                                layout_expr: layout.layout_expr.clone(),
+                                span: layout.span,
+                                height: layout.height,
+                                cost: layout.cost + (layout.height - 1) * config.height_cost,
+                                cost_gradient: layout.cost_gradient,
+                            },
+                        )
+                    })
+                    .collect(),
+            )),
+        }
+    }
+
     fn to_vec(&self) -> Vec<(Position, &Layout<'a>)> {
         match self {
             LayoutFun::Unit => vec![],
@@ -318,233 +350,281 @@ impl<'a> LayoutFun<'a> {
     }
 }
 
-#[test]
-fn test_text() {
-    /*
-     *  01234
-     * |foo･･|
-     * |-----|
-     * |･･foo|
-     *
-     * 0 -> {"foo", 3, 0, 0}
-     * 2 -> {"foo", 3, 0, 100}
-     *
-     * snapshots/fermat__layout_fun__text.snap
-     */
+#[cfg(test)]
+mod layout_fun_tests {
+    use super::{Config, LayoutFun};
+    use insta::assert_debug_snapshot;
 
-    assert_debug_snapshot!(LayoutFun::text(
-        "foo",
-        &Config {
-            right_margin: 5,
+    #[test]
+    fn text() {
+        /*
+         *  01234
+         * |foo･･|
+         * |-----|
+         * |･･foo|
+         *
+         * 0 -> {"foo", 3, 1, 0, 0}
+         * 2 -> {"foo", 3, 1, 0, 100}
+         *
+         * snapshots/fermat__layout_fun__layout_fun_tests__text.snap
+         */
+
+        assert_debug_snapshot!(LayoutFun::text(
+            "foo",
+            &Config {
+                right_margin: 5,
+                newline_cost: 1,
+                beyond_right_margin_cost: 100,
+                height_cost: 10000,
+            }
+        )
+        .to_vec())
+    }
+
+    #[test]
+    fn stack() {
+        /*
+         *  01234567
+         * |foobar･･|･･･
+         * |baz･････|･･･
+         * |--------|---
+         * |･･foobar|･･･
+         * |･･baz･･･|･･･
+         * |--------|---
+         * |･････foo|bar
+         * |･････baz|･･･
+         *
+         * 0 -> {"foobar\nbaz", 3, 2, 1, 0}
+         * 2 -> {"foobar\nbaz", 3, 2, 1, 100}
+         * 5 -> {"foobar\nbaz", 3, 2, 301, 200}
+         *
+         * snapshots/fermat__layout_fun__layout_fun_tests__stack.snap
+         */
+
+        let config = &Config {
+            right_margin: 8,
             newline_cost: 1,
             beyond_right_margin_cost: 100,
-        }
-    )
-    .to_vec())
-}
+            height_cost: 10000,
+        };
 
-#[test]
-fn test_stack() {
-    /*
-     *  01234567
-     * |foobar･･|･･･
-     * |baz･････|･･･
-     * |--------|---
-     * |･･foobar|･･･
-     * |･･baz･･･|･･･
-     * |--------|---
-     * |･････foo|bar
-     * |･････baz|･･･
-     *
-     * 0 -> {"foobar\nbaz", 3, 1, 0}
-     * 2 -> {"foobar\nbaz", 3, 1, 100}
-     * 5 -> {"foobar\nbaz", 3, 301, 200}
-     *
-     * snapshots/fermat__layout_fun__stack.snap
-     */
+        assert_debug_snapshot!(LayoutFun::stack(
+            LayoutFun::text("foobar", config),
+            LayoutFun::text("baz", config),
+            config
+        )
+        .to_vec())
+    }
 
-    let config = &Config {
-        right_margin: 8,
-        newline_cost: 1,
-        beyond_right_margin_cost: 100,
-    };
+    #[test]
+    fn apposition() {
+        /*
+         *  01234567
+         * |foobar･･|･
+         * |--------|-
+         * |･･foobar|･
+         * |--------|-
+         * |･････foo|bar
+         *
+         * 0 -> {"foobar", 6, 1, 0, 0}
+         * 2 -> {"foobar", 6, 1, 0, 100}
+         * 5 -> {"foobar", 6, 1, 300, 100}
+         *
+         * snapshots/fermat__layout_fun__layout_fun_tests__apposition.snap
+         */
 
-    assert_debug_snapshot!(LayoutFun::stack(
-        LayoutFun::text("foobar", config),
-        LayoutFun::text("baz", config),
-        config
-    )
-    .to_vec())
-}
+        let config = &Config {
+            right_margin: 8,
+            newline_cost: 1,
+            beyond_right_margin_cost: 100,
+            height_cost: 10000,
+        };
 
-#[test]
-fn test_apposition() {
-    /*
-     *  01234567
-     * |foobar･･|･
-     * |--------|-
-     * |･･foobar|･
-     * |--------|-
-     * |･････foo|bar
-     *
-     * 0 -> {"foobar", 6, 0, 0}
-     * 2 -> {"foobar", 6, 0, 100}
-     * 5 -> {"foobar", 6, 300, 100}
-     *
-     * snapshots/fermat__layout_fun__line.snap
-     */
+        assert_debug_snapshot!(LayoutFun::apposition(
+            LayoutFun::text("foo", config),
+            LayoutFun::text("bar", config),
+            config
+        )
+        .to_vec())
+    }
 
-    let config = &Config {
-        right_margin: 8,
-        newline_cost: 1,
-        beyond_right_margin_cost: 100,
-    };
+    #[test]
+    fn choice() {
+        /*
+         *  0123456789ABCDEF
+         * |if(foo) bar();･･|･･･
+         * |----------------|---
+         * |･･if(foo) bar();|･･･
+         * |----------------|---
+         * |･･･if(foo)･･････|･･･
+         * |･･･    bar();･･･|･･･
+         * |----------------|---
+         * |･･････if(foo)･･･|･･･
+         * |･･････    bar();|･･･
+         * |----------------|---
+         * |･････････if(foo)|･･･
+         * |･････････    bar|();
+         *
+         * 0 -> {"if(foo)･bar();", 14, 1, 0, 0}
+         * 2 -> {"if(foo)･bar();", 14, 1, 0, 100}
+         * 3 -> {"if(foo)\n    bar();", 10, 2, 1, 0}
+         * 6 -> {"if(foo)\n    bar();", 10, 2, 1, 100}
+         * 9 -> {"if(foo)\n    bar();", 10, 2, 301, 200}
+         *
+         * snapshots/fermat__layout_fun__layout_fun_tests__choice.snap
+         */
 
-    assert_debug_snapshot!(LayoutFun::apposition(
-        LayoutFun::text("foo", config),
-        LayoutFun::text("bar", config),
-        config
-    )
-    .to_vec())
-}
+        let config = &Config {
+            right_margin: 16,
+            newline_cost: 1,
+            beyond_right_margin_cost: 100,
+            height_cost: 10000,
+        };
 
-#[test]
-fn test_choice() {
-    /*
-     *  0123456789ABCDEF
-     * |if(foo) bar();･･|･･･
-     * |----------------|---
-     * |･･if(foo) bar();|･･･
-     * |----------------|---
-     * |･･･if(foo)･･････|･･･
-     * |･･･    bar();･･･|･･･
-     * |----------------|---
-     * |･･････if(foo)･･･|･･･
-     * |･･････    bar();|･･･
-     * |----------------|---
-     * |･････････if(foo)|･･･
-     * |･････････    bar|();
-     *
-     * 0 -> {"if(foo)･bar();", 14, 0, 0}
-     * 2 -> {"if(foo)･bar();", 14, 0, 100}
-     * 3 -> {"if(foo)\n    bar();", 10, 1, 0}
-     * 6 -> {"if(foo)\n    bar();", 10, 1, 100}
-     * 9 -> {"if(foo)\n    bar();", 10, 301, 200}
-     *
-     * snapshots/fermat__layout_fun__choice.snap
-     */
-
-    let config = &Config {
-        right_margin: 16,
-        newline_cost: 1,
-        beyond_right_margin_cost: 100,
-    };
-
-    assert_debug_snapshot!(LayoutFun::choice(
-        LayoutFun::text("if(foo) bar();", config),
-        LayoutFun::stack(
-            LayoutFun::text("if(foo)", config),
-            LayoutFun::text("    bar();", config),
-            config,
-        ),
-    )
-    .to_vec());
-}
-
-#[test]
-fn test_from_layout_expr_record() {
-    /*  0123456789ABCDEFGHIJKLMNOPQRSTUV
-     * |Foobarbaz = #record{field = 1}･･|･････････
-     * |--------------------------------|---------
-     * |･･Foobarbaz = #record{field = 1}|･････････
-     * |--------------------------------|---------
-     * |･･･Foobarbaz =･･････････････････|･････････
-     * |･･･    #record{field = 1}･･･････|･････････
-     * |--------------------------------|---------
-     * |･･････････Foobarbaz =･･･････････|･････････
-     * |･･････････    #record{field = 1}|･････････
-     * |--------------------------------|---------
-     * |･･･････････Foobarbaz =･･････････|･････････
-     * |･･･････････    #record{･････････|･････････
-     * |･･･････････       field = 1･････|･････････
-     * |･･･････････      }･･････････････|･････････
-     * |--------------------------------|---------
-     * |････････････････Foobarbaz =･････|･････････
-     * |････････････････    #record{････|･････････
-     * |････････････････       field = 1|･････････
-     * |････････････････      }･････････|･････････
-     * |--------------------------------|---------
-     * |････････････････････Foobarbaz =･|･････････
-     * |････････････････････    #record{|･････････
-     * |････････････････････       field| = 1･････
-     * |････････････････････      }･････|･････････
-     * |--------------------------------|---------
-     * |･････････････････････Foobarbaz =|･････････
-     * |･････････････････････    #record|{････････
-     * |･････････････････････       fiel|d = 1････
-     * |･････････････････････      }････|･････････
-     * |--------------------------------|---------
-     * |･････････････････････････Foobarb|az =･････
-     * |･････････････････････････    #re|cord{････
-     * |･････････････････････････       |field = 1
-     * |･････････････････････････      }|･････････
-     * |--------------------------------|---------
-     *
-     * 0 ->  {"Foobarbaz = #record{field = 1}", 30, 0, 0}
-     * 2 ->  {"Foobarbaz = #record{field = 1}", 30, 0, 100}
-     * 3 ->  {"Foobarbaz =\n    #record{field = 1}", 22, 1, 0}
-     * 10 -> {"Foobarbaz =\n    #record{field = 1}", 22, 1, 100}
-     * 11 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 3, 0}
-     * 16 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 3, 100}
-     * 20 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 403, 200}
-     * 21 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 603, 300}
-     * 25 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 1803, 400}
-     *
-     * snapshots/fermat__layout_fun__from_layout_expr_record.snap
-     */
-
-    let config = &Config {
-        right_margin: 32,
-        newline_cost: 1,
-        beyond_right_margin_cost: 100,
-    };
-
-    /*
-    assert_debug_snapshot!(LayoutFun::from_layout_expr(
-        &*apposition!(
-            choice!(
-                apposition!(text!("Foobarbaz ="), text!(" ")),
-                stack!(text!("Foobarbaz ="), text!("    "))
+        assert_debug_snapshot!(LayoutFun::choice(
+            LayoutFun::text("if(foo) bar();", config),
+            LayoutFun::stack(
+                LayoutFun::text("if(foo)", config),
+                LayoutFun::text("    bar();", config),
+                config,
             ),
-            choice!(
-                apposition!(text!("#record{"), text!("field = 1"), text!("}")),
-                stack!(
-                    text!("#record{"),
-                    apposition!(text!("   "), text!("field = 1")),
-                    apposition!(text!("  "), text!("}")),
+        )
+        .to_vec());
+    }
+
+    #[test]
+    fn height_cost_oneline() {
+        /*
+         *  01234
+         * |foo･･|
+         * |-----|
+         * |･･foo|
+         *
+         * 0 -> {"foo", 3, 1, 0, 0}
+         * 2 -> {"foo", 3, 1, 0, 100}
+         *
+         * snapshots/fermat__layout_fun__layout_fun_tests__height_cost_oneline.snap
+         */
+        let config = &Config {
+            right_margin: 4,
+            newline_cost: 1,
+            beyond_right_margin_cost: 100,
+            height_cost: 10000,
+        };
+
+        assert_debug_snapshot!(
+            LayoutFun::height_cost(LayoutFun::text("foo", config), config,).to_vec()
+        );
+    }
+
+    #[test]
+    fn height_cost_two_lines() {
+        /*
+         *  01234
+         * |foo･･|
+         * |bar･･|
+         * |-----|
+         * |･･foo|
+         * |･･bar|
+         *
+         * 0 -> {"foo\nbar", 3, 2, 10001, 0}
+         * 2 -> {"foo\nbar", 3, 2, 10001, 200}
+         *
+         * snapshots/fermat__layout_fun__layout_fun_tests__height_cost_two_lines.snap
+         */
+        let config = &Config {
+            right_margin: 4,
+            newline_cost: 1,
+            beyond_right_margin_cost: 100,
+            height_cost: 10000,
+        };
+
+        assert_debug_snapshot!(LayoutFun::height_cost(
+            LayoutFun::stack(
+                LayoutFun::text("foo", config),
+                LayoutFun::text("bar", config),
+                config
+            ),
+            config
+        )
+        .to_vec());
+    }
+
+    #[test]
+    fn from_layout_expr_record() {
+        /*  0123456789ABCDEFGHIJKLMNOPQRSTUV
+         * |Foobarbaz = #record{field = 1}･･|･････････
+         * |--------------------------------|---------
+         * |･･Foobarbaz = #record{field = 1}|･････････
+         * |--------------------------------|---------
+         * |･･･Foobarbaz =･･････････････････|･････････
+         * |･･･    #record{field = 1}･･･････|･････････
+         * |--------------------------------|---------
+         * |･･････････Foobarbaz =･･･････････|･････････
+         * |･･････････    #record{field = 1}|･････････
+         * |--------------------------------|---------
+         * |･･･････････Foobarbaz =･･････････|･････････
+         * |･･･････････    #record{･････････|･････････
+         * |･･･････････       field = 1･････|･････････
+         * |･･･････････      }･･････････････|･････････
+         * |--------------------------------|---------
+         * |････････････････Foobarbaz =･････|･････････
+         * |････････････････    #record{････|･････････
+         * |････････････････       field = 1|･････････
+         * |････････････････      }･････････|･････････
+         * |--------------------------------|---------
+         * |････････････････････Foobarbaz =･|･････････
+         * |････････････････････    #record{|･････････
+         * |････････････････････       field| = 1･････
+         * |････････････････････      }･････|･････････
+         * |--------------------------------|---------
+         * |･････････････････････Foobarbaz =|･････････
+         * |･････････････････････    #record|{････････
+         * |･････････････････････       fiel|d = 1････
+         * |･････････････････････      }････|･････････
+         * |--------------------------------|---------
+         * |･････････････････････････Foobarb|az =･････
+         * |･････････････････････････    #re|cord{････
+         * |･････････････････････････       |field = 1
+         * |･････････････････････････      }|･････････
+         * |--------------------------------|---------
+         *
+         * 0 ->  {"Foobarbaz = #record{field = 1}", 30, 1, 0, 0}
+         * 2 ->  {"Foobarbaz = #record{field = 1}", 30, 1, 0, 100}
+         * 3 ->  {"Foobarbaz =\n    #record{field = 1}", 22, 2, 1, 0}
+         * 10 -> {"Foobarbaz =\n    #record{field = 1}", 22, 2, 1, 100}
+         * 11 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 4, 3, 0}
+         * 16 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 4, 3, 100}
+         * 20 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 4, 403, 200}
+         * 21 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 4, 603, 300}
+         * 25 -> {"Foobarbaz =\n    #record{\n       field = 1\n      }", 7, 4, 1803, 400}
+         *
+         * snapshots/fermat__layout_fun__layout_fun_tests__from_layout_expr_record.snap
+         */
+
+        let config = &Config {
+            right_margin: 32,
+            newline_cost: 1,
+            beyond_right_margin_cost: 100,
+            height_cost: 10000,
+        };
+
+        assert_debug_snapshot!(LayoutFun::from_layout_expr(
+            &*layout_expr!(apposition(
+                choice(apposition("Foobarbaz =", " "), stack("Foobarbaz =", "    "),),
+                choice(
+                    apposition("#record{", "field = 1", "}"),
+                    stack(
+                        "#record{",
+                        apposition("   ", "field = 1"),
+                        apposition("  ", "}"),
+                    ),
                 ),
-            ),
-        ),
-        config
-    )
-    .to_vec())
-    */
-
-    assert_debug_snapshot!(LayoutFun::from_layout_expr(
-        &*layout_expr!(apposition(
-            choice(apposition("Foobarbaz =", " "), stack("Foobarbaz =", "    "),),
-            choice(
-                apposition("#record{", "field = 1", "}"),
-                stack(
-                    "#record{",
-                    apposition("   ", "field = 1"),
-                    apposition("  ", "}"),
-                ),
-            ),
-        )),
-        config
-    )
-    .to_vec())
+            )),
+            config
+        )
+        .to_vec())
+    }
 }
 
 fn intersection_point<'a>(

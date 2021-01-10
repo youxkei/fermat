@@ -42,8 +42,8 @@ module.exports = grammar({
   extras: ($) => [
     $.comment,
     $.line_comment,
-    $._newline,
     $.multiple_newlines,
+    $._newline,
     $._spaces,
   ],
 

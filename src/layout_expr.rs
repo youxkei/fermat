@@ -10,6 +10,7 @@ pub enum LayoutExpr<'a> {
     Stack(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Apposition(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Choice(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
+    HeightCost(Rc<LayoutExpr<'a>>),
     Let(Variable, Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Var(Variable),
 }
@@ -36,6 +37,7 @@ impl<'a> LayoutExpr<'a> {
             }
 
             LayoutExpr::Choice(_, _) => panic!("Choice should no be occered: {:?}", self),
+            LayoutExpr::HeightCost(_) => panic!("HeightCost should no be occered: {:?}", self),
             LayoutExpr::Let(_, _, _) => panic!("Let should no be occered: {:?}", self),
             LayoutExpr::Var(_) => panic!("Var should no be occered: {:?}", self),
         }
@@ -65,6 +67,9 @@ impl<'a> LayoutExpr<'a> {
             }
 
             LayoutExpr::Choice(lhs, _) => lhs.format(indent),
+
+            LayoutExpr::HeightCost(expr) => expr.format(indent),
+
             LayoutExpr::Let(_, _, _) => panic!("Let should no be occered: {:?}", self),
             LayoutExpr::Var(_) => panic!("Var should no be occered: {:?}", self),
         }
@@ -77,7 +82,7 @@ macro_rules! layout_expr_helper {
             let result = layout_expr!($f($($args)*));
             $(
                 $(
-                    let result = Rc::new(LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
+                    let result = std::rc::Rc::new($crate::layout_expr::LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
                 )?
             )?
             result
@@ -89,7 +94,7 @@ macro_rules! layout_expr_helper {
             let result = layout_expr!($x);
             $(
                 $(
-                    let result = Rc::new(LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
+                    let result = std::rc::Rc::new($crate::layout_expr::LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
                 )?
             )?
             result
@@ -112,6 +117,10 @@ macro_rules! layout_expr {
 
     (choice ($x:tt $($xs:tt)*) $(,)?) => {
         layout_expr_helper!(Choice, $x $($xs)*)
+    };
+
+    (height_cost ($x:tt $($xs:tt)*) $(,)?) => {
+        layout_expr_helper!(HeightCost, $x $($xs)*)
     };
 
     ($x:expr) => {
@@ -244,6 +253,7 @@ macro_rules! choice {
         {
             use $crate::layout_expr::LayoutExpr;
 
+            #[allow(unused_mut)]
             let mut result = $head;
 
             match &*result {
@@ -284,4 +294,10 @@ fn choice_test() {
         choice!(text.clone(), text.clone()),
         choice!(unit!(), text.clone(), unit!(), text.clone())
     );
+}
+
+macro_rules! height_cost {
+    ($x:expr) => {
+        std::rc::Rc::new($crate::layout_expr::LayoutExpr::HeightCost($x))
+    };
 }

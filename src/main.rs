@@ -25,9 +25,10 @@ fn main() {
     let layout_expr = parse(&source_code);
 
     let config = Config {
-        right_margin: 36,
+        right_margin: 140,
         newline_cost: 1,
-        beyond_right_margin_cost: 100,
+        beyond_right_margin_cost: 10000,
+        height_cost: 100,
     };
 
     println!(
@@ -91,9 +92,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         line = node_to_layout_expr(child, source_code);
                     }
 
-                    _ => {
-                        panic!("{:?} should not have {:?}", node, child)
-                    }
+                    _ => panic!("{:?} should not have {:?}", node, child),
                 }
             }
 
@@ -105,76 +104,59 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             let mut body = unit!();
 
             enum Phase {
-                BeforeArrow,
-                AfterArrow,
-                InBody,
+                BeforeDashGt,
+                AfterDashGt,
             }
-            let mut phase = Phase::BeforeArrow;
+            let mut phase = Phase::BeforeDashGt;
+            let mut comments = unit!();
 
             let mut cursor = node.walk();
 
             for child in node.children(&mut cursor) {
                 match phase {
-                    Phase::BeforeArrow => match kind_id(child) {
-                        KindId::COMMENT => {
-                            before_body = apposition!(
-                                before_body,
-                                text!(" "),
-                                stack!(node_to_layout_expr(child, source_code), text!(""))
-                            )
-                        }
+                    Phase::BeforeDashGt => match kind_id(child) {
+                        KindId::MULTIPLE_NEWLINES => {}
 
-                        KindId::LINE_COMMENT => {
-                            before_body = apposition!(
-                                before_body,
-                                stack!(
-                                    text!(""),
-                                    node_to_layout_expr(child, source_code),
-                                    text!("")
-                                )
-                            )
+                        KindId::COMMENT | KindId::LINE_COMMENT => {
+                            comments = stack!(comments, node_to_layout_expr(child, source_code))
                         }
 
                         KindId::DASH_GT => {
                             before_body = apposition!(
                                 before_body,
                                 text!(" "),
-                                node_to_layout_expr(child, source_code)
+                                stack!(comments, node_to_layout_expr(child, source_code)),
                             );
 
-                            phase = Phase::AfterArrow
+                            comments = unit!();
+                            phase = Phase::AfterDashGt;
                         }
 
-                        _ => {
-                            before_body =
-                                apposition!(before_body, node_to_layout_expr(child, source_code),)
+                        KindId::ATOM | KindId::PAT_ARGUMENT_LIST | KindId::CLAUSE_GUARD => {
+                            before_body = apposition!(
+                                before_body,
+                                if comments == unit!() {
+                                    unit!()
+                                } else {
+                                    text!(" ")
+                                },
+                                stack!(comments, node_to_layout_expr(child, source_code))
+                            );
+
+                            comments = unit!();
                         }
+
+                        _ => panic!("{:?} should not have {:?}", node, child),
                     },
 
-                    Phase::AfterArrow => {
-                        match kind_id(child) {
-                            KindId::COMMENT => {
-                                before_body = apposition!(
-                                    before_body,
-                                    text!(" "),
-                                    node_to_layout_expr(child, source_code),
-                                )
-                            }
+                    Phase::AfterDashGt => match kind_id(child) {
+                        KindId::MULTIPLE_NEWLINES => {}
 
-                            _ => {
-                                body = stack!(body, node_to_layout_expr(child, source_code));
-                            }
+                        KindId::COMMENT | KindId::LINE_COMMENT | KindId::EXPRS => {
+                            body = stack!(body, node_to_layout_expr(child, source_code))
                         }
 
-                        phase = Phase::InBody
-                    }
-
-                    Phase::InBody => match kind_id(child) {
-                        KindId::COMMENT => {
-                            body = apposition!(body, node_to_layout_expr(child, source_code))
-                        }
-
-                        _ => body = stack!(body, node_to_layout_expr(child, source_code)),
+                        _ => panic!("{:?} should not have {:?}", node, child),
                     },
                 }
             }
@@ -184,7 +166,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     before_body.clone(),
                     apposition!(text!("    "), body.clone())
                 ),
-                apposition!(before_body, text!(" "), body),
+                apposition!(before_body, text!(" "), height_cost!(body)),
             )
         }
 
@@ -210,9 +192,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         line = node_to_layout_expr(child, source_code);
                     }
 
-                    _ => {
-                        panic!("{:?} should not have {:?}", node, child)
-                    }
+                    _ => panic!("{:?} should not have {:?}", node, child),
                 }
             }
 
@@ -282,27 +262,59 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
 #[cfg(test)]
 mod node_to_layout_expr_test {
-    use super::*;
+    use super::parse;
     use indoc::indoc;
 
     macro_rules! assert_parse {
-        ($text:expr) => {
+        ($text:expr) => {{
             let text = $text;
-            assert_eq!(parse(text).format(0).0 + "\n", text)
-        };
+            pretty_assertions::assert_eq!(parse(text).format(0).0 + "\n", text)
+        }};
+
+        ($text:expr, $expected:expr) => {{
+            pretty_assertions::assert_eq!(parse($text).format(0).0 + "\n", $expected)
+        }};
     }
 
     #[test]
     fn function_clause() {
-        assert_parse!(indoc! {r#"
-            main() ->
-                io:format("Hello, world!").
-        "#});
+        // remove empty lines
+        assert_parse!(
+            indoc! {r#"
+                main() ->
+
+
+                    io:format("Hello, world!").
+            "#},
+            indoc! {r#"
+                main() ->
+                    io:format("Hello, world!").
+            "#}
+        );
+
+        // rearrange comments just after '->'
+        assert_parse!(
+            indoc! {r#"
+                main() -> % comment 1
+                          % comment 2
+                    io:format("Hello, world!").
+            "#},
+            indoc! {r#"
+                main() ->
+                    % comment 1
+                    % comment 2
+                    io:format("Hello, world!").
+            "#}
+        );
 
         assert_parse!(indoc! {r#"
-            main % after main
-                 () % after ()
-                     -> % after ->
+            main % after main 1
+                 % after main 2
+                 () % after () 1
+                    % after () 2
+                    ->
+                % after -> 1
+                % after -> 2
                 %% line comment 1
                 %% line comment 2
                 io:format("Hello, world!").
@@ -312,12 +324,12 @@ mod node_to_layout_expr_test {
     #[test]
     fn function() {
         assert_parse!(indoc! {r#"
-            f() -> % comment 1
+            f() ->
                 foo;
 
             %% line comment
 
-            f() -> % comment 2
+            f() ->
                 bar.
         "#});
     }
