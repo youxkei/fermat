@@ -23,7 +23,7 @@ pub fn define_kind_id(_item: TokenStream) -> TokenStream {
         if language.node_kind_is_visible(kind_id) && &kind_name[0..1] != "_" {
             let ident = format_ident!("{}", identize(kind_name).to_ascii_uppercase());
 
-            Some(quote! { #ident = #kind_id })
+            Some(quote! { #ident = #kind_id, })
         } else {
             None
         }
@@ -33,7 +33,8 @@ pub fn define_kind_id(_item: TokenStream) -> TokenStream {
         #[repr(u16)]
         #[derive(Debug)]
         enum KindId {
-            #(#kind_id_variants),*
+            #(#kind_id_variants)*
+            ERROR = 65535,
         }
     })
     .into()

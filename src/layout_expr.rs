@@ -43,32 +43,40 @@ impl<'a> LayoutExpr<'a> {
         }
     }
 
-    pub fn format(&self, indent: usize) -> (String, usize) {
+    pub fn format(&self, indent: usize, indented: bool) -> (String, usize, bool) {
         match self {
             LayoutExpr::Unit => panic!("Unit should not be occured"),
 
-            LayoutExpr::Text(text) => (text.to_string(), indent + text.len()),
+            LayoutExpr::Text("") => ("".to_string(), indent, indented),
+
+            LayoutExpr::Text(text) => {
+                if indented {
+                    (text.to_string(), indent + text.len(), true)
+                } else {
+                    (
+                        repeat(' ').take(indent).collect::<String>() + text,
+                        indent + text.len(),
+                        true,
+                    )
+                }
+            }
 
             LayoutExpr::Stack(lhs, rhs) => {
-                let (lhs_text, _) = lhs.format(indent);
-                let indent_spaces = repeat(' ').take(indent).collect::<String>();
-                let (rhs_text, rhs_width) = rhs.format(indent);
+                let (lhs_text, _, _) = lhs.format(indent, indented);
+                let (rhs_text, rhs_width, indented) = rhs.format(indent, false);
 
-                (
-                    format!("{}\n{}{}", lhs_text, indent_spaces, rhs_text),
-                    rhs_width,
-                )
+                (format!("{}\n{}", lhs_text, rhs_text), rhs_width, indented)
             }
 
             LayoutExpr::Apposition(lhs, rhs) => {
-                let (lhs_text, lhs_width) = lhs.format(indent);
-                let (rhs_text, rhs_width) = rhs.format(lhs_width);
-                (format!("{}{}", lhs_text, rhs_text), rhs_width)
+                let (lhs_text, lhs_width, indented) = lhs.format(indent, indented);
+                let (rhs_text, rhs_width, contents_indent) = rhs.format(lhs_width, indented);
+                (format!("{}{}", lhs_text, rhs_text), rhs_width, indented)
             }
 
-            LayoutExpr::Choice(lhs, _) => lhs.format(indent),
+            LayoutExpr::Choice(lhs, _) => lhs.format(indent, indented),
 
-            LayoutExpr::HeightCost(expr) => expr.format(indent),
+            LayoutExpr::HeightCost(expr) => expr.format(indent, indented),
 
             LayoutExpr::Let(_, _, _) => panic!("Let should no be occered: {:?}", self),
             LayoutExpr::Var(_) => panic!("Var should no be occered: {:?}", self),

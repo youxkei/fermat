@@ -18,7 +18,7 @@ extern "C" {
     fn tree_sitter_erlang() -> Language;
 }
 
-tree_sitter_id::define_kind_id!();
+tree_sitter_id::define_kind_id! {}
 
 fn main() {
     let source_code = fs::read_to_string("hello.erl").unwrap();
@@ -73,23 +73,37 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         KindId::FUNCTION => {
             let mut result = unit!();
             let mut line = unit!();
+            let mut after_semi = false;
 
             let mut cursor = node.walk();
 
             for child in node.children(&mut cursor) {
                 match kind_id(child) {
                     KindId::COMMENT => {
-                        line =
-                            apposition!(line, text!(" "), node_to_layout_expr(child, source_code));
+                        if after_semi {
+                            line = apposition!(
+                                line,
+                                text!(" "),
+                                node_to_layout_expr(child, source_code)
+                            );
+                        } else {
+                            result = stack!(result, line);
+                            line = node_to_layout_expr(child, source_code);
+                        };
+
+                        after_semi = false;
                     }
 
                     KindId::SEMI => {
                         line = apposition!(line, node_to_layout_expr(child, source_code));
+                        after_semi = true;
                     }
 
                     KindId::FUNCTION_CLAUSE | KindId::LINE_COMMENT | KindId::MULTIPLE_NEWLINES => {
                         result = stack!(result, line);
                         line = node_to_layout_expr(child, source_code);
+
+                        after_semi = false;
                     }
 
                     _ => panic!("{:?} should not have {:?}", node, child),
@@ -106,9 +120,11 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             enum Phase {
                 BeforeDashGt,
                 AfterDashGt,
+                InBody,
             }
             let mut phase = Phase::BeforeDashGt;
             let mut comments = unit!();
+            let mut stack_only = false;
 
             let mut cursor = node.walk();
 
@@ -152,8 +168,29 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     Phase::AfterDashGt => match kind_id(child) {
                         KindId::MULTIPLE_NEWLINES => {}
 
+                        KindId::COMMENT => {
+                            before_body = apposition!(
+                                before_body,
+                                text!(" "),
+                                node_to_layout_expr(child, source_code)
+                            );
+                            phase = Phase::InBody;
+                            stack_only = true;
+                        }
+
+                        KindId::LINE_COMMENT | KindId::EXPRS => {
+                            body = stack!(body, node_to_layout_expr(child, source_code));
+                            phase = Phase::InBody;
+                        }
+
+                        _ => panic!("{:?} should not have {:?}", node, child),
+                    },
+
+                    Phase::InBody => match kind_id(child) {
+                        KindId::MULTIPLE_NEWLINES => {}
+
                         KindId::COMMENT | KindId::LINE_COMMENT | KindId::EXPRS => {
-                            body = stack!(body, node_to_layout_expr(child, source_code))
+                            body = stack!(body, node_to_layout_expr(child, source_code));
                         }
 
                         _ => panic!("{:?} should not have {:?}", node, child),
@@ -161,18 +198,23 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                 }
             }
 
-            choice!(
-                stack!(
-                    before_body.clone(),
-                    apposition!(text!("    "), body.clone())
-                ),
-                apposition!(before_body, text!(" "), height_cost!(body)),
-            )
+            if stack_only {
+                stack!(before_body, apposition!(text!("    "), body))
+            } else {
+                choice!(
+                    stack!(
+                        before_body.clone(),
+                        apposition!(text!("    "), body.clone())
+                    ),
+                    apposition!(before_body, text!(" "), height_cost!(body)),
+                )
+            }
         }
 
         KindId::EXPRS => {
             let mut result = unit!();
             let mut line = unit!();
+            let mut after_comma = false;
 
             let mut cursor = node.walk();
 
@@ -180,16 +222,30 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                 match kind_id(child) {
                     KindId::COMMA => {
                         line = apposition!(line, node_to_layout_expr(child, source_code));
+
+                        after_comma = true;
                     }
 
                     KindId::COMMENT => {
-                        line =
-                            apposition!(line, text!(" "), node_to_layout_expr(child, source_code));
+                        if after_comma {
+                            line = apposition!(
+                                line,
+                                text!(" "),
+                                node_to_layout_expr(child, source_code)
+                            );
+                        } else {
+                            result = stack!(result, line);
+                            line = node_to_layout_expr(child, source_code);
+                        }
+
+                        after_comma = false;
                     }
 
-                    KindId::LINE_COMMENT | KindId::EXPR => {
+                    KindId::LINE_COMMENT | KindId::MULTIPLE_NEWLINES | KindId::EXPR => {
                         result = stack!(result, line);
                         line = node_to_layout_expr(child, source_code);
+
+                        after_comma = false;
                     }
 
                     _ => panic!("{:?} should not have {:?}", node, child),
@@ -201,14 +257,49 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
         KindId::STRINGS => {
             let mut result = unit!();
+            let mut line = unit!();
+            let mut after_string = false;
 
             let mut cursor = node.walk();
 
             for child in node.children(&mut cursor) {
-                result = stack!(result, node_to_layout_expr(child, source_code));
+                match kind_id(child) {
+                    KindId::MULTIPLE_NEWLINES => {}
+
+                    KindId::COMMENT => {
+                        if after_string {
+                            line = apposition!(
+                                line,
+                                text!(" "),
+                                node_to_layout_expr(child, source_code)
+                            );
+                        } else {
+                            result = stack!(result, line);
+                            line = node_to_layout_expr(child, source_code);
+                        }
+
+                        after_string = false;
+                    }
+
+                    KindId::LINE_COMMENT => {
+                        result = stack!(result, line);
+                        line = node_to_layout_expr(child, source_code);
+
+                        after_string = false;
+                    }
+
+                    KindId::STRING => {
+                        result = stack!(result, line);
+                        line = node_to_layout_expr(child, source_code);
+
+                        after_string = true;
+                    }
+
+                    _ => panic!("{:?} should not have {:?}", node, child),
+                };
             }
 
-            result
+            stack!(result, line)
         }
 
         KindId::FORM
@@ -257,6 +348,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         }
 
         KindId::MULTIPLE_NEWLINES => text!(""),
+
+        KindId::ERROR => panic!("syntax error {:?}", node),
     }
 }
 
@@ -266,72 +359,290 @@ mod node_to_layout_expr_test {
     use indoc::indoc;
 
     macro_rules! assert_parse {
-        ($text:expr) => {{
+        ($desc:literal, $text:expr) => {{
             let text = $text;
-            pretty_assertions::assert_eq!(parse(text).format(0).0 + "\n", text)
+            pretty_assertions::assert_eq!(parse(text).format(0, false).0 + "\n", text, $desc)
         }};
 
-        ($text:expr, $expected:expr) => {{
-            pretty_assertions::assert_eq!(parse($text).format(0).0 + "\n", $expected)
+        ($desc:literal, $text:expr, $expected:expr) => {{
+            pretty_assertions::assert_eq!(parse($text).format(0, false).0 + "\n", $expected, $desc)
         }};
     }
 
     #[test]
     fn function_clause() {
-        // remove empty lines
-        assert_parse!(
-            indoc! {r#"
-                main() ->
+        /* before '->' */
+        {
+            assert_parse!(
+                "remove empty lines",
+                indoc! {r#"
+                    main
 
+                    ()
 
-                    io:format("Hello, world!").
-            "#},
-            indoc! {r#"
-                main() ->
-                    io:format("Hello, world!").
-            "#}
-        );
+                    -> io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main() ->
+                        io:format("Hello, world!").
+                "#}
+            );
 
-        // rearrange comments just after '->'
-        assert_parse!(
-            indoc! {r#"
-                main() -> % comment 1
-                          % comment 2
-                    io:format("Hello, world!").
-            "#},
-            indoc! {r#"
-                main() ->
-                    % comment 1
+            assert_parse!(
+                "comment indentation",
+                indoc! {r#"
+                    main % comment 1
                     % comment 2
-                    io:format("Hello, world!").
-            "#}
-        );
+                    () % comment 3
+                    % comment 4
+                    -> io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main % comment 1
+                         % comment 2
+                         () % comment 3
+                            % comment 4
+                            ->
+                        io:format("Hello, world!").
+                "#}
+            );
 
-        assert_parse!(indoc! {r#"
-            main % after main 1
-                 % after main 2
-                 () % after () 1
-                    % after () 2
-                    ->
-                % after -> 1
-                % after -> 2
-                %% line comment 1
-                %% line comment 2
-                io:format("Hello, world!").
-        "#});
+            assert_parse!(
+                "line comments behave like comments",
+                indoc! {r#"
+                    main %% line comment 1
+                    %% line comment 2
+                    () %% line comment 3
+                    %% line comment 4
+                    -> io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main %% line comment 1
+                         %% line comment 2
+                         () %% line comment 3
+                            %% line comment 4
+                            ->
+                        io:format("Hello, world!").
+                "#}
+            );
+        }
+
+        /* between '->' and body */
+        {
+            assert_parse!(
+                "remove empty lines",
+                indoc! {r#"
+                    main() ->
+
+                        %% line comment
+
+                        io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main() ->
+                        %% line comment
+                        io:format("Hello, world!").
+                "#}
+            );
+
+            assert_parse!(
+                "there can be only one comment after '->'",
+                indoc! {r#"
+                    main() -> % comment 1
+                              % comment 2
+                        io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main() -> % comment 1
+                        % comment 2
+                        io:format("Hello, world!").
+                "#}
+            );
+
+            assert_parse!(
+                "there can be no line comments after '->'",
+                indoc! {r#"
+                    main() -> %% comment
+                        io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main() ->
+                        %% comment
+                        io:format("Hello, world!").
+                "#}
+            );
+        }
     }
 
     #[test]
     fn function() {
-        assert_parse!(indoc! {r#"
-            f() ->
-                foo;
+        assert_parse!(
+            "keep empty lines",
+            indoc! {r#"
+                f() ->
+                    foo;
 
-            %% line comment
+                %% line comment
 
-            f() ->
-                bar.
-        "#});
+                f() ->
+                    bar.
+            "#}
+        );
+
+        assert_parse!(
+            "there can be only one comment after ';'",
+            indoc! {r#"
+                f() ->
+                    foo; % comment 1
+                         % comment 2
+
+                f() ->
+                    bar.
+            "#},
+            indoc! {r#"
+                f() ->
+                    foo; % comment 1
+                % comment 2
+
+                f() ->
+                    bar.
+            "#}
+        );
+
+        assert_parse!(
+            "there can be no line comments after ';'",
+            indoc! {r#"
+                f() ->
+                    foo; %% line comment
+
+                f() ->
+                    bar.
+            "#},
+            indoc! {r#"
+                f() ->
+                    foo;
+                %% line comment
+
+                f() ->
+                    bar.
+            "#}
+        );
+    }
+
+    #[test]
+    fn exprs() {
+        assert_parse!(
+            "keep empty lines",
+            indoc! {r#"
+                f() ->
+                    foo,
+
+                    %% line comment
+
+                    bar.
+            "#}
+        );
+
+        assert_parse!(
+            "there can be only one comment after ','",
+            indoc! {r#"
+                f() ->
+                    foo, % comment 1
+                         % comment 2
+
+                    bar.
+            "#},
+            indoc! {r#"
+                f() ->
+                    foo, % comment 1
+                    % comment 2
+
+                    bar.
+            "#}
+        );
+
+        assert_parse!(
+            "there can be no line comments after ','",
+            indoc! {r#"
+                f() ->
+                    foo, %% line comment
+
+                    bar.
+            "#},
+            indoc! {r#"
+                f() ->
+                    foo,
+                    %% line comment
+
+                    bar.
+            "#}
+        );
+    }
+
+    #[test]
+    fn strings() {
+        assert_parse!(
+            "always stacks",
+            indoc! {r#"
+                f() ->
+                    "foo" "bar".
+            "#},
+            indoc! {r#"
+                f() ->
+                    "foo"
+                    "bar".
+            "#}
+        );
+
+        assert_parse!(
+            "remove empty lines",
+            indoc! {r#"
+                f() ->
+                    "foo"
+
+                    %% line comment
+
+                    "bar".
+            "#},
+            indoc! {r#"
+                f() ->
+                    "foo"
+                    %% line comment
+                    "bar".
+            "#}
+        );
+
+        assert_parse!(
+            "there can be only one comment after string",
+            indoc! {r#"
+                f() ->
+                    "foo" % comment 1
+                          % comment 2
+                    "bar".
+            "#},
+            indoc! {r#"
+                f() ->
+                    "foo" % comment 1
+                    % comment 2
+                    "bar".
+            "#}
+        );
+
+        assert_parse!(
+            "there can be no line comments after ','",
+            indoc! {r#"
+                f() ->
+                    "foo" %% line comment
+
+                    "bar".
+            "#},
+            indoc! {r#"
+                f() ->
+                    "foo"
+                    %% line comment
+                    "bar".
+            "#}
+        );
     }
 }
 
