@@ -70,6 +70,59 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             result
         }
 
+        KindId::FORM => {
+            let mut result = unit!();
+            let mut line = unit!();
+            let mut after_attribute_or_function = false;
+
+            let mut cursor = node.walk();
+
+            for child in node.children(&mut cursor) {
+                match kind_id(child) {
+                    KindId::MULTIPLE_NEWLINES => {}
+
+                    KindId::COMMENT => {
+                        result = stack!(
+                            apposition!(
+                                result,
+                                if after_attribute_or_function {
+                                    text!(" ")
+                                } else {
+                                    unit!()
+                                },
+                                node_to_layout_expr(child, source_code)
+                            ),
+                            text!("")
+                        );
+
+                        after_attribute_or_function = false;
+                    }
+
+                    KindId::LINE_COMMENT => {
+                        result = stack!(result, node_to_layout_expr(child, source_code), text!(""));
+
+                        after_attribute_or_function = false;
+                    }
+
+                    KindId::MODULE_ATTRIBUTE | KindId::EXPORT_ATTRIBUTE | KindId::FUNCTION => {
+                        result = node_to_layout_expr(child, source_code);
+
+                        after_attribute_or_function = true;
+                    }
+
+                    KindId::DOT => {
+                        result = apposition!(result, node_to_layout_expr(child, source_code));
+
+                        after_attribute_or_function = false;
+                    }
+
+                    _ => panic!("{:?} should not have {:?}", node, child),
+                }
+            }
+
+            result
+        }
+
         KindId::FUNCTION => {
             let mut result = unit!();
             let mut line = unit!();
@@ -302,8 +355,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             stack!(result, line)
         }
 
-        KindId::FORM
-        | KindId::MODULE_ATTRIBUTE
+        KindId::MODULE_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_MFA
         | KindId::PAT_ARGUMENT_LIST
@@ -359,124 +411,85 @@ mod node_to_layout_expr_test {
     use indoc::indoc;
 
     macro_rules! assert_parse {
-        ($desc:literal, $text:expr) => {{
-            let text = $text;
-            pretty_assertions::assert_eq!(parse(text).format(0, false).0 + "\n", text, $desc)
+        ($desc:literal, $source_code:expr $(,)?) => {{
+            let source_code = $source_code;
+            pretty_assertions::assert_eq!(
+                parse(source_code).format(0, false).0 + "\n",
+                source_code,
+                $desc
+            )
         }};
 
-        ($desc:literal, $text:expr, $expected:expr) => {{
-            pretty_assertions::assert_eq!(parse($text).format(0, false).0 + "\n", $expected, $desc)
+        ($desc:literal, $source_code:expr, $expected:expr $(,)?) => {{
+            pretty_assertions::assert_eq!(
+                parse($source_code).format(0, false).0 + "\n",
+                $expected,
+                $desc
+            )
         }};
     }
 
     #[test]
-    fn function_clause() {
-        /* before '->' */
-        {
-            assert_parse!(
-                "remove empty lines",
-                indoc! {r#"
-                    main
+    fn form() {
+        assert_parse! {
+            "remove newlines",
+            indoc! {r#"
+                -module(foo)
 
-                    ()
-
-                    -> io:format("Hello, world!").
-                "#},
-                indoc! {r#"
-                    main() ->
-                        io:format("Hello, world!").
-                "#}
-            );
-
-            assert_parse!(
-                "comment indentation",
-                indoc! {r#"
-                    main % comment 1
-                    % comment 2
-                    () % comment 3
-                    % comment 4
-                    -> io:format("Hello, world!").
-                "#},
-                indoc! {r#"
-                    main % comment 1
-                         % comment 2
-                         () % comment 3
-                            % comment 4
-                            ->
-                        io:format("Hello, world!").
-                "#}
-            );
-
-            assert_parse!(
-                "line comments behave like comments",
-                indoc! {r#"
-                    main %% line comment 1
-                    %% line comment 2
-                    () %% line comment 3
-                    %% line comment 4
-                    -> io:format("Hello, world!").
-                "#},
-                indoc! {r#"
-                    main %% line comment 1
-                         %% line comment 2
-                         () %% line comment 3
-                            %% line comment 4
-                            ->
-                        io:format("Hello, world!").
-                "#}
-            );
+                .
+            "#},
+            indoc! {r#"
+                -module(foo).
+            "#},
         }
 
-        /* between '->' and body */
-        {
-            assert_parse!(
-                "remove empty lines",
-                indoc! {r#"
-                    main() ->
+        assert_parse! {
+            "remove empty lines",
+            indoc! {r#"
+                -module(foo)
 
-                        %% line comment
+                %% line comment
 
-                        io:format("Hello, world!").
-                "#},
-                indoc! {r#"
-                    main() ->
-                        %% line comment
-                        io:format("Hello, world!").
-                "#}
-            );
+                .
+            "#},
+            indoc! {r#"
+                -module(foo)
+                %% line comment
+                .
+            "#},
+        }
 
-            assert_parse!(
-                "there can be only one comment after '->'",
-                indoc! {r#"
-                    main() -> % comment 1
-                              % comment 2
-                        io:format("Hello, world!").
-                "#},
-                indoc! {r#"
-                    main() -> % comment 1
-                        % comment 2
-                        io:format("Hello, world!").
-                "#}
-            );
+        assert_parse! {
+            "there can be only one comment after attribute",
+            indoc! {r#"
+                -module(foo) % comment 1
+                             % comment 2
+                .
+            "#},
+            indoc! {r#"
+                -module(foo) % comment 1
+                % comment 2
+                .
+            "#},
+        }
 
-            assert_parse!(
-                "there can be no line comments after '->'",
-                indoc! {r#"
-                    main() -> %% comment
-                        io:format("Hello, world!").
-                "#},
-                indoc! {r#"
-                    main() ->
-                        %% comment
-                        io:format("Hello, world!").
-                "#}
-            );
+        assert_parse! {
+            "there can be no line comments after attribute",
+            indoc! {r#"
+                -module(foo) %% line comment
+                .
+            "#},
+            indoc! {r#"
+                -module(foo)
+                %% line comment
+                .
+            "#},
         }
     }
 
     #[test]
     fn function() {
-        assert_parse!(
+        assert_parse! {
             "keep empty lines",
             indoc! {r#"
                 f() ->
@@ -486,10 +499,10 @@ mod node_to_layout_expr_test {
 
                 f() ->
                     bar.
-            "#}
-        );
+            "#},
+        }
 
-        assert_parse!(
+        assert_parse! {
             "there can be only one comment after ';'",
             indoc! {r#"
                 f() ->
@@ -506,10 +519,10 @@ mod node_to_layout_expr_test {
 
                 f() ->
                     bar.
-            "#}
-        );
+            "#},
+        }
 
-        assert_parse!(
+        assert_parse! {
             "there can be no line comments after ';'",
             indoc! {r#"
                 f() ->
@@ -525,13 +538,118 @@ mod node_to_layout_expr_test {
 
                 f() ->
                     bar.
-            "#}
-        );
+            "#},
+        }
+    }
+
+    #[test]
+    fn function_clause() {
+        /* before '->' */
+        {
+            assert_parse! {
+                "remove empty lines",
+                indoc! {r#"
+                    main
+
+                    ()
+
+                    -> io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main() ->
+                        io:format("Hello, world!").
+                "#},
+            }
+
+            assert_parse! {
+                "comment indentation",
+                indoc! {r#"
+                    main % comment 1
+                    % comment 2
+                    () % comment 3
+                    % comment 4
+                    -> io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main % comment 1
+                         % comment 2
+                         () % comment 3
+                            % comment 4
+                            ->
+                        io:format("Hello, world!").
+                "#},
+            }
+
+            assert_parse! {
+                "line comments behave like comments",
+                indoc! {r#"
+                    main %% line comment 1
+                    %% line comment 2
+                    () %% line comment 3
+                    %% line comment 4
+                    -> io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main %% line comment 1
+                         %% line comment 2
+                         () %% line comment 3
+                            %% line comment 4
+                            ->
+                        io:format("Hello, world!").
+                "#},
+            }
+        }
+
+        /* between '->' and body */
+        {
+            assert_parse! {
+                "remove empty lines",
+                indoc! {r#"
+                    main() ->
+
+                        %% line comment
+
+                        io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main() ->
+                        %% line comment
+                        io:format("Hello, world!").
+                "#},
+            }
+
+            assert_parse! {
+                "there can be only one comment after '->'",
+                indoc! {r#"
+                    main() -> % comment 1
+                              % comment 2
+                        io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main() -> % comment 1
+                        % comment 2
+                        io:format("Hello, world!").
+                "#},
+            }
+
+            assert_parse! {
+                "there can be no line comments after '->'",
+                indoc! {r#"
+                    main() -> %% comment
+                        io:format("Hello, world!").
+                "#},
+                indoc! {r#"
+                    main() ->
+                        %% comment
+                        io:format("Hello, world!").
+                "#},
+            }
+        }
     }
 
     #[test]
     fn exprs() {
-        assert_parse!(
+        assert_parse! {
             "keep empty lines",
             indoc! {r#"
                 f() ->
@@ -540,10 +658,10 @@ mod node_to_layout_expr_test {
                     %% line comment
 
                     bar.
-            "#}
-        );
+            "#},
+        }
 
-        assert_parse!(
+        assert_parse! {
             "there can be only one comment after ','",
             indoc! {r#"
                 f() ->
@@ -558,10 +676,10 @@ mod node_to_layout_expr_test {
                     % comment 2
 
                     bar.
-            "#}
-        );
+            "#},
+        }
 
-        assert_parse!(
+        assert_parse! {
             "there can be no line comments after ','",
             indoc! {r#"
                 f() ->
@@ -575,13 +693,13 @@ mod node_to_layout_expr_test {
                     %% line comment
 
                     bar.
-            "#}
-        );
+            "#},
+        }
     }
 
     #[test]
     fn strings() {
-        assert_parse!(
+        assert_parse! {
             "always stacks",
             indoc! {r#"
                 f() ->
@@ -591,10 +709,10 @@ mod node_to_layout_expr_test {
                 f() ->
                     "foo"
                     "bar".
-            "#}
-        );
+            "#},
+        }
 
-        assert_parse!(
+        assert_parse! {
             "remove empty lines",
             indoc! {r#"
                 f() ->
@@ -609,10 +727,10 @@ mod node_to_layout_expr_test {
                     "foo"
                     %% line comment
                     "bar".
-            "#}
-        );
+            "#},
+        }
 
-        assert_parse!(
+        assert_parse! {
             "there can be only one comment after string",
             indoc! {r#"
                 f() ->
@@ -625,10 +743,10 @@ mod node_to_layout_expr_test {
                     "foo" % comment 1
                     % comment 2
                     "bar".
-            "#}
-        );
+            "#},
+        }
 
-        assert_parse!(
+        assert_parse! {
             "there can be no line comments after ','",
             indoc! {r#"
                 f() ->
@@ -641,8 +759,8 @@ mod node_to_layout_expr_test {
                     "foo"
                     %% line comment
                     "bar".
-            "#}
-        );
+            "#},
+        }
     }
 }
 
