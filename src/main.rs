@@ -123,6 +123,45 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             result
         }
 
+        KindId::MODULE_ATTRIBUTE => {
+            let mut result = unit!();
+            let mut comments = unit!();
+
+            let mut cursor = node.walk();
+
+            for child in node.children(&mut cursor) {
+                match kind_id(child) {
+                    KindId::MULTIPLE_NEWLINES => {}
+
+                    KindId::COMMENT | KindId::LINE_COMMENT => {
+                        comments = stack!(comments, node_to_layout_expr(child, source_code))
+                    }
+
+                    KindId::DASH
+                    | KindId::MODULE
+                    | KindId::LPAREN
+                    | KindId::ATOM
+                    | KindId::RPAREN => {
+                        result = apposition!(
+                            result,
+                            if comments == unit!() {
+                                unit!()
+                            } else {
+                                text!(" ")
+                            },
+                            stack!(comments, node_to_layout_expr(child, source_code))
+                        );
+
+                        comments = unit!();
+                    }
+
+                    _ => panic!("{:?} should not have {:?}", node, child),
+                }
+            }
+
+            result
+        }
+
         KindId::FUNCTION => {
             let mut result = unit!();
             let mut line = unit!();
@@ -483,6 +522,59 @@ mod node_to_layout_expr_test {
                 -module(foo)
                 %% line comment
                 .
+            "#},
+        }
+    }
+
+    #[test]
+    fn module_attribute() {
+        assert_parse! {
+            "remove empty lines",
+            indoc! {r#"
+                -
+
+                module
+
+                (
+
+                foo
+
+                )
+
+                .
+            "#},
+            indoc! {r#"
+                -module(foo).
+            "#},
+        }
+
+        assert_parse! {
+            "comments indentation",
+            indoc! {r#"
+                - % comment 1
+                  % comment 2
+                  module % comment 3
+                         % comment 4
+                         ( % comment 5
+                           % comment 6
+                           foo % comment 7
+                               % comment 8
+                               ).
+            "#},
+        }
+
+        assert_parse! {
+            "line comments indentation",
+            indoc! {r#"
+                - %% line comment 1
+                  %% line comment 2
+                  module %% line comment 3
+                         %% line comment 4
+                         ( %% line comment 5
+                           %% line comment 6
+                           foo %% line comment 7
+                               %% line comment 8
+                               ).
             "#},
         }
     }
