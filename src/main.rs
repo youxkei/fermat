@@ -1,4 +1,4 @@
-#![feature(box_syntax, box_patterns, bindings_after_at, decl_macro)]
+#![feature(box_syntax, box_patterns, bindings_after_at, decl_macro, or_patterns)]
 
 mod avltree;
 mod layout_expr;
@@ -24,7 +24,7 @@ fn main() {
     let layout_expr = parse(&source_code);
 
     let config = Config {
-        right_margin: 140,
+        right_margin: 41,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
@@ -71,7 +71,6 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
         KindId::FORM => {
             let mut result = unit!();
-            let mut line = unit!();
             let mut after_attribute_or_function = false;
 
             let mut cursor = node.walk();
@@ -161,13 +160,176 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             result
         }
 
+        KindId::EXPORT_ATTRIBUTE => {
+            let mut before_bracket = unit!();
+            let mut after_bracket = unit!();
+            let mut comments = unit!();
+            let mut element = unit!();
+            let mut in_bracket_elements = vec![];
+            let mut comment_or_empty_line_in_bracket = false;
+
+            enum Phase {
+                BeforeBracket,
+                InBracket,
+                AfterBracket,
+            }
+            let mut phase = Phase::BeforeBracket;
+
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                match phase {
+                    Phase::BeforeBracket => match kind_id(child) {
+                        KindId::MULTIPLE_NEWLINES => {}
+
+                        KindId::COMMENT | KindId::LINE_COMMENT => {
+                            comments = stack!(comments, node_to_layout_expr(child, source_code))
+                        }
+
+                        kind_id
+                        @
+                        (KindId::DASH
+                        | KindId::EXPORT
+                        | KindId::LPAREN
+                        | KindId::LBRACK) => {
+                            before_bracket = apposition!(
+                                before_bracket,
+                                if comments == unit!() {
+                                    unit!()
+                                } else {
+                                    text!(" ")
+                                },
+                                stack!(comments, node_to_layout_expr(child, source_code))
+                            );
+
+                            comments = unit!();
+
+                            if kind_id == KindId::LBRACK {
+                                phase = Phase::InBracket;
+                            }
+                        }
+
+                        _ => panic!("{:?} should not have {:?}", node, child),
+                    },
+
+                    Phase::InBracket => match kind_id(child) {
+                        KindId::COMMA => {
+                            element = apposition!(element, node_to_layout_expr(child, source_code));
+                        }
+
+                        KindId::COMMENT => {
+                            if element == unit!() {
+                                element = node_to_layout_expr(child, source_code);
+                            } else {
+                                element = apposition!(
+                                    element,
+                                    text!(" "),
+                                    node_to_layout_expr(child, source_code)
+                                );
+                            }
+
+                            in_bracket_elements.push(element);
+
+                            element = unit!();
+
+                            comment_or_empty_line_in_bracket = true;
+                        }
+
+                        KindId::MULTIPLE_NEWLINES | KindId::LINE_COMMENT => {
+                            in_bracket_elements.push(element);
+
+                            element = node_to_layout_expr(child, source_code);
+
+                            comment_or_empty_line_in_bracket = true;
+                        }
+
+                        KindId::EXPORT_MFA => {
+                            in_bracket_elements.push(element);
+
+                            element = node_to_layout_expr(child, source_code);
+                        }
+
+                        KindId::RBRACK => {
+                            if element != unit!() {
+                                in_bracket_elements.push(element)
+                            }
+
+                            element = unit!();
+
+                            after_bracket = node_to_layout_expr(child, source_code);
+
+                            phase = Phase::AfterBracket;
+                        }
+
+                        _ => panic!("{:?} should not have {:?}", node, child),
+                    },
+
+                    Phase::AfterBracket => match kind_id(child) {
+                        KindId::MULTIPLE_NEWLINES => {}
+
+                        KindId::COMMENT | KindId::LINE_COMMENT => {
+                            comments = stack!(comments, node_to_layout_expr(child, source_code))
+                        }
+
+                        KindId::RPAREN => {
+                            after_bracket = apposition!(
+                                after_bracket,
+                                if comments == unit!() {
+                                    unit!()
+                                } else {
+                                    text!(" ")
+                                },
+                                stack!(comments, node_to_layout_expr(child, source_code))
+                            );
+
+                            comments = unit!();
+                        }
+
+                        _ => panic!("{:?} should not have {:?}", node, child),
+                    },
+                }
+            }
+
+            let mfa = if comment_or_empty_line_in_bracket {
+                let mut mfa = unit!();
+
+                for element in in_bracket_elements {
+                    mfa = stack!(mfa, element);
+                }
+
+                mfa
+            } else {
+                let mut stack_mfa = unit!();
+                let mut apposition_mfa = unit!();
+
+                for element in in_bracket_elements {
+                    stack_mfa = stack!(stack_mfa, element.clone());
+
+                    if apposition_mfa == unit!() {
+                        apposition_mfa = element;
+                    } else {
+                        apposition_mfa = apposition!(apposition_mfa, text!(" "), element);
+                    }
+                }
+
+                choice!(stack_mfa, apposition_mfa)
+            };
+
+            choice!(
+                stack!(
+                    before_bracket.clone(),
+                    apposition!(text!("    "), mfa.clone()),
+                    after_bracket.clone()
+                ),
+                apposition!(before_bracket, mfa, after_bracket)
+            )
+        }
+
         KindId::FUNCTION => {
             let mut result = unit!();
             let mut line = unit!();
             let mut after_semi = false;
 
             let mut cursor = node.walk();
-
             for child in node.children(&mut cursor) {
                 match kind_id(child) {
                     KindId::COMMENT => {
@@ -215,10 +377,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             }
             let mut phase = Phase::BeforeDashGt;
             let mut comments = unit!();
-            let mut stack_only = false;
+            let mut comment_after_dash_gt = false;
 
             let mut cursor = node.walk();
-
             for child in node.children(&mut cursor) {
                 match phase {
                     Phase::BeforeDashGt => match kind_id(child) {
@@ -266,7 +427,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                                 node_to_layout_expr(child, source_code)
                             );
                             phase = Phase::InBody;
-                            stack_only = true;
+                            comment_after_dash_gt = true;
                         }
 
                         KindId::LINE_COMMENT | KindId::EXPRS => {
@@ -289,7 +450,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                 }
             }
 
-            if stack_only {
+            if comment_after_dash_gt {
                 stack!(before_body, apposition!(text!("    "), body))
             } else {
                 choice!(
@@ -308,7 +469,6 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             let mut after_comma = false;
 
             let mut cursor = node.walk();
-
             for child in node.children(&mut cursor) {
                 match kind_id(child) {
                     KindId::COMMA => {
@@ -352,7 +512,6 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             let mut after_string = false;
 
             let mut cursor = node.walk();
-
             for child in node.children(&mut cursor) {
                 match kind_id(child) {
                     KindId::MULTIPLE_NEWLINES => {}
@@ -393,9 +552,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             stack!(result, line)
         }
 
-        KindId::MODULE_ATTRIBUTE
-        | KindId::EXPORT_ATTRIBUTE
-        | KindId::EXPORT_MFA
+        KindId::EXPORT_MFA
         | KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
         | KindId::EXPR
@@ -406,7 +563,6 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             let mut result = unit!();
 
             let mut cursor = node.walk();
-
             for child in node.children(&mut cursor) {
                 result = apposition!(result, node_to_layout_expr(child, source_code));
             }
@@ -418,7 +574,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::LPAREN
         | KindId::RPAREN
         | KindId::LBRACK
-        | KindId::RBARKC
+        | KindId::RBRACK
         | KindId::COMMA
         | KindId::DOT
         | KindId::DASH

@@ -31,7 +31,7 @@ pub fn define_kind_id(_item: TokenStream) -> TokenStream {
 
     (quote! {
         #[repr(u16)]
-        #[derive(Debug)]
+        #[derive(Debug, PartialEq)]
         enum KindId {
             #(#kind_id_variants)*
             ERROR = 65535,
@@ -46,7 +46,7 @@ fn identize(token: &str) -> &str {
         "(" => "LPAREN",
         ")" => "RPAREN",
         "[" => "LBRACK",
-        "]" => "RBARKC",
+        "]" => "RBRACK",
         "," => "COMMA",
         "." => "DOT",
         "-" => "DASH",
