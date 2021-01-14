@@ -148,14 +148,14 @@ impl<K: Copy + Ord, V> AvlTree<K, V> {
         }
     }
 
-    pub fn iter<'a>(&'a self) -> Iter<'a, K, V> {
+    pub fn iter(&self) -> Iter<'_, K, V> {
         Iter {
             tree: self,
             current_key: None,
         }
     }
 
-    pub fn keys<'a>(&'a self) -> Keys<'a, K, V> {
+    pub fn keys(&self) -> Keys<'_, K, V> {
         Keys {
             tree: self,
             current_key: None,
