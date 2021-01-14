@@ -84,79 +84,73 @@ impl<'a> LayoutExpr<'a> {
     }
 }
 
-macro_rules! layout_expr_helper {
+macro layout_expr_helper {
     ($ctor:ident, $f:ident($($args:tt)*) $(, $($y:tt $($ys:tt)*)?)?) => {
         {
             let result = layout_expr!($f($($args)*));
             $(
                 $(
-                    let result = std::rc::Rc::new($crate::layout_expr::LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
+                    let result = Rc::new(LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
                 )?
             )?
             result
         }
-    };
+    },
 
     ($ctor:ident, $x:expr $(, $($y:tt $($ys:tt)*)?)?) => {
         {
             let result = layout_expr!($x);
             $(
                 $(
-                    let result = std::rc::Rc::new($crate::layout_expr::LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
+                    let result = Rc::new(LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
                 )?
             )?
             result
         }
-    };
+    },
 }
 
-macro_rules! layout_expr {
+pub macro layout_expr {
     ($x:literal) => {
-        std::rc::Rc::new($crate::layout_expr::LayoutExpr::Text($x))
-    };
+        Rc::new(LayoutExpr::Text($x))
+    },
 
     (stack ($x:tt $($xs:tt)*) $(,)?) => {
         layout_expr_helper!(Stack, $x $($xs)*)
-    };
+    },
 
     (apposition ($x:tt $($xs:tt)*) $(,)?) => {
         layout_expr_helper!(Apposition, $x $($xs)*)
-    };
+    },
 
     (choice ($x:tt $($xs:tt)*) $(,)?) => {
         layout_expr_helper!(Choice, $x $($xs)*)
-    };
+    },
 
     (height_cost ($x:tt $($xs:tt)*) $(,)?) => {
         layout_expr_helper!(HeightCost, $x $($xs)*)
-    };
+    },
 
     ($x:expr) => {
         $x
-    }
+    },
 }
 
-macro_rules! unit {
-    () => {
-        std::rc::Rc::new($crate::layout_expr::LayoutExpr::Unit)
-    };
+pub macro unit() {
+    Rc::new(LayoutExpr::Unit)
 }
 
-macro_rules! text {
-    ($x:expr) => {
-        std::rc::Rc::new($crate::layout_expr::LayoutExpr::Text($x))
-    };
+pub macro text($x:expr) {
+    Rc::new(LayoutExpr::Text($x))
 }
 
-macro_rules! stack {
+pub macro stack {
     () => {
         unit!()
-    };
+    },
 
     ($head:expr $(, $($tail:expr),* $(,)?)?) => {
         {
-            use $crate::layout_expr::LayoutExpr;
-
             #[allow(unused_mut)]
             let mut result = $head;
 
@@ -172,7 +166,7 @@ macro_rules! stack {
                             match &*tail {
                                 LayoutExpr::Unit => {}
                                 _ => {
-                                    result = std::rc::Rc::new(LayoutExpr::Stack(result, tail));
+                                    result = Rc::new(LayoutExpr::Stack(result, tail));
                                 }
                             }
                          )*
@@ -182,7 +176,7 @@ macro_rules! stack {
                 }
             }
         }
-    }
+    },
 }
 
 #[test]
@@ -200,15 +194,13 @@ fn stack_test() {
     );
 }
 
-macro_rules! apposition {
+pub macro apposition {
     () => {
         unit!()
-    };
+    },
 
     ($head:expr $(, $($tail:expr),* $(,)?)?) => {
         {
-            use $crate::layout_expr::LayoutExpr;
-
             #[allow(unused_mut)]
             let mut result = $head;
 
@@ -224,7 +216,7 @@ macro_rules! apposition {
                             match &*tail {
                                 LayoutExpr::Unit => {}
                                 _ => {
-                                    result = std::rc::Rc::new(LayoutExpr::Apposition(result, tail));
+                                    result = Rc::new(LayoutExpr::Apposition(result, tail));
                                 }
                             }
                          )*
@@ -234,7 +226,7 @@ macro_rules! apposition {
                 }
             }
         }
-    }
+    },
 }
 
 #[test]
@@ -252,15 +244,13 @@ fn apposition_test() {
     );
 }
 
-macro_rules! choice {
+pub macro choice {
     () => {
         unit!()
-    };
+    },
 
     ($head:expr $(, $($tail:expr),* $(,)?)?) => {
         {
-            use $crate::layout_expr::LayoutExpr;
-
             #[allow(unused_mut)]
             let mut result = $head;
 
@@ -276,7 +266,7 @@ macro_rules! choice {
                             match &*tail {
                                 LayoutExpr::Unit => {}
                                 _ => {
-                                    result = std::rc::Rc::new(LayoutExpr::Choice(result, tail));
+                                    result = Rc::new(LayoutExpr::Choice(result, tail));
                                 }
                             }
                          )*
@@ -286,7 +276,7 @@ macro_rules! choice {
                 }
             }
         }
-    }
+    },
 }
 
 #[test]
@@ -304,8 +294,6 @@ fn choice_test() {
     );
 }
 
-macro_rules! height_cost {
-    ($x:expr) => {
-        std::rc::Rc::new($crate::layout_expr::LayoutExpr::HeightCost($x))
-    };
+pub macro height_cost($x:expr) {
+    std::rc::Rc::new($crate::layout_expr::LayoutExpr::HeightCost($x))
 }

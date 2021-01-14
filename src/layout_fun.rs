@@ -610,7 +610,7 @@ mod layout_fun_tests {
         };
 
         assert_debug_snapshot!(LayoutFun::from_layout_expr(
-            &*layout_expr!(apposition(
+            &*crate::layout_expr::layout_expr!(apposition(
                 choice(apposition("Foobarbaz =", " "), stack("Foobarbaz =", "    "),),
                 choice(
                     apposition("#record{", "field = 1", "}"),

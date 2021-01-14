@@ -1,7 +1,6 @@
-#![feature(box_syntax, box_patterns, bindings_after_at)]
+#![feature(box_syntax, box_patterns, bindings_after_at, decl_macro)]
 
 mod avltree;
-#[macro_use]
 mod layout_expr;
 mod layout_fun;
 
@@ -11,7 +10,7 @@ use std::rc::Rc;
 
 use tree_sitter::{Language, Node, Parser};
 
-use layout_expr::LayoutExpr;
+use layout_expr::{apposition, choice, height_cost, stack, text, unit, LayoutExpr};
 use layout_fun::{Config, LayoutFun};
 
 extern "C" {
