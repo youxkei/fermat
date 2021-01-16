@@ -3,10 +3,9 @@ use std::collections::{BTreeSet, HashSet};
 use std::rc::Rc;
 
 use itertools::Itertools;
-use rpds::HashTrieMap;
 
 use crate::avltree::AvlTree;
-use crate::layout_expr::{LayoutExpr, Variable};
+use crate::layout_expr::LayoutExpr;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Config {
@@ -60,18 +59,12 @@ impl<'a> LayoutFun<'a> {
     }
 
     pub fn from_layout_expr(layout_expr: &LayoutExpr<'a>, config: &Config) -> Self {
-        LayoutFun::from_layout_expr_with_trailing(
-            layout_expr,
-            LayoutFun::Unit,
-            &HashTrieMap::new(),
-            config,
-        )
+        LayoutFun::from_layout_expr_with_trailing(layout_expr, LayoutFun::Unit, config)
     }
 
     fn from_layout_expr_with_trailing(
         layout_expr: &LayoutExpr<'a>,
         trailing_layout_fun: Self,
-        env: &HashTrieMap<Variable, Self>,
         config: &Config,
     ) -> Self {
         match layout_expr {
@@ -82,38 +75,21 @@ impl<'a> LayoutFun<'a> {
                 config,
             ),
             LayoutExpr::Stack(lhs, rhs) => Self::stack(
-                Self::from_layout_expr_with_trailing(lhs, Self::Unit, env, config),
-                Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, env, config),
+                Self::from_layout_expr_with_trailing(lhs, Self::Unit, config),
+                Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, config),
                 config,
             ),
             LayoutExpr::Apposition(lhs, rhs) => Self::from_layout_expr_with_trailing(
                 lhs,
-                Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, env, config),
-                env,
+                Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, config),
                 config,
             ),
             LayoutExpr::Choice(lhs, rhs) => Self::choice(
-                Self::from_layout_expr_with_trailing(lhs, trailing_layout_fun.clone(), env, config),
-                Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, env, config),
+                Self::from_layout_expr_with_trailing(lhs, trailing_layout_fun.clone(), config),
+                Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, config),
             ),
             LayoutExpr::HeightCost(expr) => Self::height_cost(
-                Self::from_layout_expr_with_trailing(expr, trailing_layout_fun, env, config),
-                config,
-            ),
-            LayoutExpr::Let(var, def, body) => {
-                let def_fun =
-                    Self::from_layout_expr_with_trailing(def, LayoutFun::Unit, env, config);
-
-                Self::from_layout_expr_with_trailing(
-                    body,
-                    trailing_layout_fun,
-                    &env.insert(*var, def_fun),
-                    config,
-                )
-            }
-            LayoutExpr::Var(var) => Self::apposition(
-                env.get(var).unwrap().clone(),
-                trailing_layout_fun.clone(),
+                Self::from_layout_expr_with_trailing(expr, trailing_layout_fun, config),
                 config,
             ),
         }

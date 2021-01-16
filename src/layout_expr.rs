@@ -1,8 +1,6 @@
 use std::iter::repeat;
 use std::rc::Rc;
 
-pub type Variable = usize;
-
 #[derive(PartialEq, Clone, Debug)]
 pub enum LayoutExpr<'a> {
     Unit,
@@ -11,8 +9,6 @@ pub enum LayoutExpr<'a> {
     Apposition(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Choice(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     HeightCost(Rc<LayoutExpr<'a>>),
-    Let(Variable, Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
-    Var(Variable),
 }
 
 impl<'a> LayoutExpr<'a> {
@@ -38,8 +34,6 @@ impl<'a> LayoutExpr<'a> {
 
             LayoutExpr::Choice(_, _) => panic!("Choice should no be occered: {:?}", self),
             LayoutExpr::HeightCost(_) => panic!("HeightCost should no be occered: {:?}", self),
-            LayoutExpr::Let(_, _, _) => panic!("Let should no be occered: {:?}", self),
-            LayoutExpr::Var(_) => panic!("Var should no be occered: {:?}", self),
         }
     }
 
@@ -77,9 +71,6 @@ impl<'a> LayoutExpr<'a> {
             LayoutExpr::Choice(lhs, _) => lhs.format(indent, indented),
 
             LayoutExpr::HeightCost(expr) => expr.format(indent, indented),
-
-            LayoutExpr::Let(_, _, _) => panic!("Let should no be occered: {:?}", self),
-            LayoutExpr::Var(_) => panic!("Var should no be occered: {:?}", self),
         }
     }
 }

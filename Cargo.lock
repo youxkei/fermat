@@ -19,15 +19,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "archery"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d308d8fa3f687f7a7588fccc4812ed6914be09518232f00454693a7417273ad2"
-dependencies = [
- "static_assertions",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -90,7 +81,6 @@ dependencies = [
  "insta",
  "itertools",
  "pretty_assertions",
- "rpds",
  "tree-sitter",
  "tree-sitter-id",
 ]
@@ -215,15 +205,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
 
 [[package]]
-name = "rpds"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1196a0a2f52d343bd32179834273eaac7d8739f7e3f8b700227d2fa06b9a423b"
-dependencies = [
- "archery",
-]
-
-[[package]]
 name = "ryu"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -271,12 +252,6 @@ dependencies = [
  "serde",
  "yaml-rust",
 ]
-
-[[package]]
-name = "static_assertions"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f3eb36b47e512f8f1c9e3d10c2c1965bc992bd9cdb024fa581e2194501c83d3"
 
 [[package]]
 name = "syn"

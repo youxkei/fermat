@@ -7,7 +7,6 @@ edition = "2018"
 [dependencies]
 tree-sitter = "0.17"
 itertools = "0.9"
-rpds = "0.7"
 tree-sitter-id = { path = "tree-sitter-id" }
 
 [build-dependencies]
