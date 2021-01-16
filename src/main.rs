@@ -21,26 +21,28 @@ tree_sitter_id::define_kind_id! {}
 
 fn main() {
     let source_code = fs::read_to_string("hello.erl").unwrap();
-    let layout_expr = parse(&source_code);
 
     let config = Config {
-        right_margin: 140,
+        right_margin: 80,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
     };
 
     println!(
-        "{}|",
+        "{}|\n{}",
         repeat(' ')
             .take((config.right_margin - 1) as usize)
-            .collect::<String>()
+            .collect::<String>(),
+        format(&source_code, &config),
     );
+}
 
+fn format(source_code: &str, config: &Config) -> String {
+    let layout_expr = parse(&source_code);
     let layout_fun = LayoutFun::from_layout_expr(&*layout_expr, &config);
-    let layout_expr = layout_fun.at(0).layout_expr;
 
-    layout_expr.print(0);
+    layout_fun.at(0).layout_expr.format(0, false).0
 }
 
 fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
@@ -636,8 +638,12 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
     }
 }
 
+fn kind_id(node: Node<'_>) -> KindId {
+    unsafe { std::mem::transmute(node.kind_id()) }
+}
+
 #[cfg(test)]
-mod node_to_layout_expr_test {
+mod parse_test {
     use super::parse;
     use indoc::indoc;
 
@@ -1046,8 +1052,4 @@ mod node_to_layout_expr_test {
             "#},
         }
     }
-}
-
-fn kind_id(node: Node<'_>) -> KindId {
-    unsafe { std::mem::transmute(node.kind_id()) }
 }
