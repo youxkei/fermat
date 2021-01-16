@@ -1,4 +1,4 @@
-#![feature(box_syntax, box_patterns, bindings_after_at, decl_macro, or_patterns)]
+#![feature(box_syntax, box_patterns, bindings_after_at, decl_macro)]
 
 mod avltree;
 mod layout_expr;
@@ -254,7 +254,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         }
 
                         KindId::RBRACK => {
-                            in_bracket_elements.push(element);
+                            if element != text!("") {
+                                in_bracket_elements.push(element);
+                            }
                             element = unit!();
 
                             phase = Phase::AfterBracket;
@@ -778,6 +780,37 @@ mod parse_test {
     }
 
     #[test]
+    fn export_attribute() {
+        assert_parse!(
+            "keep empty lines in body",
+            indoc! {r#"
+                -export([
+
+                         foo/1,
+
+                         bar/2,
+
+                         foobar/3,
+
+                         baz/4
+
+                        ])
+            "#},
+            indoc! {r#"
+                -export([
+                         foo/1,
+
+                         bar/2,
+
+                         foobar/3,
+
+                         baz/4
+                        ])
+            "#},
+        );
+    }
+
+    #[test]
     fn function() {
         assert_parse! {
             "keep empty lines",
@@ -1051,5 +1084,193 @@ mod parse_test {
                     "bar".
             "#},
         }
+    }
+}
+
+#[cfg(test)]
+mod format_test {
+    use super::format;
+    use super::layout_fun::Config;
+    use indoc::indoc;
+
+    macro_rules! assert_format {
+        ($desc:literal, $config:expr, $source_code:expr $(,)?) => {{
+            let source_code = $source_code;
+            pretty_assertions::assert_eq!(format(source_code, &$config) + "\n", source_code, $desc)
+        }};
+
+        ($desc:literal, $config:expr, $source_code:expr, $expected:expr $(,)?) => {{
+            pretty_assertions::assert_eq!(format($source_code, &$config) + "\n", $expected, $desc)
+        }};
+    }
+
+    #[test]
+    fn export_attribute() {
+        assert_format!(
+            "apposed",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([foo/1, bar/2, foobar/3, baz/4]).
+            "#},
+        );
+
+        assert_format!(
+            "stacked due to right margin",
+            Config {
+                right_margin: 10,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         foo/1,
+                         bar/2,
+                         foobar/3,
+                         baz/4
+                        ]).
+            "#},
+        );
+
+        assert_format!(
+            "stack style due to comments",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         foo/1, % comment 1
+                         bar/2, % comment 2
+                         foobar/3, % comment 3
+                         baz/4 % comment 4
+                        ]).
+            "#},
+        );
+
+        assert_format!(
+            "stack style due to comments",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         %% line comment 1
+                         foo/1,
+                         %% line comment 2
+                         bar/2,
+                         %% line comment 3
+                         foobar/3,
+                         %% line comment 4
+                         baz/4
+                         %% line comment 5
+                        ]).
+            "#},
+        );
+
+        assert_format!(
+            "stack style due to empty lines",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         foo/1,
+
+                         bar/2,
+
+                         foobar/3,
+
+                         baz/4
+                        ]).
+            "#},
+        );
+    }
+
+    #[test]
+    fn function_clause() {
+        assert_format!(
+            "apposition style",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                f() -> ok.
+            "#}
+        );
+
+        assert_format!(
+            "stack style",
+            Config {
+                right_margin: 5,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                f() ->
+                    ok.
+            "#}
+        );
+
+        assert_format!(
+            "stack style with comment",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                f() -> % comment
+                    ok.
+            "#}
+        );
+
+        assert_format!(
+            "stack style with line comment",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                f() ->
+                    %% comment
+                    ok.
+            "#}
+        );
+
+        assert_format!(
+            "stack style with multi line body",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                f() ->
+                    foo,
+                    bar.
+            "#}
+        );
     }
 }
