@@ -24,7 +24,7 @@ fn main() {
     let layout_expr = parse(&source_code);
 
     let config = Config {
-        right_margin: 41,
+        right_margin: 140,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
@@ -162,10 +162,11 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
         KindId::EXPORT_ATTRIBUTE => {
             let mut before_bracket = unit!();
+            let mut in_bracket_elements = vec![];
             let mut after_bracket = unit!();
+
             let mut comments = unit!();
             let mut element = unit!();
-            let mut in_bracket_elements = vec![];
             let mut comment_or_empty_line_in_bracket = false;
 
             enum Phase {
@@ -185,12 +186,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             comments = stack!(comments, node_to_layout_expr(child, source_code))
                         }
 
-                        kind_id
-                        @
-                        (KindId::DASH
-                        | KindId::EXPORT
-                        | KindId::LPAREN
-                        | KindId::LBRACK) => {
+                        KindId::DASH | KindId::EXPORT | KindId::LPAREN => {
                             before_bracket = apposition!(
                                 before_bracket,
                                 if comments == unit!() {
@@ -202,10 +198,20 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             );
 
                             comments = unit!();
+                        }
 
-                            if kind_id == KindId::LBRACK {
-                                phase = Phase::InBracket;
+                        KindId::LBRACK => {
+                            if comments != unit!() {
+                                before_bracket = apposition!(
+                                    before_bracket,
+                                    text!(" "),
+                                    stack!(comments, text!(""))
+                                );
                             }
+
+                            comments = unit!();
+
+                            phase = Phase::InBracket;
                         }
 
                         _ => panic!("{:?} should not have {:?}", node, child),
@@ -228,7 +234,6 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             }
 
                             in_bracket_elements.push(element);
-
                             element = unit!();
 
                             comment_or_empty_line_in_bracket = true;
@@ -236,7 +241,6 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
                         KindId::MULTIPLE_NEWLINES | KindId::LINE_COMMENT => {
                             in_bracket_elements.push(element);
-
                             element = node_to_layout_expr(child, source_code);
 
                             comment_or_empty_line_in_bracket = true;
@@ -244,18 +248,12 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
                         KindId::EXPORT_MFA => {
                             in_bracket_elements.push(element);
-
                             element = node_to_layout_expr(child, source_code);
                         }
 
                         KindId::RBRACK => {
-                            if element != unit!() {
-                                in_bracket_elements.push(element)
-                            }
-
+                            in_bracket_elements.push(element);
                             element = unit!();
-
-                            after_bracket = node_to_layout_expr(child, source_code);
 
                             phase = Phase::AfterBracket;
                         }
@@ -289,39 +287,79 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                 }
             }
 
-            let mfa = if comment_or_empty_line_in_bracket {
-                let mut mfa = unit!();
+            let left_bracket = text!("[");
+            let right_bracket = text!("]");
 
-                for element in in_bracket_elements {
-                    mfa = stack!(mfa, element);
+            let mut stacked_mfas = unit!();
+            let mut apposed_mfas = unit!();
+
+            for element in in_bracket_elements {
+                stacked_mfas = stack!(stacked_mfas, element.clone());
+
+                if apposed_mfas == unit!() {
+                    apposed_mfas = height_cost!(element);
+                } else {
+                    apposed_mfas = apposition!(apposed_mfas, text!(" "), height_cost!(element));
                 }
+            }
 
-                mfa
-            } else {
-                let mut stack_mfa = unit!();
-                let mut apposition_mfa = unit!();
-
-                for element in in_bracket_elements {
-                    stack_mfa = stack!(stack_mfa, element.clone());
-
-                    if apposition_mfa == unit!() {
-                        apposition_mfa = element;
-                    } else {
-                        apposition_mfa = apposition!(apposition_mfa, text!(" "), element);
-                    }
-                }
-
-                choice!(stack_mfa, apposition_mfa)
-            };
-
-            choice!(
+            let stack_style = apposition!(
+                before_bracket.clone(),
                 stack!(
-                    before_bracket.clone(),
-                    apposition!(text!("    "), mfa.clone()),
-                    after_bracket.clone()
+                    left_bracket.clone(),
+                    apposition!(text!(" "), stacked_mfas),
+                    right_bracket.clone(),
                 ),
-                apposition!(before_bracket, mfa, after_bracket)
-            )
+                after_bracket.clone(),
+            );
+
+            if comment_or_empty_line_in_bracket {
+                stack_style
+            } else {
+                let apposition_style = apposition!(
+                    before_bracket,
+                    left_bracket,
+                    apposed_mfas,
+                    right_bracket,
+                    after_bracket
+                );
+
+                choice!(stack_style, apposition_style)
+            }
+        }
+
+        KindId::EXPORT_MFA => {
+            let mut result = unit!();
+            let mut comments = unit!();
+
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                match kind_id(child) {
+                    KindId::MULTIPLE_NEWLINES => {}
+
+                    KindId::COMMENT | KindId::LINE_COMMENT => {
+                        comments = stack!(comments, node_to_layout_expr(child, source_code))
+                    }
+
+                    KindId::ATOM | KindId::SLASH | KindId::INTEGER => {
+                        result = apposition!(
+                            result,
+                            if comments == unit!() {
+                                unit!()
+                            } else {
+                                text!(" ")
+                            },
+                            stack!(comments, node_to_layout_expr(child, source_code))
+                        );
+
+                        comments = unit!();
+                    }
+
+                    _ => panic!("{:?} should not have {:?}", node, child),
+                }
+            }
+
+            result
         }
 
         KindId::FUNCTION => {
@@ -552,8 +590,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             stack!(result, line)
         }
 
-        KindId::EXPORT_MFA
-        | KindId::PAT_ARGUMENT_LIST
+        KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
         | KindId::EXPR
         | KindId::FUNCTION_CALL

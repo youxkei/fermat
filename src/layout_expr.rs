@@ -70,7 +70,7 @@ impl<'a> LayoutExpr<'a> {
 
             LayoutExpr::Apposition(lhs, rhs) => {
                 let (lhs_text, lhs_width, indented) = lhs.format(indent, indented);
-                let (rhs_text, rhs_width, contents_indent) = rhs.format(lhs_width, indented);
+                let (rhs_text, rhs_width, indented) = rhs.format(lhs_width, indented);
                 (format!("{}{}", lhs_text, rhs_text), rhs_width, indented)
             }
 
@@ -295,5 +295,9 @@ fn choice_test() {
 }
 
 pub macro height_cost($x:expr) {
-    std::rc::Rc::new($crate::layout_expr::LayoutExpr::HeightCost($x))
+    match &*$x {
+        LayoutExpr::Unit => unit!(),
+
+        _ => std::rc::Rc::new($crate::layout_expr::LayoutExpr::HeightCost($x)),
+    }
 }
