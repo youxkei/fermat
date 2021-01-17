@@ -516,11 +516,11 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_newline"
+      "name": "multiple_newlines"
     },
     {
       "type": "SYMBOL",
-      "name": "multiple_newlines"
+      "name": "_newline"
     },
     {
       "type": "SYMBOL",
