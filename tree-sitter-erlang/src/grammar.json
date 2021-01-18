@@ -85,6 +85,19 @@
           "value": "("
         },
         {
+          "type": "SYMBOL",
+          "name": "export_attribute_mfa_list"
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "export_attribute_mfa_list": {
+      "type": "SEQ",
+      "members": [
+        {
           "type": "STRING",
           "value": "["
         },
@@ -92,29 +105,8 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "export_mfa"
-                },
-                {
-                  "type": "REPEAT",
-                  "content": {
-                    "type": "SEQ",
-                    "members": [
-                      {
-                        "type": "STRING",
-                        "value": ","
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "export_mfa"
-                      }
-                    ]
-                  }
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "export_attribute_mfas"
             },
             {
               "type": "BLANK"
@@ -124,14 +116,35 @@
         {
           "type": "STRING",
           "value": "]"
-        },
-        {
-          "type": "STRING",
-          "value": ")"
         }
       ]
     },
-    "export_mfa": {
+    "export_attribute_mfas": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "export_attribute_mfa"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "SYMBOL",
+                "name": "export_attribute_mfa"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "export_attribute_mfa": {
       "type": "SEQ",
       "members": [
         {

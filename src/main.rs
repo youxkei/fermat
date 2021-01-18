@@ -162,6 +162,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             result
         }
 
+        /*
         KindId::EXPORT_ATTRIBUTE => {
             let mut before_bracket = unit!();
             let mut in_bracket_elements = vec![];
@@ -342,8 +343,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                 choice!(stack_style, apposition_style)
             }
         }
-
-        KindId::EXPORT_MFA => {
+        KindId::EXPORT_ATTRIBUTE_MFA => {
             let mut result = unit!();
             let mut comments = unit!();
 
@@ -376,7 +376,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
             result
         }
-
+        */
         KindId::FUNCTION => {
             let mut result = unit!();
             let mut line = unit!();
@@ -606,7 +606,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             stack!(result, line)
         }
 
-        KindId::PAT_ARGUMENT_LIST
+        KindId::EXPORT_ATTRIBUTE
+        | KindId::EXPORT_ATTRIBUTE_MFA
+        | KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
         | KindId::EXPR
         | KindId::FUNCTION_CALL
@@ -614,13 +616,178 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::EXPR_MAX
         | KindId::ARGUMENT_LIST => {
             let mut result = unit!();
+            let mut comments = unit!();
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
-                result = apposition!(result, node_to_layout_expr(child, source_code));
+                match kind_id(child) {
+                    KindId::MULTIPLE_NEWLINES => {}
+
+                    KindId::COMMENT | KindId::LINE_COMMENT => {
+                        comments = stack!(comments, node_to_layout_expr(child, source_code))
+                    }
+
+                    _ => {
+                        result = apposition!(
+                            result,
+                            if comments == unit!() {
+                                unit!()
+                            } else {
+                                text!(" ")
+                            },
+                            stack!(comments, node_to_layout_expr(child, source_code))
+                        );
+
+                        comments = unit!();
+                    }
+                }
             }
 
             result
+        }
+
+        // comma separated elements
+        KindId::EXPORT_ATTRIBUTE_MFAS => {
+            let mut elements = vec![];
+            let mut element = unit!();
+            let mut comments = unit!();
+            let mut comment_or_empty_line = false;
+
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                match kind_id(child) {
+                    KindId::MULTIPLE_NEWLINES | KindId::LINE_COMMENT => {
+                        if comments != unit!() {
+                            element = apposition!(element, text!(" "), comments);
+                        }
+                        comments = unit!();
+
+                        elements.push(element);
+                        element = unit!();
+
+                        elements.push(node_to_layout_expr(child, source_code));
+
+                        comment_or_empty_line = true;
+                    }
+
+                    KindId::COMMENT => {
+                        comments = stack!(comments, node_to_layout_expr(child, source_code));
+
+                        comment_or_empty_line = true;
+                    }
+
+                    KindId::COMMA => {
+                        element = apposition!(element, node_to_layout_expr(child, source_code));
+                    }
+
+                    _ => {
+                        if comments != unit!() {
+                            element = apposition!(element, text!(" "), comments);
+                        }
+                        comments = unit!();
+
+                        elements.push(element);
+                        element = node_to_layout_expr(child, source_code);
+                    }
+                }
+            }
+
+            elements.push(element);
+
+            let mut stacked_elements = unit!();
+            let mut apposed_elements = unit!();
+
+            for element in elements {
+                stacked_elements = stack!(stacked_elements, element.clone());
+
+                if apposed_elements == unit!() {
+                    apposed_elements = height_cost!(element);
+                } else {
+                    apposed_elements =
+                        apposition!(apposed_elements, text!(" "), height_cost!(element));
+                }
+            }
+
+            if comment_or_empty_line {
+                stacked_elements
+            } else {
+                choice!(stacked_elements, apposed_elements)
+            }
+        }
+
+        // list
+        KindId::EXPORT_ATTRIBUTE_MFA_LIST => {
+            let mut comments = unit!();
+            let mut open = unit!();
+            let mut close = unit!();
+            let mut body = unit!();
+            let mut line = unit!();
+
+            let mut after_open = false;
+
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                match kind_id(child) {
+                    KindId::MULTIPLE_NEWLINES => {
+                        if after_open {
+                            after_open = false;
+                            continue;
+                        }
+
+                        body = stack!(body, node_to_layout_expr(child, source_code));
+                    }
+
+                    KindId::COMMENT => {
+                        comments = stack!(comments, node_to_layout_expr(child, source_code));
+                    }
+
+                    KindId::LINE_COMMENT => {
+                        if comments != unit!() {
+                            line = apposition!(line, text!(" "), comments);
+                        }
+                        comments = unit!();
+
+                        body = stack!(body, line, node_to_layout_expr(child, source_code));
+                        line = unit!();
+                    }
+
+                    KindId::LBRACK => {
+                        open = node_to_layout_expr(child, source_code);
+                        after_open = true;
+                    }
+
+                    KindId::RBRACK => {
+                        if comments != unit!() {
+                            line = apposition!(line, text!(" "), comments);
+                        }
+                        comments = unit!();
+
+                        body = stack!(body, line);
+                        line = unit!();
+
+                        close = node_to_layout_expr(child, source_code);
+                    }
+
+                    _ => {
+                        if comments != unit!() {
+                            line = apposition!(line, text!(" "), comments);
+                        }
+                        comments = unit!();
+
+                        body = stack!(body, line);
+                        line = node_to_layout_expr(child, source_code);
+                    }
+                }
+            }
+
+            choice!(
+                stack!(
+                    open.clone(),
+                    apposition!(text!(" "), body.clone()),
+                    close.clone()
+                ),
+                apposition!(open, height_cost!(body), close),
+            )
         }
 
         KindId::DASH_GT

@@ -24,18 +24,18 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
-      "required": false,
+      "multiple": false,
+      "required": true,
       "types": [
         {
-          "type": "export_mfa",
+          "type": "export_attribute_mfa_list",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "export_mfa",
+    "type": "export_attribute_mfa",
     "named": true,
     "fields": {},
     "children": {
@@ -48,6 +48,36 @@
         },
         {
           "type": "integer",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "export_attribute_mfa_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "export_attribute_mfas",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "export_attribute_mfas",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "export_attribute_mfa",
           "named": true
         }
       ]
