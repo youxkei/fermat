@@ -95,7 +95,7 @@ module.exports = grammar({
 
     clause_guard: ($) => seq("when" /*, $.guard*/),
 
-    exprs: ($) => repeatComma1($.expr),
+    exprs: ($) => seq(repeatComma1($.expr), optional(",")),
 
     expr: ($) =>
       choice(

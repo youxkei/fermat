@@ -214,6 +214,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::STRINGS => {
             let mut elements = vec![];
             let mut element = unit!();
+            let mut separator = unit!();
             let mut comments = unit!();
             let mut apposable = false;
             let mut should_stack = false;
@@ -228,6 +229,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     }
 
                     KindId::COMMA | KindId::SEMICOLON | KindId::PERIOD => {
+                        separator = node_to_layout_expr(child, source_code);
+                        /*
                         if apposable {
                             if comments.is_unit() {
                                 element =
@@ -248,20 +251,22 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         }
 
                         apposable = true;
+                        */
                     }
 
                     kind_id => {
                         if apposable {
                             if !comments.is_unit() {
-                                element = apposition!(element, text!(" "), comments);
+                                element = apposition!(element, separator, text!(" "), comments);
                             }
 
                             elements.push(element);
                         } else {
-                            elements.push(element);
+                            elements.push(apposition!(element, separator));
                             elements.push(comments);
                         }
                         comments = unit!();
+                        separator = unit!();
 
                         element = node_to_layout_expr(child, source_code);
 
