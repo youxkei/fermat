@@ -479,65 +479,7 @@ mod parse_test {
     }
 
     #[test]
-    fn form() {
-        assert_parse!(
-            "remove newlines",
-            indoc! {r#"
-                -module(foo)
-
-                .
-            "#},
-            indoc! {r#"
-                -module(foo).
-            "#},
-        );
-
-        assert_parse!(
-            "remove empty lines",
-            indoc! {r#"
-                -module(foo)
-
-                %% line comment
-
-                .
-            "#},
-            indoc! {r#"
-                -module(foo)
-                %% line comment
-                .
-            "#},
-        );
-
-        assert_parse!(
-            "there can be only one comment after attribute",
-            indoc! {r#"
-                -module(foo) % comment 1
-                             % comment 2
-                .
-            "#},
-            indoc! {r#"
-                -module(foo) % comment 1
-                % comment 2
-                .
-            "#},
-        );
-
-        assert_parse!(
-            "there can be no line comments after attribute",
-            indoc! {r#"
-                -module(foo) %% line comment
-                .
-            "#},
-            indoc! {r#"
-                -module(foo)
-                %% line comment
-                .
-            "#},
-        );
-    }
-
-    #[test]
-    fn module_attribute() {
+    fn elements_that_should_be_apposed() {
         assert_parse!(
             "remove empty lines",
             indoc! {r#"
@@ -549,9 +491,7 @@ mod parse_test {
 
                 foo
 
-                )
-
-                .
+                ).
             "#},
             indoc! {r#"
                 -module(foo).
@@ -590,263 +530,101 @@ mod parse_test {
     }
 
     #[test]
-    fn export_attribute() {
-        /* outside brackets */
-        {
-            assert_parse!(
-                "remove empty lines",
-                indoc! {r#"
-                    -
+    fn elements_that_should_be_stacked_or_apposed() {
+        assert_parse!(
+            "keep empty lines",
+            indoc! {r#"
+                -export([
+                         foo/1,
 
-                    export
+                         bar/2,
 
-                    (
+                         foobar/3,
 
-                    [main/0]
+                         baz/4
+                        ])
+            "#},
+        );
 
-                    ).
-                "#},
-                indoc! {r#"
-                    -export([
-                             main/0
-                            ]).
-                "#},
-            );
+        assert_parse!(
+            "comments indentation",
+            indoc! {r#"
+                -export([
+                         foo/1, % comment 1
+                                % comment 2
+                         bar/2, % comment 3
+                                % comment 4
+                         foobar/3, % comment 5
+                                   % comment 6
+                         baz/4 % comment 7
+                               % comment 8
+                        ])
+            "#},
+        );
 
-            assert_parse!(
-                "comment indentation",
-                indoc! {r#"
-                    - % comment 1
-                    % comment 2
-                    export % comment 3
-                    % comment 4
-                    ( % comment 5
-                    % comment 6
-                    [main/0] % comment 7
-                    % comment 8
-                    ).
-                "#},
-                indoc! {r#"
-                    - % comment 1
-                      % comment 2
-                      export % comment 3
-                             % comment 4
-                             ( % comment 5
-                               % comment 6
-                               [
-                                main/0
-                               ] % comment 7
-                                 % comment 8
-                                 ).
-                "#},
-            );
-
-            assert_parse!(
-                "line comments behave like comments",
-                indoc! {r#"
-                    - %% line comment 1
-                    %% line comment 2
-                    export %% line comment 3
-                    %% line comment 4
-                    ( %% line comment 5
-                    %% line comment 6
-                    [main/0] %% line comment 7
-                    %% line comment 8
-                    ).
-                "#},
-                indoc! {r#"
-                    - %% line comment 1
-                      %% line comment 2
-                      export %% line comment 3
-                             %% line comment 4
-                             ( %% line comment 5
-                               %% line comment 6
-                               [
-                                main/0
-                               ] %% line comment 7
-                                 %% line comment 8
-                                 ).
-                "#},
-            );
-        }
-        /* in brackets */
-        {
-            assert_parse!(
-                "keep empty lines",
-                indoc! {r#"
-                    -export([
-
-                             foo/1,
-
-                             bar/2,
-
-                             foobar/3,
-
-                             baz/4
-
-                            ])
-                "#},
-                indoc! {r#"
-                    -export([
-                             foo/1,
-
-                             bar/2,
-
-                             foobar/3,
-
-                             baz/4
-                            ])
-                "#},
-            );
-
-            assert_parse!(
-                "there can be only one comment after MFA",
-                indoc! {r#"
-                    -export([
-                             foo/1, % comment 1
-                                    % comment 2
-                             bar/2, % comment 3
-                                    % comment 4
-                             foobar/3, % comment 5
-                                       % comment 6
-                             baz/4 % comment 7
-                                   % comment 8
-                            ])
-                "#},
-                indoc! {r#"
-                    -export([
-                             foo/1, % comment 1
-                             % comment 2
-                             bar/2, % comment 3
-                             % comment 4
-                             foobar/3, % comment 5
-                             % comment 6
-                             baz/4 % comment 7
-                             % comment 8
-                            ])
-                "#},
-            );
-
-            assert_parse!(
-                "there can be no line comment after MFA",
-                indoc! {r#"
-                    -export([
-                             foo/1, %% line comment 1
-                             bar/2, %% line comment 2
-                             foobar/3, %% line comment 3
-                             baz/4 %% line comment 4
-                            ])
-                "#},
-                indoc! {r#"
-                    -export([
-                             foo/1,
-                             %% line comment 1
-                             bar/2,
-                             %% line comment 2
-                             foobar/3,
-                             %% line comment 3
-                             baz/4
-                             %% line comment 4
-                            ])
-                "#},
-            );
-        }
+        assert_parse!(
+            "there can be no line comment after an element",
+            indoc! {r#"
+                -export([
+                         foo/1, %% line comment 1
+                         bar/2, %% line comment 2
+                         foobar/3, %% line comment 3
+                         baz/4 %% line comment 4
+                        ])
+            "#},
+            indoc! {r#"
+                -export([
+                         foo/1,
+                         %% line comment 1
+                         bar/2,
+                         %% line comment 2
+                         foobar/3,
+                         %% line comment 3
+                         baz/4
+                         %% line comment 4
+                        ])
+            "#},
+        );
     }
 
     #[test]
-    fn export_mfa() {
+    fn block() {
         assert_parse!(
             "remove empty lines",
             indoc! {r#"
                 -export([
-                         main
 
-                         /
+                         main/0
 
-                         0
-                        ])
+                         ]).
             "#},
             indoc! {r#"
                 -export([
                          main/0
-                        ])
+                        ]).
             "#},
         );
 
         assert_parse!(
-            "comment indentation",
+            "comments indentation",
             indoc! {r#"
                 -export([
-                         main % comment 1
-                              % comment 2
-                         / % comment 3
-                           % comment 4
-                         0
-                        ])
-            "#},
-            indoc! {r#"
-                -export([
-                         main % comment 1
-                              % comment 2
-                              / % comment 3
-                                % comment 4
-                                0
-                        ])
-            "#},
-        );
-    }
-
-    #[test]
-    fn function() {
-        assert_parse!(
-            "keep empty lines",
-            indoc! {r#"
-                f() ->
-                    foo;
-
-                %% line comment
-
-                f() ->
-                    bar.
-            "#},
-        );
-
-        assert_parse!(
-            "there can be only one comment after ';'",
-            indoc! {r#"
-                f() ->
-                    foo; % comment 1
+                         % comment 1
                          % comment 2
-
-                f() ->
-                    bar.
-            "#},
-            indoc! {r#"
-                f() ->
-                    foo; % comment 1
-                % comment 2
-
-                f() ->
-                    bar.
+                         main/0 % comment 3
+                                % comment 4
+                        ]).
             "#},
         );
 
         assert_parse!(
-            "there can be no line comments after ';'",
+            "line comments indentation",
             indoc! {r#"
-                f() ->
-                    foo; %% line comment
-
-                f() ->
-                    bar.
-            "#},
-            indoc! {r#"
-                f() ->
-                    foo;
-                %% line comment
-
-                f() ->
-                    bar.
+                -export([
+                         %% comment 1
+                         main/0
+                         %% comment 2
+                        ]).
             "#},
         );
     }
@@ -862,11 +640,11 @@ mod parse_test {
 
                     ()
 
-                    -> io:format("Hello, world!").
+                    -> ok.
                 "#},
                 indoc! {r#"
                     main() ->
-                        io:format("Hello, world!").
+                        ok.
                 "#},
             );
 
@@ -877,7 +655,7 @@ mod parse_test {
                     % comment 2
                     () % comment 3
                     % comment 4
-                    -> io:format("Hello, world!").
+                    -> ok.
                 "#},
                 indoc! {r#"
                     main % comment 1
@@ -885,7 +663,7 @@ mod parse_test {
                          () % comment 3
                             % comment 4
                             ->
-                        io:format("Hello, world!").
+                        ok.
                 "#},
             );
 
@@ -896,7 +674,7 @@ mod parse_test {
                     %% line comment 2
                     () %% line comment 3
                     %% line comment 4
-                    -> io:format("Hello, world!").
+                    -> ok.
                 "#},
                 indoc! {r#"
                     main %% line comment 1
@@ -904,7 +682,7 @@ mod parse_test {
                          () %% line comment 3
                             %% line comment 4
                             ->
-                        io:format("Hello, world!").
+                        ok.
                 "#},
             );
         }
@@ -918,12 +696,12 @@ mod parse_test {
 
                         %% line comment
 
-                        io:format("Hello, world!").
+                        ok.
                 "#},
                 indoc! {r#"
                     main() ->
                         %% line comment
-                        io:format("Hello, world!").
+                        ok.
                 "#},
             );
 
@@ -932,7 +710,7 @@ mod parse_test {
                 indoc! {r#"
                     main() -> % comment 1
                               % comment 2
-                        io:format("Hello, world!").
+                        ok.
                 "#},
             );
 
@@ -940,148 +718,15 @@ mod parse_test {
                 "there can be no line comments after '->'",
                 indoc! {r#"
                     main() -> %% comment
-                        io:format("Hello, world!").
+                        ok.
                 "#},
                 indoc! {r#"
                     main() ->
                         %% comment
-                        io:format("Hello, world!").
+                        ok.
                 "#},
             );
         }
-
-        /* in body */
-        {
-            assert_parse!(
-                "comment",
-                indoc! {r#"
-                    main() ->
-                        io:format("Hello, world!") % comment
-                        .
-                "#},
-                indoc! {r#"
-                    main() ->
-                        io:format("Hello, world!") % comment
-                    .
-                "#},
-            );
-        }
-    }
-
-    #[test]
-    fn exprs() {
-        assert_parse!(
-            "keep empty lines",
-            indoc! {r#"
-                f() ->
-                    foo,
-
-                    %% line comment
-
-                    bar.
-            "#},
-        );
-
-        assert_parse!(
-            "there can be only one comment after ','",
-            indoc! {r#"
-                f() ->
-                    foo, % comment 1
-                         % comment 2
-
-                    bar.
-            "#},
-            indoc! {r#"
-                f() ->
-                    foo, % comment 1
-                    % comment 2
-
-                    bar.
-            "#},
-        );
-
-        assert_parse!(
-            "there can be no line comments after ','",
-            indoc! {r#"
-                f() ->
-                    foo, %% line comment
-
-                    bar.
-            "#},
-            indoc! {r#"
-                f() ->
-                    foo,
-                    %% line comment
-
-                    bar.
-            "#},
-        );
-    }
-
-    #[test]
-    fn strings() {
-        assert_parse!(
-            "always stacks",
-            indoc! {r#"
-                f() ->
-                    "foo" "bar".
-            "#},
-            indoc! {r#"
-                f() ->
-                    "foo"
-                    "bar".
-            "#},
-        );
-
-        assert_parse!(
-            "remove empty lines",
-            indoc! {r#"
-                f() ->
-                    "foo"
-
-                    %% line comment
-
-                    "bar".
-            "#},
-            indoc! {r#"
-                f() ->
-                    "foo"
-                    %% line comment
-                    "bar".
-            "#},
-        );
-
-        assert_parse!(
-            "there can be only one comment after string",
-            indoc! {r#"
-                f() ->
-                    "foo" % comment 1
-                          % comment 2
-                    "bar".
-            "#},
-            indoc! {r#"
-                f() ->
-                    "foo" % comment 1
-                    % comment 2
-                    "bar".
-            "#},
-        );
-
-        assert_parse!(
-            "there can be no line comments after ','",
-            indoc! {r#"
-                f() ->
-                    "foo" %% line comment
-
-                    "bar".
-            "#},
-            indoc! {r#"
-                f() ->
-                    "foo"
-                    %% line comment
-                    "bar".
-            "#},
-        );
     }
 }
 
@@ -1103,7 +748,7 @@ mod format_test {
     }
 
     #[test]
-    fn export_attribute() {
+    fn elements_that_should_be_stacked_or_apposed() {
         assert_format!(
             "apposed",
             Config {
@@ -1194,6 +839,71 @@ mod format_test {
 
                          baz/4
                         ]).
+            "#},
+        );
+    }
+
+    #[test]
+    fn block_with_one_space_with_trailing_newline() {
+        assert_format!(
+            "apposed",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([foo/1]).
+            "#},
+        );
+
+        assert_format!(
+            "stacked due to right margin",
+            Config {
+                right_margin: 14,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         foo/1
+                        ]).
+            "#},
+        );
+    }
+
+    #[test]
+    fn block_with_two_space_without_trailing_newline() {
+        assert_format!(
+            "apposed",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                f() ->
+                    %% comment
+                    io:format("foo").
+            "#},
+        );
+
+        assert_format!(
+            "stacked due to right margin",
+            Config {
+                right_margin: 14,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                f() ->
+                    %% comment
+                    io:format(
+                      "foo").
             "#},
         );
     }
