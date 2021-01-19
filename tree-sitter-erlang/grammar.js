@@ -69,21 +69,27 @@ module.exports = grammar({
     module_attribute: ($) => seq("-", "module", "(", $.atom, ")"),
 
     export_attribute: ($) =>
-      seq("-", "export", "(", $.export_attribute_mfa_list, ")"),
+      seq("-", "export", "(", $.export_attribute_block, ")"),
 
-    export_attribute_mfa_list: ($) =>
+    export_attribute_block: ($) =>
       seq("[", optional($.export_attribute_mfas), "]"),
 
     export_attribute_mfas: ($) => repeatComma1($.export_attribute_mfa),
 
     export_attribute_mfa: ($) => seq($.atom, "/", $.integer),
 
-    _function_or_macro: ($) => choice($["function"] /*, $.macro*/),
+    _function_or_macro: ($) => choice($.function_clauses /*, $.macro*/),
 
-    ["function"]: ($) => repeatSep1($.function_clause, ";"),
+    function_clauses: ($) => repeatSep1($.function_clause, ";"),
 
     function_clause: ($) =>
-      seq($.atom, $.pat_argument_list, optional($.clause_guard), "->", $.exprs),
+      seq(
+        $.atom,
+        $.pat_argument_list,
+        optional($.clause_guard),
+        "->",
+        alias($.exprs, "function_clause_exprs")
+      ),
 
     pat_argument_list: ($) => seq("(", /*repeatComma($.pat_expr),*/ ")"),
 
@@ -96,12 +102,15 @@ module.exports = grammar({
         //$.binary_expr,
         //$.unary_expr,
         //$.map_expr,
-        $.function_call,
+        $.function_call_block,
         //$.record_expr,
         $.expr_remote
       ),
 
-    function_call: ($) => seq($.expr_remote, $.argument_list),
+    function_call_block: ($) =>
+      seq($.function_call_open, optional($.exprs), ")"),
+
+    function_call_open: ($) => seq($.expr_remote, "("),
 
     expr_remote: ($) =>
       choice(
@@ -111,7 +120,7 @@ module.exports = grammar({
 
     expr_max: ($) => choice($._atomic),
 
-    argument_list: ($) => seq("(", optional($.exprs), ")"),
+    //argument_list: ($) => seq("(", optional($.exprs), ")"),
 
     //pat_expr: ($) =>
     //  choice(

@@ -86,7 +86,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "export_attribute_mfa_list"
+          "name": "export_attribute_block"
         },
         {
           "type": "STRING",
@@ -94,7 +94,7 @@
         }
       ]
     },
-    "export_attribute_mfa_list": {
+    "export_attribute_block": {
       "type": "SEQ",
       "members": [
         {
@@ -166,11 +166,11 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "function"
+          "name": "function_clauses"
         }
       ]
     },
-    "function": {
+    "function_clauses": {
       "type": "SEQ",
       "members": [
         {
@@ -223,8 +223,13 @@
           "value": "->"
         },
         {
-          "type": "SYMBOL",
-          "name": "exprs"
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "exprs"
+          },
+          "named": false,
+          "value": "function_clause_exprs"
         }
       ]
     },
@@ -280,7 +285,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "function_call"
+          "name": "function_call_block"
         },
         {
           "type": "SYMBOL",
@@ -288,7 +293,32 @@
         }
       ]
     },
-    "function_call": {
+    "function_call_block": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "function_call_open"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "exprs"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": ")"
+        }
+      ]
+    },
+    "function_call_open": {
       "type": "SEQ",
       "members": [
         {
@@ -296,8 +326,8 @@
           "name": "expr_remote"
         },
         {
-          "type": "SYMBOL",
-          "name": "argument_list"
+          "type": "STRING",
+          "value": "("
         }
       ]
     },
@@ -337,31 +367,6 @@
         {
           "type": "SYMBOL",
           "name": "_atomic"
-        }
-      ]
-    },
-    "argument_list": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "("
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "exprs"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "STRING",
-          "value": ")"
         }
       ]
     },

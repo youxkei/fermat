@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use tree_sitter::{Language, Node, Parser};
 
-use layout_expr::{apposition, choice, height_cost, stack, text, unit, LayoutExpr};
+use layout_expr::{apposition, choice, multi_line_cost, stack, text, unit, LayoutExpr};
 use layout_fun::{Config, LayoutFun};
 
 extern "C" {
@@ -19,11 +19,17 @@ extern "C" {
 
 tree_sitter_id::define_kind_id! {}
 
+enum BlockStyle {
+    OneSpaceWithTrailingNewline,
+    OneSpaceWithoutTrailingNewline,
+    TweSpaceWithoutTrailingNewline,
+}
+
 fn main() {
     let source_code = fs::read_to_string("hello.erl").unwrap();
 
     let config = Config {
-        right_margin: 80,
+        right_margin: 49,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
@@ -59,390 +65,30 @@ fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
 
 fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
     match kind_id(node) {
-        KindId::SOURCE_FILE => {
-            let mut result = unit!();
-
-            let mut cursor = node.walk();
-
-            for child in node.children(&mut cursor) {
-                result = stack!(result, node_to_layout_expr(child, source_code))
-            }
-
-            result
-        }
-
-        KindId::FORM => {
-            let mut result = unit!();
-            let mut after_attribute_or_function = false;
-
-            let mut cursor = node.walk();
-
-            for child in node.children(&mut cursor) {
-                match kind_id(child) {
-                    KindId::MULTIPLE_NEWLINES => {}
-
-                    KindId::COMMENT => {
-                        result = stack!(
-                            apposition!(
-                                result,
-                                if after_attribute_or_function {
-                                    text!(" ")
-                                } else {
-                                    unit!()
-                                },
-                                node_to_layout_expr(child, source_code)
-                            ),
-                            text!("")
-                        );
-
-                        after_attribute_or_function = false;
-                    }
-
-                    KindId::LINE_COMMENT => {
-                        result = stack!(result, node_to_layout_expr(child, source_code), text!(""));
-
-                        after_attribute_or_function = false;
-                    }
-
-                    KindId::MODULE_ATTRIBUTE | KindId::EXPORT_ATTRIBUTE | KindId::FUNCTION => {
-                        result = node_to_layout_expr(child, source_code);
-
-                        after_attribute_or_function = true;
-                    }
-
-                    KindId::DOT => {
-                        result = apposition!(result, node_to_layout_expr(child, source_code));
-
-                        after_attribute_or_function = false;
-                    }
-
-                    _ => panic!("{:?} should not have {:?}", node, child),
-                }
-            }
-
-            result
-        }
-
-        KindId::MODULE_ATTRIBUTE => {
-            let mut result = unit!();
-            let mut comments = unit!();
-
-            let mut cursor = node.walk();
-
-            for child in node.children(&mut cursor) {
-                match kind_id(child) {
-                    KindId::MULTIPLE_NEWLINES => {}
-
-                    KindId::COMMENT | KindId::LINE_COMMENT => {
-                        comments = stack!(comments, node_to_layout_expr(child, source_code))
-                    }
-
-                    KindId::DASH
-                    | KindId::MODULE
-                    | KindId::LPAREN
-                    | KindId::ATOM
-                    | KindId::RPAREN => {
-                        result = apposition!(
-                            result,
-                            if comments == unit!() {
-                                unit!()
-                            } else {
-                                text!(" ")
-                            },
-                            stack!(comments, node_to_layout_expr(child, source_code))
-                        );
-
-                        comments = unit!();
-                    }
-
-                    _ => panic!("{:?} should not have {:?}", node, child),
-                }
-            }
-
-            result
-        }
-
-        /*
-        KindId::EXPORT_ATTRIBUTE => {
-            let mut before_bracket = unit!();
-            let mut in_bracket_elements = vec![];
-            let mut after_bracket = unit!();
-
-            let mut comments = unit!();
-            let mut element = unit!();
-            let mut comment_or_empty_line_in_bracket = false;
-
-            enum Phase {
-                BeforeBracket,
-                InBracket,
-                AfterBracket,
-            }
-            let mut phase = Phase::BeforeBracket;
-
-            let mut cursor = node.walk();
-            for child in node.children(&mut cursor) {
-                match phase {
-                    Phase::BeforeBracket => match kind_id(child) {
-                        KindId::MULTIPLE_NEWLINES => {}
-
-                        KindId::COMMENT | KindId::LINE_COMMENT => {
-                            comments = stack!(comments, node_to_layout_expr(child, source_code))
-                        }
-
-                        KindId::DASH | KindId::EXPORT | KindId::LPAREN => {
-                            before_bracket = apposition!(
-                                before_bracket,
-                                if comments == unit!() {
-                                    unit!()
-                                } else {
-                                    text!(" ")
-                                },
-                                stack!(comments, node_to_layout_expr(child, source_code))
-                            );
-
-                            comments = unit!();
-                        }
-
-                        KindId::LBRACK => {
-                            if comments != unit!() {
-                                before_bracket = apposition!(
-                                    before_bracket,
-                                    text!(" "),
-                                    stack!(comments, text!(""))
-                                );
-                            }
-
-                            comments = unit!();
-
-                            phase = Phase::InBracket;
-                        }
-
-                        _ => panic!("{:?} should not have {:?}", node, child),
-                    },
-
-                    Phase::InBracket => match kind_id(child) {
-                        KindId::COMMA => {
-                            element = apposition!(element, node_to_layout_expr(child, source_code));
-                        }
-
-                        KindId::COMMENT => {
-                            if element == unit!() {
-                                element = node_to_layout_expr(child, source_code);
-                            } else {
-                                element = apposition!(
-                                    element,
-                                    text!(" "),
-                                    node_to_layout_expr(child, source_code)
-                                );
-                            }
-
-                            in_bracket_elements.push(element);
-                            element = unit!();
-
-                            comment_or_empty_line_in_bracket = true;
-                        }
-
-                        KindId::MULTIPLE_NEWLINES => {
-                            if in_bracket_elements.is_empty() {
-                                continue;
-                            }
-
-                            in_bracket_elements.push(element);
-                            element = node_to_layout_expr(child, source_code);
-
-                            comment_or_empty_line_in_bracket = true;
-                        }
-
-                        KindId::LINE_COMMENT => {
-                            in_bracket_elements.push(element);
-                            element = node_to_layout_expr(child, source_code);
-
-                            comment_or_empty_line_in_bracket = true;
-                        }
-
-                        KindId::EXPORT_MFA => {
-                            in_bracket_elements.push(element);
-                            element = node_to_layout_expr(child, source_code);
-                        }
-
-                        KindId::RBRACK => {
-                            if element != text!("") {
-                                in_bracket_elements.push(element);
-                            }
-                            element = unit!();
-
-                            phase = Phase::AfterBracket;
-                        }
-
-                        _ => panic!("{:?} should not have {:?}", node, child),
-                    },
-
-                    Phase::AfterBracket => match kind_id(child) {
-                        KindId::MULTIPLE_NEWLINES => {}
-
-                        KindId::COMMENT | KindId::LINE_COMMENT => {
-                            comments = stack!(comments, node_to_layout_expr(child, source_code))
-                        }
-
-                        KindId::RPAREN => {
-                            after_bracket = apposition!(
-                                after_bracket,
-                                if comments == unit!() {
-                                    unit!()
-                                } else {
-                                    text!(" ")
-                                },
-                                stack!(comments, node_to_layout_expr(child, source_code))
-                            );
-
-                            comments = unit!();
-                        }
-
-                        _ => panic!("{:?} should not have {:?}", node, child),
-                    },
-                }
-            }
-
-            let left_bracket = text!("[");
-            let right_bracket = text!("]");
-
-            let mut stacked_mfas = unit!();
-            let mut apposed_mfas = unit!();
-
-            for element in in_bracket_elements {
-                stacked_mfas = stack!(stacked_mfas, element.clone());
-
-                if apposed_mfas == unit!() {
-                    apposed_mfas = height_cost!(element);
-                } else {
-                    apposed_mfas = apposition!(apposed_mfas, text!(" "), height_cost!(element));
-                }
-            }
-
-            let stack_style = apposition!(
-                before_bracket.clone(),
-                stack!(
-                    left_bracket.clone(),
-                    apposition!(text!(" "), stacked_mfas),
-                    right_bracket.clone(),
-                ),
-                after_bracket.clone(),
-            );
-
-            if comment_or_empty_line_in_bracket {
-                stack_style
-            } else {
-                let apposition_style = apposition!(
-                    before_bracket,
-                    left_bracket,
-                    apposed_mfas,
-                    right_bracket,
-                    after_bracket
-                );
-
-                choice!(stack_style, apposition_style)
-            }
-        }
-        KindId::EXPORT_ATTRIBUTE_MFA => {
-            let mut result = unit!();
-            let mut comments = unit!();
-
-            let mut cursor = node.walk();
-            for child in node.children(&mut cursor) {
-                match kind_id(child) {
-                    KindId::MULTIPLE_NEWLINES => {}
-
-                    KindId::COMMENT | KindId::LINE_COMMENT => {
-                        comments = stack!(comments, node_to_layout_expr(child, source_code))
-                    }
-
-                    KindId::ATOM | KindId::SLASH | KindId::INTEGER => {
-                        result = apposition!(
-                            result,
-                            if comments == unit!() {
-                                unit!()
-                            } else {
-                                text!(" ")
-                            },
-                            stack!(comments, node_to_layout_expr(child, source_code))
-                        );
-
-                        comments = unit!();
-                    }
-
-                    _ => panic!("{:?} should not have {:?}", node, child),
-                }
-            }
-
-            result
-        }
-        */
-        KindId::FUNCTION => {
-            let mut result = unit!();
-            let mut line = unit!();
-            let mut after_semi = false;
-
-            let mut cursor = node.walk();
-            for child in node.children(&mut cursor) {
-                match kind_id(child) {
-                    KindId::COMMENT => {
-                        if after_semi {
-                            line = apposition!(
-                                line,
-                                text!(" "),
-                                node_to_layout_expr(child, source_code)
-                            );
-                        } else {
-                            result = stack!(result, line);
-                            line = node_to_layout_expr(child, source_code);
-                        };
-
-                        after_semi = false;
-                    }
-
-                    KindId::SEMI => {
-                        line = apposition!(line, node_to_layout_expr(child, source_code));
-                        after_semi = true;
-                    }
-
-                    KindId::FUNCTION_CLAUSE | KindId::LINE_COMMENT | KindId::MULTIPLE_NEWLINES => {
-                        result = stack!(result, line);
-                        line = node_to_layout_expr(child, source_code);
-
-                        after_semi = false;
-                    }
-
-                    _ => panic!("{:?} should not have {:?}", node, child),
-                }
-            }
-
-            stack!(result, line)
-        }
-
         KindId::FUNCTION_CLAUSE => {
             let mut before_body = unit!();
             let mut body = unit!();
 
             enum Phase {
-                BeforeDashGt,
-                AfterDashGt,
+                BeforeHyphenGt,
+                AfterHyphenGt,
                 InBody,
             }
-            let mut phase = Phase::BeforeDashGt;
+            let mut phase = Phase::BeforeHyphenGt;
             let mut comments = unit!();
             let mut comment_after_dash_gt = false;
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
                 match phase {
-                    Phase::BeforeDashGt => match kind_id(child) {
+                    Phase::BeforeHyphenGt => match kind_id(child) {
                         KindId::MULTIPLE_NEWLINES => {}
 
                         KindId::COMMENT | KindId::LINE_COMMENT => {
                             comments = stack!(comments, node_to_layout_expr(child, source_code))
                         }
 
-                        KindId::DASH_GT => {
+                        KindId::HYPHEN_GT => {
                             before_body = apposition!(
                                 before_body,
                                 text!(" "),
@@ -450,7 +96,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             );
 
                             comments = unit!();
-                            phase = Phase::AfterDashGt;
+                            phase = Phase::AfterHyphenGt;
                         }
 
                         KindId::ATOM | KindId::PAT_ARGUMENT_LIST | KindId::CLAUSE_GUARD => {
@@ -470,7 +116,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         _ => panic!("{:?} should not have {:?}", node, child),
                     },
 
-                    Phase::AfterDashGt => match kind_id(child) {
+                    Phase::AfterHyphenGt => match kind_id(child) {
                         KindId::MULTIPLE_NEWLINES => {}
 
                         KindId::COMMENT => {
@@ -479,7 +125,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             comment_after_dash_gt = true;
                         }
 
-                        KindId::LINE_COMMENT | KindId::EXPRS => {
+                        KindId::LINE_COMMENT | KindId::FUNCTION_CLAUSE_EXPRS => {
                             if comments != unit!() {
                                 before_body = apposition!(before_body, text!(" "), comments);
                             }
@@ -495,7 +141,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     Phase::InBody => match kind_id(child) {
                         KindId::MULTIPLE_NEWLINES => {}
 
-                        KindId::COMMENT | KindId::LINE_COMMENT | KindId::EXPRS => {
+                        KindId::COMMENT | KindId::LINE_COMMENT | KindId::FUNCTION_CLAUSE_EXPRS => {
                             body = stack!(body, node_to_layout_expr(child, source_code));
                         }
 
@@ -512,109 +158,22 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         before_body.clone(),
                         apposition!(text!("    "), body.clone())
                     ),
-                    apposition!(before_body, text!(" "), height_cost!(body)),
+                    apposition!(before_body, text!(" "), multi_line_cost!(body)),
                 )
             }
         }
 
-        KindId::EXPRS => {
-            let mut result = unit!();
-            let mut line = unit!();
-            let mut after_comma = false;
-
-            let mut cursor = node.walk();
-            for child in node.children(&mut cursor) {
-                match kind_id(child) {
-                    KindId::COMMA => {
-                        line = apposition!(line, node_to_layout_expr(child, source_code));
-
-                        after_comma = true;
-                    }
-
-                    KindId::COMMENT => {
-                        if after_comma {
-                            line = apposition!(
-                                line,
-                                text!(" "),
-                                node_to_layout_expr(child, source_code)
-                            );
-                        } else {
-                            result = stack!(result, line);
-                            line = node_to_layout_expr(child, source_code);
-                        }
-
-                        after_comma = false;
-                    }
-
-                    KindId::LINE_COMMENT | KindId::MULTIPLE_NEWLINES | KindId::EXPR => {
-                        result = stack!(result, line);
-                        line = node_to_layout_expr(child, source_code);
-
-                        after_comma = false;
-                    }
-
-                    _ => panic!("{:?} should not have {:?}", node, child),
-                }
-            }
-
-            stack!(result, line)
-        }
-
-        KindId::STRINGS => {
-            let mut result = unit!();
-            let mut line = unit!();
-            let mut after_string = false;
-
-            let mut cursor = node.walk();
-            for child in node.children(&mut cursor) {
-                match kind_id(child) {
-                    KindId::MULTIPLE_NEWLINES => {}
-
-                    KindId::COMMENT => {
-                        if after_string {
-                            line = apposition!(
-                                line,
-                                text!(" "),
-                                node_to_layout_expr(child, source_code)
-                            );
-                        } else {
-                            result = stack!(result, line);
-                            line = node_to_layout_expr(child, source_code);
-                        }
-
-                        after_string = false;
-                    }
-
-                    KindId::LINE_COMMENT => {
-                        result = stack!(result, line);
-                        line = node_to_layout_expr(child, source_code);
-
-                        after_string = false;
-                    }
-
-                    KindId::STRING => {
-                        result = stack!(result, line);
-                        line = node_to_layout_expr(child, source_code);
-
-                        after_string = true;
-                    }
-
-                    _ => panic!("{:?} should not have {:?}", node, child),
-                };
-            }
-
-            stack!(result, line)
-        }
-
-        KindId::EXPORT_ATTRIBUTE
+        // elements that should be apposed
+        KindId::FORM
+        | KindId::MODULE_ATTRIBUTE
+        | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE_MFA
         | KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
         | KindId::EXPR
-        | KindId::FUNCTION_CALL
+        | KindId::FUNCTION_CALL_OPEN
         | KindId::EXPR_REMOTE
-        | KindId::EXPR_MAX
-        | KindId::ARGUMENT_LIST => {
+        | KindId::EXPR_MAX => {
             let mut result = unit!();
             let mut comments = unit!();
 
@@ -646,53 +205,82 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             result
         }
 
-        // comma separated elements
-        KindId::EXPORT_ATTRIBUTE_MFAS => {
+        // elements that should be stacked or apposed
+        KindId::SOURCE_FILE
+        | KindId::FUNCTION_CLAUSES
+        | KindId::EXPRS
+        | KindId::FUNCTION_CLAUSE_EXPRS
+        | KindId::EXPORT_ATTRIBUTE_MFAS
+        | KindId::STRINGS => {
             let mut elements = vec![];
             let mut element = unit!();
             let mut comments = unit!();
-            let mut comment_or_empty_line = false;
+            let mut apposable = false;
+            let mut should_stack = false;
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
                 match kind_id(child) {
-                    KindId::MULTIPLE_NEWLINES | KindId::LINE_COMMENT => {
-                        if comments != unit!() {
-                            element = apposition!(element, text!(" "), comments);
-                        }
-                        comments = unit!();
-
-                        elements.push(element);
-                        element = unit!();
-
-                        elements.push(node_to_layout_expr(child, source_code));
-
-                        comment_or_empty_line = true;
-                    }
-
                     KindId::COMMENT => {
                         comments = stack!(comments, node_to_layout_expr(child, source_code));
 
-                        comment_or_empty_line = true;
+                        should_stack = true;
                     }
 
-                    KindId::COMMA => {
-                        element = apposition!(element, node_to_layout_expr(child, source_code));
+                    KindId::COMMA | KindId::SEMICOLON | KindId::PERIOD => {
+                        if apposable {
+                            if comments.is_unit() {
+                                element =
+                                    apposition!(element, node_to_layout_expr(child, source_code));
+                            } else {
+                                element = apposition!(element, text!(" "), comments);
+                                elements.push(element);
+                                comments = unit!();
+
+                                element = node_to_layout_expr(child, source_code);
+                            }
+                        } else {
+                            elements.push(element);
+                            elements.push(comments);
+                            comments = unit!();
+
+                            element = node_to_layout_expr(child, source_code);
+                        }
+
+                        apposable = true;
                     }
 
-                    _ => {
-                        if comments != unit!() {
-                            element = apposition!(element, text!(" "), comments);
+                    kind_id => {
+                        if apposable {
+                            if !comments.is_unit() {
+                                element = apposition!(element, text!(" "), comments);
+                            }
+
+                            elements.push(element);
+                        } else {
+                            elements.push(element);
+                            elements.push(comments);
                         }
                         comments = unit!();
 
-                        elements.push(element);
                         element = node_to_layout_expr(child, source_code);
+
+                        apposable = is_apposable(kind_id);
+                        should_stack |= !apposable;
                     }
                 }
             }
 
-            elements.push(element);
+            if apposable {
+                if !comments.is_unit() {
+                    element = apposition!(element, text!(" "), comments);
+                }
+
+                elements.push(element);
+            } else {
+                elements.push(element);
+                elements.push(comments);
+            }
 
             let mut stacked_elements = unit!();
             let mut apposed_elements = unit!();
@@ -701,22 +289,22 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                 stacked_elements = stack!(stacked_elements, element.clone());
 
                 if apposed_elements == unit!() {
-                    apposed_elements = height_cost!(element);
+                    apposed_elements = multi_line_cost!(element);
                 } else {
                     apposed_elements =
-                        apposition!(apposed_elements, text!(" "), height_cost!(element));
+                        apposition!(apposed_elements, text!(" "), multi_line_cost!(element));
                 }
             }
 
-            if comment_or_empty_line {
+            if should_stack || self::should_stack(node) {
                 stacked_elements
             } else {
                 choice!(stacked_elements, apposed_elements)
             }
         }
 
-        // list
-        KindId::EXPORT_ATTRIBUTE_MFA_LIST => {
+        // block
+        KindId::FUNCTION_CALL_BLOCK | KindId::EXPORT_ATTRIBUTE_BLOCK => {
             let mut comments = unit!();
             let mut open = unit!();
             let mut close = unit!();
@@ -724,84 +312,95 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             let mut line = unit!();
 
             let mut after_open = false;
+            let mut comment_apposable = false;
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
                 match kind_id(child) {
-                    KindId::MULTIPLE_NEWLINES => {
-                        if after_open {
-                            after_open = false;
-                            continue;
-                        }
-
-                        body = stack!(body, node_to_layout_expr(child, source_code));
-                    }
-
                     KindId::COMMENT => {
                         comments = stack!(comments, node_to_layout_expr(child, source_code));
                     }
 
-                    KindId::LINE_COMMENT => {
-                        if comments != unit!() {
-                            line = apposition!(line, text!(" "), comments);
+                    kind_id => {
+                        if kind_id == KindId::MULTIPLE_NEWLINES && after_open {
+                            after_open = false;
+
+                            continue;
+                        }
+
+                        if kind_id.is_open() {
+                            open = node_to_layout_expr(child, source_code);
+                            after_open = true;
+
+                            continue;
+                        }
+
+                        if comment_apposable {
+                            if line != unit!() && comments != unit!() {
+                                line = apposition!(line, text!(" "), comments);
+                            } else {
+                                line = apposition!(line, comments);
+                            }
+                        } else {
+                            line = stack!(line, comments)
                         }
                         comments = unit!();
 
-                        body = stack!(body, line, node_to_layout_expr(child, source_code));
-                        line = unit!();
-                    }
+                        if kind_id.is_close() {
+                            if !line.is_empty() {
+                                body = stack!(body, line);
+                            }
+                            line = unit!();
 
-                    KindId::LBRACK => {
-                        open = node_to_layout_expr(child, source_code);
-                        after_open = true;
-                    }
+                            close = node_to_layout_expr(child, source_code);
+                        } else {
+                            body = stack!(body, line);
+                            line = node_to_layout_expr(child, source_code);
 
-                    KindId::RBRACK => {
-                        if comments != unit!() {
-                            line = apposition!(line, text!(" "), comments);
+                            comment_apposable = is_apposable(kind_id);
                         }
-                        comments = unit!();
-
-                        body = stack!(body, line);
-                        line = unit!();
-
-                        close = node_to_layout_expr(child, source_code);
-                    }
-
-                    _ => {
-                        if comments != unit!() {
-                            line = apposition!(line, text!(" "), comments);
-                        }
-                        comments = unit!();
-
-                        body = stack!(body, line);
-                        line = node_to_layout_expr(child, source_code);
                     }
                 }
             }
 
-            choice!(
-                stack!(
+            let stacked = match block_style(node) {
+                BlockStyle::OneSpaceWithTrailingNewline => stack!(
                     open.clone(),
                     apposition!(text!(" "), body.clone()),
                     close.clone()
                 ),
-                apposition!(open, height_cost!(body), close),
-            )
+
+                BlockStyle::OneSpaceWithoutTrailingNewline => stack!(
+                    open.clone(),
+                    apposition!(text!(" "), body.clone(), close.clone()),
+                ),
+
+                BlockStyle::TweSpaceWithoutTrailingNewline => stack!(
+                    open.clone(),
+                    apposition!(text!("  "), body.clone(), close.clone()),
+                ),
+            };
+
+            if deny_multi_line_body_apposed(node) {
+                body = multi_line_cost!(body)
+            }
+
+            choice!(stacked, apposition!(open, body, close),)
         }
 
-        KindId::DASH_GT
-        | KindId::LPAREN
-        | KindId::RPAREN
-        | KindId::LBRACK
-        | KindId::RBRACK
+        // text
+        KindId::HYPHEN_GT
+        | KindId::PAREN_OPEN
+        | KindId::PAREN_CLOSE
+        | KindId::BRACKET_OPEN
+        | KindId::BRACKET_CLOSE
         | KindId::COMMA
-        | KindId::DOT
-        | KindId::DASH
+        | KindId::PERIOD
+        | KindId::HYPHEN
         | KindId::SLASH
-        | KindId::SEMI
+        | KindId::SEMICOLON
         | KindId::COLON
-        | KindId::DQUOTE
+        | KindId::DOUBLE_QUOTE
         | KindId::MODULE
         | KindId::EXPORT
         | KindId::WHEN
@@ -821,6 +420,38 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
 fn kind_id(node: Node<'_>) -> KindId {
     unsafe { std::mem::transmute(node.kind_id()) }
+}
+
+fn block_style(node: Node<'_>) -> BlockStyle {
+    match kind_id(node) {
+        KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::OneSpaceWithTrailingNewline,
+        KindId::FUNCTION_CALL_BLOCK => BlockStyle::TweSpaceWithoutTrailingNewline,
+        _ => panic!("{:?} is not a block node", node),
+    }
+}
+
+fn deny_multi_line_body_apposed(node: Node<'_>) -> bool {
+    match kind_id(node) {
+        KindId::EXPORT_ATTRIBUTE_BLOCK => true,
+        _ => false,
+    }
+}
+
+fn is_apposable(kind_id: KindId) -> bool {
+    match kind_id {
+        KindId::MULTIPLE_NEWLINES | KindId::COMMENT | KindId::LINE_COMMENT => false,
+        _ => true,
+    }
+}
+
+fn should_stack(node: Node<'_>) -> bool {
+    match kind_id(node) {
+        KindId::SOURCE_FILE => true,
+        KindId::FUNCTION_CLAUSES => true,
+        KindId::FUNCTION_CLAUSE_EXPRS => true,
+        KindId::STRINGS => true,
+        _ => false,
+    }
 }
 
 #[cfg(test)]

@@ -1,20 +1,5 @@
 [
   {
-    "type": "argument_list",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "exprs",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "clause_guard",
     "named": true,
     "fields": {}
@@ -28,7 +13,22 @@
       "required": true,
       "types": [
         {
-          "type": "export_attribute_mfa_list",
+          "type": "export_attribute_block",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "export_attribute_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "export_attribute_mfas",
           "named": true
         }
       ]
@@ -48,21 +48,6 @@
         },
         {
           "type": "integer",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "export_attribute_mfa_list",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "export_attribute_mfas",
           "named": true
         }
       ]
@@ -96,7 +81,7 @@
           "named": true
         },
         {
-          "type": "function_call",
+          "type": "function_call_block",
           "named": true
         }
       ]
@@ -164,7 +149,7 @@
           "named": true
         },
         {
-          "type": "function",
+          "type": "function_clauses",
           "named": true
         },
         {
@@ -175,7 +160,7 @@
     }
   },
   {
-    "type": "function",
+    "type": "function_call_block",
     "named": true,
     "fields": {},
     "children": {
@@ -183,24 +168,24 @@
       "required": true,
       "types": [
         {
-          "type": "function_clause",
+          "type": "exprs",
+          "named": true
+        },
+        {
+          "type": "function_call_open",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "function_call",
+    "type": "function_call_open",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "argument_list",
-          "named": true
-        },
         {
           "type": "expr_remote",
           "named": true
@@ -225,11 +210,37 @@
           "named": true
         },
         {
-          "type": "exprs",
-          "named": true
-        },
-        {
           "type": "pat_argument_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "function_clause_exprs",
+    "named": false,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "expr",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "function_clauses",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "function_clause",
           "named": true
         }
       ]

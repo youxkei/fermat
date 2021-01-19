@@ -1,6 +1,6 @@
 ---
 source: src/layout_fun.rs
-expression: "LayoutFun::height_cost(LayoutFun::stack(LayoutFun::text(\"foo\", config),\n                                        LayoutFun::text(\"bar\", config),\n                                        config), config).to_vec()"
+expression: "LayoutFun::multi_line_cost(LayoutFun::stack(LayoutFun::text(\"foo\", config),\n                                            LayoutFun::text(\"bar\", config),\n                                            config), config).to_vec()"
 ---
 [
     (

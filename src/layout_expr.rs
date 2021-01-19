@@ -8,35 +8,11 @@ pub enum LayoutExpr<'a> {
     Stack(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Apposition(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Choice(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
-    HeightCost(Rc<LayoutExpr<'a>>),
+    MultiLineCost(Rc<LayoutExpr<'a>>),
+    OneLineCost(Rc<LayoutExpr<'a>>),
 }
 
 impl<'a> LayoutExpr<'a> {
-    pub fn print(&self, indent: usize) -> usize {
-        match self {
-            LayoutExpr::Unit => panic!("Unit should not be occured"),
-
-            LayoutExpr::Text(text) => {
-                print!("{}", text);
-                indent + text.len()
-            }
-
-            LayoutExpr::Stack(lhs, rhs) => {
-                lhs.print(indent);
-                print!("\n{}", repeat(' ').take(indent).collect::<String>());
-                rhs.print(indent)
-            }
-
-            LayoutExpr::Apposition(lhs, rhs) => {
-                let width = lhs.print(indent);
-                rhs.print(width)
-            }
-
-            LayoutExpr::Choice(_, _) => panic!("Choice should no be occered: {:?}", self),
-            LayoutExpr::HeightCost(_) => panic!("HeightCost should no be occered: {:?}", self),
-        }
-    }
-
     pub fn format(&self, indent: usize, indented: bool) -> (String, usize, bool) {
         match self {
             LayoutExpr::Unit => panic!("Unit should not be occured"),
@@ -70,35 +46,47 @@ impl<'a> LayoutExpr<'a> {
 
             LayoutExpr::Choice(lhs, _) => lhs.format(indent, indented),
 
-            LayoutExpr::HeightCost(expr) => expr.format(indent, indented),
+            LayoutExpr::MultiLineCost(expr) => expr.format(indent, indented),
+
+            LayoutExpr::OneLineCost(expr) => expr.format(indent, indented),
+        }
+    }
+
+    pub fn is_unit(&self) -> bool {
+        match self {
+            LayoutExpr::Unit => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            LayoutExpr::Text("") => true,
+            _ => false,
         }
     }
 }
 
 macro layout_expr_helper {
-    ($ctor:ident, $f:ident($($args:tt)*) $(, $($y:tt $($ys:tt)*)?)?) => {
-        {
-            let result = layout_expr!($f($($args)*));
+    ($ctor:ident, $f:ident($($args:tt)*) $(, $($y:tt $($ys:tt)*)?)?) => {{
+        let result = layout_expr!($f($($args)*));
+        $(
             $(
-                $(
-                    let result = Rc::new(LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
-                )?
+                let result = Rc::new(LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
             )?
-            result
-        }
-    },
+        )?
+        result
+    }},
 
-    ($ctor:ident, $x:expr $(, $($y:tt $($ys:tt)*)?)?) => {
-        {
-            let result = layout_expr!($x);
+    ($ctor:ident, $x:expr $(, $($y:tt $($ys:tt)*)?)?) => {{
+        let result = layout_expr!($x);
+        $(
             $(
-                $(
-                    let result = Rc::new(LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
-                )?
+                let result = Rc::new(LayoutExpr::$ctor(result, layout_expr_helper!($ctor, $y $($ys)*)));
             )?
-            result
-        }
-    },
+        )?
+        result
+    }},
 }
 
 pub macro layout_expr {
@@ -118,8 +106,12 @@ pub macro layout_expr {
         layout_expr_helper!(Choice, $x $($xs)*)
     },
 
-    (height_cost ($x:tt $($xs:tt)*) $(,)?) => {
-        layout_expr_helper!(HeightCost, $x $($xs)*)
+    (multi_line_cost ($x:tt $($xs:tt)*) $(,)?) => {
+        layout_expr_helper!(MultiLineCost, $x $($xs)*)
+    },
+
+    (one_line_cost ($x:tt $($xs:tt)*) $(,)?) => {
+        layout_expr_helper!(OneLineCost, $x $($xs)*)
     },
 
     ($x:expr) => {
@@ -140,34 +132,32 @@ pub macro stack {
         unit!()
     },
 
-    ($head:expr $(, $($tail:expr),* $(,)?)?) => {
-        {
-            #[allow(unused_mut)]
-            let mut result = $head;
+    ($head:expr $(, $($tail:expr),* $(,)?)?) => {{
+        #[allow(unused_mut)]
+        let mut result = $head;
 
-            match &*result {
-                LayoutExpr::Unit => {
-                    stack!($($($tail),*)?)
-                }
+        match &*result {
+            LayoutExpr::Unit => {
+                stack!($($($tail),*)?)
+            }
 
-                _ => {
+            _ => {
+                $(
                     $(
-                        $(
-                            let tail = $tail;
-                            match &*tail {
-                                LayoutExpr::Unit => {}
-                                _ => {
-                                    result = Rc::new(LayoutExpr::Stack(result, tail));
-                                }
+                        let tail = $tail;
+                        match &*tail {
+                            LayoutExpr::Unit => {}
+                            _ => {
+                                result = Rc::new(LayoutExpr::Stack(result, tail));
                             }
-                         )*
-                     )?
+                        }
+                     )*
+                 )?
 
-                    result
-                }
+                result
             }
         }
-    },
+    }},
 }
 
 #[test]
@@ -190,34 +180,32 @@ pub macro apposition {
         unit!()
     },
 
-    ($head:expr $(, $($tail:expr),* $(,)?)?) => {
-        {
-            #[allow(unused_mut)]
-            let mut result = $head;
+    ($head:expr $(, $($tail:expr),* $(,)?)?) => {{
+        #[allow(unused_mut)]
+        let mut result = $head;
 
-            match &*result {
-                LayoutExpr::Unit => {
-                    apposition!($($($tail),*)?)
-                }
+        match &*result {
+            LayoutExpr::Unit => {
+                apposition!($($($tail),*)?)
+            }
 
-                _ => {
+            _ => {
+                $(
                     $(
-                        $(
-                            let tail = $tail;
-                            match &*tail {
-                                LayoutExpr::Unit => {}
-                                _ => {
-                                    result = Rc::new(LayoutExpr::Apposition(result, tail));
-                                }
+                        let tail = $tail;
+                        match &*tail {
+                            LayoutExpr::Unit => {}
+                            _ => {
+                                result = Rc::new(LayoutExpr::Apposition(result, tail));
                             }
-                         )*
-                     )?
+                        }
+                     )*
+                 )?
 
-                    result
-                }
+                result
             }
         }
-    },
+    }},
 }
 
 #[test]
@@ -240,33 +228,31 @@ pub macro choice {
         unit!()
     },
 
-    ($head:expr $(, $($tail:expr),* $(,)?)?) => {
-        {
-            #[allow(unused_mut)]
-            let mut result = $head;
+    ($head:expr $(, $($tail:expr),* $(,)?)?) => {{
+        #[allow(unused_mut)]
+        let mut result = $head;
 
-            match &*result {
-                LayoutExpr::Unit => {
-                    choice!($($($tail),*)?)
-                }
-
-                _ => {
-                    $(
-                        $(
-                            let tail = $tail;
-                            match &*tail {
-                                LayoutExpr::Unit => {}
-                                _ => {
-                                    result = Rc::new(LayoutExpr::Choice(result, tail));
-                                }
-                            }
-                         )*
-                     )?
-
-                    result
-                }
+        match &*result {
+            LayoutExpr::Unit => {
+                choice!($($($tail),*)?)
             }
-        }
+
+            _ => {
+                $(
+                    $(
+                        let tail = $tail;
+                        match &*tail {
+                            LayoutExpr::Unit => {}
+                            _ => {
+                                result = Rc::new(LayoutExpr::Choice(result, tail));
+                            }
+                        }
+                     )*
+                 )?
+
+                result
+            }
+        }}
     },
 }
 
@@ -285,10 +271,22 @@ fn choice_test() {
     );
 }
 
-pub macro height_cost($x:expr) {
-    match &*$x {
+pub macro multi_line_cost($expr:expr) {{
+    let expr = $expr;
+
+    match &*expr {
         LayoutExpr::Unit => unit!(),
 
-        _ => std::rc::Rc::new($crate::layout_expr::LayoutExpr::HeightCost($x)),
+        _ => Rc::new(LayoutExpr::MultiLineCost(expr)),
     }
-}
+}}
+
+pub macro one_line_cost($expr:expr) {{
+    let expr = $expr;
+
+    match &*expr {
+        LayoutExpr::Unit => unit!(),
+
+        _ => Rc::new(LayoutExpr::OneLineCost(expr)),
+    }
+}}
