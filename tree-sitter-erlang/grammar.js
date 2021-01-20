@@ -74,7 +74,8 @@ module.exports = grammar({
     export_attribute_block: ($) =>
       seq("[", optional($.export_attribute_mfas), "]"),
 
-    export_attribute_mfas: ($) => repeatComma1($.export_attribute_mfa),
+    export_attribute_mfas: ($) =>
+      seq(repeatComma1($.export_attribute_mfa), optional(",")),
 
     export_attribute_mfa: ($) => seq($.atom, "/", $.integer),
 

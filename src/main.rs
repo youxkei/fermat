@@ -216,6 +216,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             let mut element = unit!();
             let mut separator = unit!();
             let mut comments = unit!();
+            let mut separator_before_comments = unit!();
+            let mut separator_after_comments = unit!();
             let mut apposable = false;
             let mut should_stack = false;
 
@@ -223,50 +225,104 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             for child in node.children(&mut cursor) {
                 match kind_id(child) {
                     KindId::COMMENT => {
+                        if !separator_after_comments.is_unit() {
+                            if apposable {
+                                element = apposition!(element, text!(" "), comments);
+                                elements.push(element);
+
+                                element = separator_after_comments
+                            } else {
+                                elements.push(element);
+                                elements.push(comments);
+
+                                element = separator_after_comments
+                            }
+
+                            comments = unit!();
+                            separator_after_comments = unit!();
+                        }
+
                         comments = stack!(comments, node_to_layout_expr(child, source_code));
 
                         should_stack = true;
                     }
 
-                    KindId::COMMA | KindId::SEMICOLON | KindId::PERIOD => {
-                        separator = node_to_layout_expr(child, source_code);
-                        /*
+                    KindId::COMMA | KindId::SEMICOLON => {
                         if apposable {
                             if comments.is_unit() {
-                                element =
-                                    apposition!(element, node_to_layout_expr(child, source_code));
+                                separator_before_comments = node_to_layout_expr(child, source_code);
                             } else {
-                                element = apposition!(element, text!(" "), comments);
-                                elements.push(element);
-                                comments = unit!();
-
-                                element = node_to_layout_expr(child, source_code);
+                                separator_after_comments = node_to_layout_expr(child, source_code);
                             }
                         } else {
-                            elements.push(element);
-                            elements.push(comments);
-                            comments = unit!();
-
-                            element = node_to_layout_expr(child, source_code);
+                            separator_after_comments = node_to_layout_expr(child, source_code);
                         }
 
                         apposable = true;
-                        */
+                    }
+
+                    KindId::PERIOD => {
+                        if apposable {
+                            if comments.is_unit() {
+                                element = apposition!(
+                                    element,
+                                    separator_before_comments,
+                                    node_to_layout_expr(child, source_code)
+                                );
+                            } else {
+                                element = apposition!(
+                                    element,
+                                    separator_before_comments,
+                                    text!(" "),
+                                    comments
+                                );
+                                elements.push(element);
+
+                                element = apposition!(
+                                    separator_after_comments,
+                                    node_to_layout_expr(child, source_code)
+                                );
+                            }
+                        } else {
+                            elements.push(element);
+                            elements.push(separator_before_comments);
+                            elements.push(comments);
+
+                            element = apposition!(
+                                separator_after_comments,
+                                node_to_layout_expr(child, source_code)
+                            );
+                        }
+
+                        comments = unit!();
+                        separator_before_comments = unit!();
+                        separator_after_comments = unit!();
+
+                        apposable = true;
                     }
 
                     kind_id => {
                         if apposable {
                             if !comments.is_unit() {
-                                element = apposition!(element, separator, text!(" "), comments);
+                                element = apposition!(
+                                    element,
+                                    separator_before_comments,
+                                    text!(" "),
+                                    comments
+                                );
                             }
 
                             elements.push(element);
+                            elements.push(separator_after_comments);
                         } else {
-                            elements.push(apposition!(element, separator));
+                            elements.push(element);
+                            elements.push(separator_before_comments);
                             elements.push(comments);
+                            elements.push(separator_after_comments);
                         }
                         comments = unit!();
-                        separator = unit!();
+                        separator_before_comments = unit!();
+                        separator_after_comments = unit!();
 
                         element = node_to_layout_expr(child, source_code);
 
@@ -277,11 +333,13 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             }
 
             if apposable {
-                if !comments.is_unit() {
+                if !separator_after_comments.is_unit() {
+                    elements.push(element);
+                    elements.push(comments);
+                } else if !comments.is_unit() {
                     element = apposition!(element, text!(" "), comments);
+                    elements.push(element);
                 }
-
-                elements.push(element);
             } else {
                 elements.push(element);
                 elements.push(comments);
