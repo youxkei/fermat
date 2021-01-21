@@ -1,6 +1,7 @@
 -export([
-         main/0 % comment 1
-         ,
+         main/0, % comment 1
+         main/0 % comment 2
+         , % comment 3
         ]).
 
 

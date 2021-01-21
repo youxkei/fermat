@@ -339,6 +339,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                 } else if !comments.is_unit() {
                     element = apposition!(element, text!(" "), comments);
                     elements.push(element);
+                } else {
+                    elements.push(element);
                 }
             } else {
                 elements.push(element);
