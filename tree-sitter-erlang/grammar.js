@@ -47,6 +47,12 @@ module.exports = grammar({
     $._spaces,
   ],
 
+  conflicts: ($) => [
+    [$.export_attribute_mfas],
+    [$.exprs],
+    [$.function_clauses],
+  ],
+
   rules: {
     source_file: ($) => repeat1($.form),
 
@@ -72,13 +78,17 @@ module.exports = grammar({
       seq("-", "export", "(", $.export_attribute_block, ")"),
 
     export_attribute_block: ($) =>
-      seq("[", optional($.export_attribute_mfas), "]"),
+      seq("[", optional($.export_attribute_mfas), optional(","), "]"),
 
     export_attribute_mfas: ($) => repeatComma1($.export_attribute_mfa),
 
     export_attribute_mfa: ($) => seq($.atom, "/", $.integer),
 
-    _function_or_macro: ($) => choice($.function_clauses /*, $.macro*/),
+    _function_or_macro: ($) =>
+      choice($.function_clauses_trailing_semicolon /*, $.macro*/),
+
+    function_clauses_trailing_semicolon: ($) =>
+      seq($.function_clauses, optional(";")),
 
     function_clauses: ($) => repeatSep1($.function_clause, ";"),
 
@@ -88,12 +98,15 @@ module.exports = grammar({
         $.pat_argument_list,
         optional($.clause_guard),
         "->",
-        alias($.exprs, "function_clause_exprs")
+        $.function_clause_exprs_trailing_comma
       ),
 
     pat_argument_list: ($) => seq("(", /*repeatComma($.pat_expr),*/ ")"),
 
     clause_guard: ($) => seq("when" /*, $.guard*/),
+
+    function_clause_exprs_trailing_comma: ($) =>
+      seq(alias($.exprs, "function_clause_exprs"), optional(",")),
 
     exprs: ($) => repeatComma1($.expr),
 

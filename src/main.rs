@@ -125,7 +125,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             comment_after_dash_gt = true;
                         }
 
-                        KindId::LINE_COMMENT | KindId::FUNCTION_CLAUSE_EXPRS => {
+                        KindId::LINE_COMMENT | KindId::FUNCTION_CLAUSE_EXPRS_TRAILING_COMMA => {
                             if comments != unit!() {
                                 before_body = apposition!(before_body, text!(" "), comments);
                             }
@@ -141,7 +141,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     Phase::InBody => match kind_id(child) {
                         KindId::MULTIPLE_NEWLINES => {}
 
-                        KindId::COMMENT | KindId::LINE_COMMENT | KindId::FUNCTION_CLAUSE_EXPRS => {
+                        KindId::COMMENT
+                        | KindId::LINE_COMMENT
+                        | KindId::FUNCTION_CLAUSE_EXPRS_TRAILING_COMMA => {
                             body = stack!(body, node_to_layout_expr(child, source_code));
                         }
 
@@ -303,8 +305,53 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             }
         }
 
+        // trailing separator
+        KindId::FUNCTION_CLAUSES_TRAILING_SEMICOLON
+        | KindId::FUNCTION_CLAUSE_EXPRS_TRAILING_COMMA => {
+            let mut comments = unit!();
+            let mut body = unit!();
+            let mut line = unit!();
+
+            let mut apposable = false;
+
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                match kind_id(child) {
+                    KindId::COMMA | KindId::SEMICOLON => {}
+
+                    KindId::COMMENT => {
+                        comments = stack!(comments, node_to_layout_expr(child, source_code));
+                    }
+
+                    kind_id => {
+                        if apposable {
+                            if line != unit!() && comments != unit!() {
+                                line = apposition!(line, text!(" "), comments);
+                            } else {
+                                line = apposition!(line, comments);
+                            }
+                        } else {
+                            line = stack!(line, comments)
+                        }
+                        comments = unit!();
+
+                        body = stack!(body, line);
+                        line = node_to_layout_expr(child, source_code);
+
+                        apposable = is_apposable(kind_id);
+                    }
+                }
+            }
+
+            if !line.is_empty() {
+                body = stack!(body, line);
+            }
+
+            body
+        }
+
         // block
-        KindId::FUNCTION_CALL_BLOCK | KindId::EXPORT_ATTRIBUTE_BLOCK => {
+        KindId::EXPORT_ATTRIBUTE_BLOCK | KindId::FUNCTION_CALL_BLOCK => {
             let mut comments = unit!();
             let mut open = unit!();
             let mut close = unit!();
@@ -312,13 +359,17 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             let mut line = unit!();
 
             let mut after_open = false;
-            let mut comment_apposable = false;
+            let mut apposable = false;
+            let mut should_stack = false;
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
                 match kind_id(child) {
+                    KindId::COMMA | KindId::SEMICOLON => {}
+
                     KindId::COMMENT => {
                         comments = stack!(comments, node_to_layout_expr(child, source_code));
+                        should_stack = true
                     }
 
                     kind_id => {
@@ -335,7 +386,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             continue;
                         }
 
-                        if comment_apposable {
+                        if apposable {
                             if line != unit!() && comments != unit!() {
                                 line = apposition!(line, text!(" "), comments);
                             } else {
@@ -357,7 +408,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             body = stack!(body, line);
                             line = node_to_layout_expr(child, source_code);
 
-                            comment_apposable = is_apposable(kind_id);
+                            apposable = is_apposable(kind_id);
+                            should_stack |= !apposable
                         }
                     }
                 }
@@ -381,11 +433,15 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                 ),
             };
 
-            if deny_multi_line_body_apposed(node) {
-                body = multi_line_cost!(body)
-            }
+            if should_stack {
+                stacked
+            } else {
+                if deny_multi_line_body_apposed(node) {
+                    body = multi_line_cost!(body)
+                }
 
-            choice!(stacked, apposition!(open, body, close),)
+                choice!(stacked, apposition!(open, body, close),)
+            }
         }
 
         // text
@@ -627,6 +683,26 @@ mod parse_test {
                         ]).
             "#},
         );
+
+        assert_parse!(
+            "remove trailing separator",
+            indoc! {r#"
+                -export([
+                         % comment 1
+                         % comment 2
+                         main/0 % comment 3
+                         , % comment 4
+                        ]).
+            "#},
+            indoc! {r#"
+                -export([
+                         % comment 1
+                         % comment 2
+                         main/0 % comment 3
+                                % comment 4
+                        ]).
+            "#},
+        );
     }
 
     #[test]
@@ -794,6 +870,21 @@ mod format_test {
                          bar/2, % comment 2
                          foobar/3, % comment 3
                          baz/4 % comment 4
+                        ]).
+            "#},
+        );
+
+        assert_format!(
+            "stacked due to a comment",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         foo/1 % comment 1
                         ]).
             "#},
         );

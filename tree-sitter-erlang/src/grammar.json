@@ -114,6 +114,18 @@
           ]
         },
         {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
           "type": "STRING",
           "value": "]"
         }
@@ -166,7 +178,28 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "function_clauses_trailing_semicolon"
+        }
+      ]
+    },
+    "function_clauses_trailing_semicolon": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
           "name": "function_clauses"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": ";"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -223,13 +256,8 @@
           "value": "->"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "exprs"
-          },
-          "named": false,
-          "value": "function_clause_exprs"
+          "type": "SYMBOL",
+          "name": "function_clause_exprs_trailing_comma"
         }
       ]
     },
@@ -252,6 +280,32 @@
         {
           "type": "STRING",
           "value": "when"
+        }
+      ]
+    },
+    "function_clause_exprs_trailing_comma": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "exprs"
+          },
+          "named": false,
+          "value": "function_clause_exprs"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -545,7 +599,17 @@
       "name": "_spaces"
     }
   ],
-  "conflicts": [],
+  "conflicts": [
+    [
+      "export_attribute_mfas"
+    ],
+    [
+      "exprs"
+    ],
+    [
+      "function_clauses"
+    ]
+  ],
   "externals": [],
   "inline": [],
   "supertypes": []
