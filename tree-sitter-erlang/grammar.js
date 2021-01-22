@@ -90,16 +90,13 @@ module.exports = grammar({
     function_clauses_trailing_semicolon: ($) =>
       seq($.function_clauses, optional(";")),
 
-    function_clauses: ($) => repeatSep1($.function_clause, ";"),
+    function_clauses: ($) => repeatSep1($.function_clause_block, ";"),
 
-    function_clause: ($) =>
-      seq(
-        $.atom,
-        $.pat_argument_list,
-        optional($.clause_guard),
-        "->",
-        $.function_clause_exprs_trailing_comma
-      ),
+    function_clause_block: ($) =>
+      seq($.function_clause_open, $.function_clause_exprs_trailing_comma),
+
+    function_clause_open: ($) =>
+      seq($.atom, $.pat_argument_list, optional($.clause_guard), "->"),
 
     pat_argument_list: ($) => seq("(", /*repeatComma($.pat_expr),*/ ")"),
 
@@ -121,7 +118,7 @@ module.exports = grammar({
       ),
 
     function_call_block: ($) =>
-      seq($.function_call_open, optional($.exprs), ")"),
+      seq($.function_call_open, optional($.exprs), optional(","), ")"),
 
     function_call_open: ($) => seq($.expr_remote, "("),
 

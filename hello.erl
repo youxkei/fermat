@@ -7,5 +7,6 @@
 
 %% ハローワールド
 main() ->
-    %% comment
-    io:format("Hello, world!"),;.
+    io:format(foo, % comment 1
+              bar, % comment 2
+              ),;.

@@ -69,11 +69,9 @@ impl<'a> LayoutFun<'a> {
     ) -> Self {
         match layout_expr {
             LayoutExpr::Unit => Self::Unit,
-            LayoutExpr::Text(text) => Self::apposition(
-                Self::text(text, config),
-                trailing_layout_fun.clone(),
-                config,
-            ),
+            LayoutExpr::Text(text) => {
+                Self::apposition(Self::text(text, config), trailing_layout_fun, config)
+            }
             LayoutExpr::Stack(lhs, rhs) => Self::stack(
                 Self::from_layout_expr_with_trailing(lhs, Self::Unit, config),
                 Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, config),

@@ -194,7 +194,7 @@
     }
   },
   {
-    "type": "function_clause",
+    "type": "function_clause_block",
     "named": true,
     "fields": {},
     "children": {
@@ -202,19 +202,11 @@
       "required": true,
       "types": [
         {
-          "type": "atom",
-          "named": true
-        },
-        {
-          "type": "clause_guard",
-          "named": true
-        },
-        {
           "type": "function_clause_exprs_trailing_comma",
           "named": true
         },
         {
-          "type": "pat_argument_list",
+          "type": "function_clause_open",
           "named": true
         }
       ]
@@ -241,6 +233,29 @@
     "fields": {}
   },
   {
+    "type": "function_clause_open",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "clause_guard",
+          "named": true
+        },
+        {
+          "type": "pat_argument_list",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "function_clauses",
     "named": true,
     "fields": {},
@@ -249,7 +264,7 @@
       "required": true,
       "types": [
         {
-          "type": "function_clause",
+          "type": "function_clause_block",
           "named": true
         }
       ]

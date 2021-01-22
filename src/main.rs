@@ -20,9 +20,48 @@ extern "C" {
 tree_sitter_id::define_kind_id! {}
 
 enum BlockStyle {
-    OneSpaceWithTrailingNewline,
-    OneSpaceWithoutTrailingNewline,
-    TweSpaceWithoutTrailingNewline,
+    /*
+     * apposition:
+     * -export([foo/1, bar/2]).
+     *
+     * stack:
+     * -export([
+     *          foo/1,
+     *          bar/2
+     *         ]).
+     */
+    Export,
+
+    /*
+     * apposition:
+     * function_name("foo bar")
+     * function_name("foo", % comment
+     *               "bar")
+     *
+     * stack:
+     * function_name(
+     *   "foo bar")
+     */
+    FunctionCall,
+
+    /*
+     * apposition:
+     * fun() -> ok.
+     *
+     * stack:
+     * fun() ->
+     *     ok.
+     */
+    Function,
+}
+
+fn block_style(kind_id: KindId) -> BlockStyle {
+    match kind_id {
+        KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::Export,
+        KindId::FUNCTION_CALL_BLOCK => BlockStyle::FunctionCall,
+        KindId::FUNCTION_CLAUSE_BLOCK => BlockStyle::Function,
+        _ => panic!("{:?} is not a block node", kind_id),
+    }
 }
 
 fn main() {
@@ -64,112 +103,15 @@ fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
 }
 
 fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
-    match kind_id(node) {
-        KindId::FUNCTION_CLAUSE => {
-            let mut before_body = unit!();
-            let mut body = unit!();
+    let kind_id = kind_id(node);
 
-            enum Phase {
-                BeforeHyphenGt,
-                AfterHyphenGt,
-                InBody,
-            }
-            let mut phase = Phase::BeforeHyphenGt;
-            let mut comments = unit!();
-            let mut comment_after_dash_gt = false;
-
-            let mut cursor = node.walk();
-            for child in node.children(&mut cursor) {
-                match phase {
-                    Phase::BeforeHyphenGt => match kind_id(child) {
-                        KindId::MULTIPLE_NEWLINES => {}
-
-                        KindId::COMMENT | KindId::LINE_COMMENT => {
-                            comments = stack!(comments, node_to_layout_expr(child, source_code))
-                        }
-
-                        KindId::HYPHEN_GT => {
-                            before_body = apposition!(
-                                before_body,
-                                text!(" "),
-                                stack!(comments, node_to_layout_expr(child, source_code)),
-                            );
-
-                            comments = unit!();
-                            phase = Phase::AfterHyphenGt;
-                        }
-
-                        KindId::ATOM | KindId::PAT_ARGUMENT_LIST | KindId::CLAUSE_GUARD => {
-                            before_body = apposition!(
-                                before_body,
-                                if comments == unit!() {
-                                    unit!()
-                                } else {
-                                    text!(" ")
-                                },
-                                stack!(comments, node_to_layout_expr(child, source_code))
-                            );
-
-                            comments = unit!();
-                        }
-
-                        _ => panic!("{:?} should not have {:?}", node, child),
-                    },
-
-                    Phase::AfterHyphenGt => match kind_id(child) {
-                        KindId::MULTIPLE_NEWLINES => {}
-
-                        KindId::COMMENT => {
-                            comments = stack!(comments, node_to_layout_expr(child, source_code));
-
-                            comment_after_dash_gt = true;
-                        }
-
-                        KindId::LINE_COMMENT | KindId::FUNCTION_CLAUSE_EXPRS_TRAILING_COMMA => {
-                            if comments != unit!() {
-                                before_body = apposition!(before_body, text!(" "), comments);
-                            }
-                            comments = unit!();
-
-                            body = node_to_layout_expr(child, source_code);
-                            phase = Phase::InBody;
-                        }
-
-                        _ => panic!("{:?} should not have {:?}", node, child),
-                    },
-
-                    Phase::InBody => match kind_id(child) {
-                        KindId::MULTIPLE_NEWLINES => {}
-
-                        KindId::COMMENT
-                        | KindId::LINE_COMMENT
-                        | KindId::FUNCTION_CLAUSE_EXPRS_TRAILING_COMMA => {
-                            body = stack!(body, node_to_layout_expr(child, source_code));
-                        }
-
-                        _ => panic!("{:?} should not have {:?}", node, child),
-                    },
-                }
-            }
-
-            if comment_after_dash_gt {
-                stack!(before_body, apposition!(text!("    "), body))
-            } else {
-                choice!(
-                    stack!(
-                        before_body.clone(),
-                        apposition!(text!("    "), body.clone())
-                    ),
-                    apposition!(before_body, text!(" "), multi_line_cost!(body)),
-                )
-            }
-        }
-
+    match kind_id {
         // elements that should be apposed
         KindId::FORM
         | KindId::MODULE_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE_MFA
+        | KindId::FUNCTION_CLAUSE_OPEN
         | KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
         | KindId::EXPR
@@ -181,11 +123,21 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
-                match kind_id(child) {
+                match self::kind_id(child) {
                     KindId::MULTIPLE_NEWLINES => {}
 
                     KindId::COMMENT | KindId::LINE_COMMENT => {
                         comments = stack!(comments, node_to_layout_expr(child, source_code))
+                    }
+
+                    KindId::HYPHEN_GT => {
+                        result = apposition!(
+                            result,
+                            text!(" "),
+                            stack!(comments, node_to_layout_expr(child, source_code))
+                        );
+
+                        comments = unit!();
                     }
 
                     _ => {
@@ -222,7 +174,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
-                match kind_id(child) {
+                match self::kind_id(child) {
                     KindId::COMMENT => {
                         comments = stack!(comments, node_to_layout_expr(child, source_code));
 
@@ -316,7 +268,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
-                match kind_id(child) {
+                match self::kind_id(child) {
                     KindId::COMMA | KindId::SEMICOLON => {}
 
                     KindId::COMMENT => {
@@ -351,7 +303,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         }
 
         // block
-        KindId::EXPORT_ATTRIBUTE_BLOCK | KindId::FUNCTION_CALL_BLOCK => {
+        KindId::EXPORT_ATTRIBUTE_BLOCK
+        | KindId::FUNCTION_CLAUSE_BLOCK
+        | KindId::FUNCTION_CALL_BLOCK => {
             let mut comments = unit!();
             let mut open = unit!();
             let mut close = unit!();
@@ -360,16 +314,17 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
             let mut after_open = false;
             let mut apposable = false;
-            let mut should_stack = false;
+            let mut not_apposable = false;
+            let mut last_comment = false;
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
-                match kind_id(child) {
+                match self::kind_id(child) {
                     KindId::COMMA | KindId::SEMICOLON => {}
 
                     KindId::COMMENT => {
                         comments = stack!(comments, node_to_layout_expr(child, source_code));
-                        should_stack = true
+                        not_apposable = true;
                     }
 
                     kind_id => {
@@ -387,10 +342,16 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         }
 
                         if apposable {
-                            if line != unit!() && comments != unit!() {
-                                line = apposition!(line, text!(" "), comments);
+                            if comments.is_unit() {
+                                last_comment = false
                             } else {
-                                line = apposition!(line, comments);
+                                if line.is_unit() {
+                                    line = apposition!(line, comments);
+                                } else {
+                                    line = apposition!(line, text!(" "), comments);
+                                }
+
+                                last_comment = true;
                             }
                         } else {
                             line = stack!(line, comments)
@@ -409,39 +370,67 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             line = node_to_layout_expr(child, source_code);
 
                             apposable = is_apposable(kind_id);
-                            should_stack |= !apposable
+                            not_apposable |= !apposable
                         }
                     }
                 }
             }
 
-            let stacked = match block_style(node) {
-                BlockStyle::OneSpaceWithTrailingNewline => stack!(
+            if !line.is_empty() {
+                body = stack!(body, line);
+            }
+
+            let block_style = block_style(kind_id);
+
+            let stacked = match block_style {
+                BlockStyle::Export => stack!(
                     open.clone(),
                     apposition!(text!(" "), body.clone()),
                     close.clone()
                 ),
 
-                BlockStyle::OneSpaceWithoutTrailingNewline => stack!(
-                    open.clone(),
-                    apposition!(text!(" "), body.clone(), close.clone()),
-                ),
-
-                BlockStyle::TweSpaceWithoutTrailingNewline => stack!(
-                    open.clone(),
-                    apposition!(text!("  "), body.clone(), close.clone()),
-                ),
-            };
-
-            if should_stack {
-                stacked
-            } else {
-                if deny_multi_line_body_apposed(node) {
-                    body = multi_line_cost!(body)
+                BlockStyle::Function => {
+                    stack!(open.clone(), apposition!(text!("    "), body.clone()))
                 }
 
-                choice!(stacked, apposition!(open, body, close),)
-            }
+                BlockStyle::FunctionCall => {
+                    if last_comment {
+                        stack!(
+                            open.clone(),
+                            apposition!(text!("  "), stack!(body.clone(), close.clone())),
+                        )
+                    } else {
+                        stack!(
+                            open.clone(),
+                            apposition!(text!("  "), body.clone(), close.clone()),
+                        )
+                    }
+                }
+            };
+
+            let apposed = match block_style {
+                BlockStyle::Export => {
+                    if last_comment || not_apposable {
+                        unit!()
+                    } else {
+                        apposition!(open, body, close)
+                    }
+                }
+
+                BlockStyle::Function => {
+                    apposition!(open, text!(" "), multi_line_cost!(body))
+                }
+
+                BlockStyle::FunctionCall => {
+                    if last_comment {
+                        apposition!(open, stack!(body, close))
+                    } else {
+                        apposition!(open, body, close)
+                    }
+                }
+            };
+
+            choice!(stacked, apposed)
         }
 
         // text
@@ -476,21 +465,6 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
 fn kind_id(node: Node<'_>) -> KindId {
     unsafe { std::mem::transmute(node.kind_id()) }
-}
-
-fn block_style(node: Node<'_>) -> BlockStyle {
-    match kind_id(node) {
-        KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::OneSpaceWithTrailingNewline,
-        KindId::FUNCTION_CALL_BLOCK => BlockStyle::TweSpaceWithoutTrailingNewline,
-        _ => panic!("{:?} is not a block node", node),
-    }
-}
-
-fn deny_multi_line_body_apposed(node: Node<'_>) -> bool {
-    match kind_id(node) {
-        KindId::EXPORT_ATTRIBUTE_BLOCK => true,
-        _ => false,
-    }
 }
 
 fn is_apposable(kind_id: KindId) -> bool {
@@ -644,19 +618,27 @@ mod parse_test {
     }
 
     #[test]
-    fn block() {
+    fn export_style_block() {
         assert_parse!(
-            "remove empty lines",
+            "remove some empty lines",
             indoc! {r#"
                 -export([
 
+                         %% comment 1
+
                          main/0
+
+                         %% comment 2
 
                          ]).
             "#},
             indoc! {r#"
                 -export([
+                         %% comment 1
+
                          main/0
+
+                         %% comment 2
                         ]).
             "#},
         );
@@ -706,103 +688,48 @@ mod parse_test {
     }
 
     #[test]
-    fn function_clause() {
-        /* before '->' */
-        {
-            assert_parse!(
-                "remove empty lines",
-                indoc! {r#"
-                    main
+    fn function_style_block() {
+        assert_parse!(
+            "remove some empty lines",
+            indoc! {r#"
+                main() ->
 
-                    ()
+                    %% line comment
 
-                    -> ok.
-                "#},
-                indoc! {r#"
-                    main() ->
-                        ok.
-                "#},
-            );
+                    ok.
+            "#},
+            indoc! {r#"
+                main() ->
+                    %% line comment
 
-            assert_parse!(
-                "comment indentation",
-                indoc! {r#"
-                    main % comment 1
+                    ok.
+            "#},
+        );
+
+        assert_parse!(
+            "comment indentation",
+            indoc! {r#"
+                main() ->
+                    % comment 1
                     % comment 2
-                    () % comment 3
-                    % comment 4
-                    -> ok.
-                "#},
-                indoc! {r#"
-                    main % comment 1
-                         % comment 2
-                         () % comment 3
-                            % comment 4
-                            ->
-                        ok.
-                "#},
-            );
+                    ok.
+            "#},
+        );
 
-            assert_parse!(
-                "line comments behave like comments",
-                indoc! {r#"
-                    main %% line comment 1
+        assert_parse!(
+            "line comment indentation",
+            indoc! {r#"
+                main() ->
+                    %% line comment 1
                     %% line comment 2
-                    () %% line comment 3
-                    %% line comment 4
-                    -> ok.
-                "#},
-                indoc! {r#"
-                    main %% line comment 1
-                         %% line comment 2
-                         () %% line comment 3
-                            %% line comment 4
-                            ->
-                        ok.
-                "#},
-            );
-        }
+                    ok.
+            "#},
+        );
+    }
 
-        /* between '->' and body */
-        {
-            assert_parse!(
-                "remove empty lines",
-                indoc! {r#"
-                    main() ->
-
-                        %% line comment
-
-                        ok.
-                "#},
-                indoc! {r#"
-                    main() ->
-                        %% line comment
-                        ok.
-                "#},
-            );
-
-            assert_parse!(
-                "comment indentation",
-                indoc! {r#"
-                    main() -> % comment 1
-                              % comment 2
-                        ok.
-                "#},
-            );
-
-            assert_parse!(
-                "there can be no line comments after '->'",
-                indoc! {r#"
-                    main() -> %% comment
-                        ok.
-                "#},
-                indoc! {r#"
-                    main() ->
-                        %% comment
-                        ok.
-                "#},
-            );
-        }
+    #[test]
+    fn function_call_style_block() {
+        // TODO
     }
 }
 
@@ -935,7 +862,7 @@ mod format_test {
     }
 
     #[test]
-    fn block_with_one_space_with_trailing_newline() {
+    fn export_style_block() {
         assert_format!(
             "apposed",
             Config {
@@ -966,41 +893,7 @@ mod format_test {
     }
 
     #[test]
-    fn block_with_two_space_without_trailing_newline() {
-        assert_format!(
-            "apposed",
-            Config {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                f() ->
-                    %% comment
-                    io:format("foo").
-            "#},
-        );
-
-        assert_format!(
-            "stacked due to right margin",
-            Config {
-                right_margin: 14,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                f() ->
-                    %% comment
-                    io:format(
-                      "foo").
-            "#},
-        );
-    }
-
-    #[test]
-    fn function_clause() {
+    fn function_style_block() {
         assert_format!(
             "apposed",
             Config {
@@ -1037,7 +930,8 @@ mod format_test {
                 height_cost: 100,
             },
             indoc! {r#"
-                f() -> % comment
+                f() ->
+                    % comment
                     ok.
             "#}
         );
@@ -1070,6 +964,40 @@ mod format_test {
                     foo,
                     bar.
             "#}
+        );
+    }
+
+    #[test]
+    fn function_call_style_block() {
+        assert_format!(
+            "apposed",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                f() ->
+                    %% comment
+                    io:format("foo").
+            "#},
+        );
+
+        assert_format!(
+            "stacked due to right margin",
+            Config {
+                right_margin: 14,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                f() ->
+                    %% comment
+                    io:format(
+                      "foo").
+            "#},
         );
     }
 }
