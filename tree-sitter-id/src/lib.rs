@@ -92,6 +92,7 @@ fn identize(token: &str) -> &str {
         ";" => "SEMICOLON",
         ":" => "COLON",
         "\"" => "DOUBLE_QUOTE",
+        "=" => "EQUAL",
         _ => token,
     }
 }

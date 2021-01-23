@@ -8,7 +8,5 @@
 %% ハローワールド
 main() ->
     %% line comment 1
-    io:format("Hello, world!") % comment 3
-    , % comment 4
-    ; % comment 5
-    .
+    Result =
+        io:format("Lorem ipsum dolor sit amet").

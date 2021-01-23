@@ -5,6 +5,40 @@
     "fields": {}
   },
   {
+    "type": "equal_expr_block",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "equal_expr_open",
+          "named": true
+        },
+        {
+          "type": "expr",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "equal_expr_open",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "expr",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "export_attribute",
     "named": true,
     "fields": {},
@@ -77,11 +111,15 @@
       "required": true,
       "types": [
         {
-          "type": "expr_remote",
+          "type": "equal_expr_block",
           "named": true
         },
         {
           "type": "function_call_block",
+          "named": true
+        },
+        {
+          "type": "remote_expr",
           "named": true
         }
       ]
@@ -102,20 +140,9 @@
         {
           "type": "strings",
           "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "expr_remote",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
+        },
         {
-          "type": "expr_max",
+          "type": "variable",
           "named": true
         }
       ]
@@ -187,7 +214,7 @@
       "required": true,
       "types": [
         {
-          "type": "expr_remote",
+          "type": "remote_expr",
           "named": true
         }
       ]
@@ -306,6 +333,21 @@
     "fields": {}
   },
   {
+    "type": "remote_expr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "expr_max",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "source_file",
     "named": true,
     "fields": {},
@@ -381,6 +423,10 @@
     "named": false
   },
   {
+    "type": "=",
+    "named": false
+  },
+  {
     "type": "[",
     "named": false
   },
@@ -414,6 +460,10 @@
   },
   {
     "type": "multiple_newlines",
+    "named": true
+  },
+  {
+    "type": "variable",
     "named": true
   },
   {

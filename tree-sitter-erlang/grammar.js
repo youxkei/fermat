@@ -109,26 +109,31 @@ module.exports = grammar({
 
     expr: ($) =>
       choice(
-        //$.binary_expr,
+        $.equal_expr_block,
+        //$.binary_op_expr,
         //$.unary_expr,
         //$.map_expr,
         $.function_call_block,
         //$.record_expr,
-        $.expr_remote
+        $.remote_expr
       ),
+
+    equal_expr_block: ($) =>
+      prec.right(PREC.equal_exclam, seq($.equal_expr_open, $.expr)),
+    equal_expr_open: ($) => seq($.expr, "="),
 
     function_call_block: ($) =>
       seq($.function_call_open, optional($.exprs), optional(","), ")"),
 
-    function_call_open: ($) => seq($.expr_remote, "("),
+    function_call_open: ($) => seq($.remote_expr, "("),
 
-    expr_remote: ($) =>
+    remote_expr: ($) =>
       choice(
         $.expr_max,
         prec.nonassoc(PREC.colon, seq($.expr_max, ":", $.expr_max))
       ),
 
-    expr_max: ($) => choice($._atomic),
+    expr_max: ($) => choice($.variable, $._atomic),
 
     //argument_list: ($) => seq("(", optional($.exprs), ")"),
 
@@ -140,6 +145,8 @@ module.exports = grammar({
     //    $.record_pat_expr,
     //    $.pat_expr_max
     //  ),
+
+    variable: (_) => token(/[A-Z][a-zA-Z0-9_]*/),
 
     _atomic: ($) => choice($.atom, $.strings),
 

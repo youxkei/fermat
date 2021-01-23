@@ -59,7 +59,7 @@ fn block_style(kind_id: KindId) -> BlockStyle {
     match kind_id {
         KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::Export,
         KindId::FUNCTION_CALL_BLOCK => BlockStyle::FunctionCall,
-        KindId::FUNCTION_CLAUSE_BLOCK => BlockStyle::Function,
+        KindId::FUNCTION_CLAUSE_BLOCK | KindId::EQUAL_EXPR_BLOCK => BlockStyle::Function,
         _ => panic!("{:?} is not a block node", kind_id),
     }
 }
@@ -116,7 +116,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::CLAUSE_GUARD
         | KindId::EXPR
         | KindId::FUNCTION_CALL_OPEN
-        | KindId::EXPR_REMOTE
+        | KindId::REMOTE_EXPR
+        | KindId::EQUAL_EXPR_OPEN
         | KindId::EXPR_MAX => {
             let mut result = unit!();
             let mut comments = unit!();
@@ -130,7 +131,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         comments = stack!(comments, node_to_layout_expr(child, source_code))
                     }
 
-                    KindId::HYPHEN_GT => {
+                    KindId::HYPHEN_GT | KindId::EQUAL => {
                         result = apposition!(
                             result,
                             text!(" "),
@@ -316,6 +317,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         // block
         KindId::EXPORT_ATTRIBUTE_BLOCK
         | KindId::FUNCTION_CLAUSE_BLOCK
+        | KindId::EQUAL_EXPR_BLOCK
         | KindId::FUNCTION_CALL_BLOCK => {
             let mut comments = unit!();
             let mut open = unit!();
@@ -461,9 +463,11 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::SEMICOLON
         | KindId::COLON
         | KindId::DOUBLE_QUOTE
+        | KindId::EQUAL
         | KindId::MODULE
         | KindId::EXPORT
         | KindId::WHEN
+        | KindId::VARIABLE
         | KindId::ATOM
         | KindId::INTEGER
         | KindId::STRING

@@ -348,11 +348,45 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "equal_expr_block"
+        },
+        {
+          "type": "SYMBOL",
           "name": "function_call_block"
         },
         {
           "type": "SYMBOL",
-          "name": "expr_remote"
+          "name": "remote_expr"
+        }
+      ]
+    },
+    "equal_expr_block": {
+      "type": "PREC_RIGHT",
+      "value": 100,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "equal_expr_open"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "expr"
+          }
+        ]
+      }
+    },
+    "equal_expr_open": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "expr"
+        },
+        {
+          "type": "STRING",
+          "value": "="
         }
       ]
     },
@@ -398,7 +432,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "expr_remote"
+          "name": "remote_expr"
         },
         {
           "type": "STRING",
@@ -406,7 +440,7 @@
         }
       ]
     },
-    "expr_remote": {
+    "remote_expr": {
       "type": "CHOICE",
       "members": [
         {
@@ -441,9 +475,20 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "variable"
+        },
+        {
+          "type": "SYMBOL",
           "name": "_atomic"
         }
       ]
+    },
+    "variable": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "[A-Z][a-zA-Z0-9_]*"
+      }
     },
     "_atomic": {
       "type": "CHOICE",
