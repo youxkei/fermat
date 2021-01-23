@@ -46,10 +46,10 @@ enum BlockStyle {
 
     /*
      * apposition:
-     * fun() -> ok.
+     * function() -> ok.
      *
      * stack:
-     * fun() ->
+     * function() ->
      *     ok.
      */
     Function,
@@ -265,11 +265,12 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             let mut line = unit!();
 
             let mut apposable = false;
+            let mut last_line_comment = false;
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
                 match self::kind_id(child) {
-                    KindId::COMMA | KindId::SEMICOLON => {}
+                    KindId::COMMA | KindId::SEMICOLON | KindId::MULTIPLE_NEWLINES => {}
 
                     KindId::COMMENT => {
                         comments = stack!(comments, node_to_layout_expr(child, source_code));
@@ -291,12 +292,22 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         line = node_to_layout_expr(child, source_code);
 
                         apposable = is_apposable(kind_id);
+                        last_line_comment = kind_id == KindId::LINE_COMMENT;
                     }
                 }
             }
 
-            if !line.is_empty() {
-                body = stack!(body, line);
+            if comments.is_unit() {
+                if last_line_comment {
+                    body = stack!(body, line, text!(""))
+                } else {
+                    body = stack!(body, line);
+                }
+            } else {
+                body = stack!(
+                    body,
+                    apposition!(line, text!(" "), stack!(comments, text!("")))
+                )
             }
 
             body
@@ -314,7 +325,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
             let mut after_open = false;
             let mut apposable = false;
-            let mut not_apposable = false;
+            let mut has_non_apposable = false;
             let mut last_comment = false;
 
             let mut cursor = node.walk();
@@ -324,7 +335,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
                     KindId::COMMENT => {
                         comments = stack!(comments, node_to_layout_expr(child, source_code));
-                        not_apposable = true;
+                        has_non_apposable = true;
                     }
 
                     kind_id => {
@@ -342,9 +353,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         }
 
                         if apposable {
-                            if comments.is_unit() {
-                                last_comment = false
-                            } else {
+                            if !comments.is_unit() {
                                 if line.is_unit() {
                                     line = apposition!(line, comments);
                                 } else {
@@ -370,7 +379,13 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             line = node_to_layout_expr(child, source_code);
 
                             apposable = is_apposable(kind_id);
-                            not_apposable |= !apposable
+                            has_non_apposable |= !apposable;
+
+                            if kind_id == KindId::LINE_COMMENT {
+                                last_comment = true;
+                            } else {
+                                last_comment = false;
+                            }
                         }
                     }
                 }
@@ -410,10 +425,10 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
             let apposed = match block_style {
                 BlockStyle::Export => {
-                    if last_comment || not_apposable {
+                    if has_non_apposable {
                         unit!()
                     } else {
-                        apposition!(open, body, close)
+                        apposition!(open, multi_line_cost!(body), close)
                     }
                 }
 
@@ -618,6 +633,69 @@ mod parse_test {
     }
 
     #[test]
+    fn trailing_separator() {
+        assert_parse!(
+            "remove empty lines and trailing separator",
+            indoc! {r#"
+                main() ->
+                    ok
+
+                    % comment
+
+                    ,.
+            "#},
+            indoc! {r#"
+                main() ->
+                    ok % comment
+                       .
+            "#},
+        );
+
+        assert_parse!(
+            "comments indentation",
+            indoc! {r#"
+                main() ->
+                    ok % comment 1
+                       % comment 2
+                    , % comment 3
+                      % comment 4
+                    .
+            "#},
+            indoc! {r#"
+                main() ->
+                    ok % comment 1
+                       % comment 2
+                        % comment 3
+                        % comment 4
+                        .
+            "#},
+        );
+
+        assert_parse!(
+            "line comments indentation",
+            indoc! {r#"
+                main() ->
+                    ok
+                    %% line comment 1
+                    %% line comment 2
+                    ,
+                    %% line comment 3
+                    %% line comment 4
+                    .
+            "#},
+            indoc! {r#"
+                main() ->
+                    ok
+                    %% line comment 1
+                    %% line comment 2
+                     %% line comment 3
+                     %% line comment 4
+                     .
+            "#},
+        );
+    }
+
+    #[test]
     fn export_style_block() {
         assert_parse!(
             "remove some empty lines",
@@ -630,7 +708,7 @@ mod parse_test {
 
                          %% comment 2
 
-                         ]).
+                        ]).
             "#},
             indoc! {r#"
                 -export([
@@ -694,14 +772,10 @@ mod parse_test {
             indoc! {r#"
                 main() ->
 
-                    %% line comment
-
                     ok.
             "#},
             indoc! {r#"
                 main() ->
-                    %% line comment
-
                     ok.
             "#},
         );
@@ -725,11 +799,79 @@ mod parse_test {
                     ok.
             "#},
         );
+
+        assert_parse!(
+            "remove trailing separator",
+            indoc! {r#"
+                main() ->
+                    ok,.
+            "#},
+            indoc! {r#"
+                main() ->
+                    ok.
+            "#},
+        );
     }
 
     #[test]
     fn function_call_style_block() {
-        // TODO
+        assert_parse!(
+            "remove some empty lines",
+            indoc! {r#"
+                main() ->
+                    mod:function(
+
+                      "foo"
+
+                      ).
+            "#},
+            indoc! {r#"
+                main() ->
+                    mod:function(
+                      "foo").
+            "#},
+        );
+
+        assert_parse!(
+            "comments indentation",
+            indoc! {r#"
+                main() ->
+                    mod:function(
+                      % comment 1
+                      % comment 2
+                      "foo" % comment 3
+                            % comment 4
+                      ).
+            "#},
+        );
+
+        assert_parse!(
+            "line comments indentation",
+            indoc! {r#"
+                main() ->
+                    mod:function(
+                      %% line comment 1
+                      %% line comment 2
+                      "foo"
+                      %% line comment 3
+                      %% line comment 4
+                      ).
+            "#},
+        );
+
+        assert_parse!(
+            "remove trailing separator",
+            indoc! {r#"
+                main() ->
+                    mod:function(
+                      "foo",).
+            "#},
+            indoc! {r#"
+                main() ->
+                    mod:function(
+                      "foo").
+            "#},
+        );
     }
 }
 
@@ -797,21 +939,6 @@ mod format_test {
                          bar/2, % comment 2
                          foobar/3, % comment 3
                          baz/4 % comment 4
-                        ]).
-            "#},
-        );
-
-        assert_format!(
-            "stacked due to a comment",
-            Config {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         foo/1 % comment 1
                         ]).
             "#},
         );
@@ -890,6 +1017,85 @@ mod format_test {
                         ]).
             "#},
         );
+
+        assert_format!(
+            "stacked due to a before body comment",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         % comment
+                         foo/1
+                        ]).
+            "#},
+        );
+
+        assert_format!(
+            "stacked due to an after body comment",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         foo/1 % comment
+                        ]).
+            "#},
+        );
+
+        assert_format!(
+            "stacked due to a before body line comment",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         %% line comment
+                         foo/1
+                        ]).
+            "#},
+        );
+
+        assert_format!(
+            "stacked due to an after body line comment",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         foo/1
+                         %% line comment
+                        ]).
+            "#},
+        );
+
+        assert_format!(
+            "stacked due to a multi line body",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([
+                         foo/ % comment
+                              1
+                        ]).
+            "#},
+        );
     }
 
     #[test]
@@ -922,7 +1128,7 @@ mod format_test {
         );
 
         assert_format!(
-            "stacked due to a comment",
+            "stacked due to a before body comment",
             Config {
                 right_margin: 80,
                 newline_cost: 1,
@@ -937,7 +1143,7 @@ mod format_test {
         );
 
         assert_format!(
-            "stacked due to a line comment",
+            "stacked due to a before body line comment",
             Config {
                 right_margin: 80,
                 newline_cost: 1,
@@ -978,24 +1184,73 @@ mod format_test {
                 height_cost: 100,
             },
             indoc! {r#"
-                f() ->
-                    %% comment
-                    io:format("foo").
+                main() ->
+                    %% line comment
+                    mod:function("foo").
+            "#},
+        );
+
+        assert_format!(
+            "apposed with multi line body",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                main() ->
+                    %% line comment
+                    mod:function(mod: % comment
+                                      function).
+            "#},
+        );
+
+        assert_format!(
+            "apposed with last comment",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                main() ->
+                    %% line comment
+                    mod:function("foo" % comment
+                                 ).
+            "#},
+        );
+
+        assert_format!(
+            "apposed with last line comment",
+            Config {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                main() ->
+                    %% line comment
+                    mod:function("foo"
+                                 %% line comment
+                                 ).
             "#},
         );
 
         assert_format!(
             "stacked due to right margin",
             Config {
-                right_margin: 14,
+                right_margin: 23,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
                 height_cost: 100,
             },
             indoc! {r#"
-                f() ->
-                    %% comment
-                    io:format(
+                main() ->
+                    %% line comment
+                    mod:function(
                       "foo").
             "#},
         );
