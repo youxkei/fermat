@@ -365,7 +365,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "equal_expr_block"
+          "name": "equal_op_expr_block"
         },
         {
           "type": "SYMBOL",
@@ -377,7 +377,7 @@
         }
       ]
     },
-    "equal_expr_block": {
+    "equal_op_expr_block": {
       "type": "PREC_RIGHT",
       "value": 100,
       "content": {
@@ -385,7 +385,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "equal_expr_open"
+            "name": "equal_op_expr_open"
           },
           {
             "type": "SYMBOL",
@@ -394,7 +394,7 @@
         ]
       }
     },
-    "equal_expr_open": {
+    "equal_op_expr_open": {
       "type": "SEQ",
       "members": [
         {

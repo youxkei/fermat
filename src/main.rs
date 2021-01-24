@@ -59,7 +59,7 @@ fn block_style(kind_id: KindId) -> BlockStyle {
     match kind_id {
         KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::Export,
         KindId::FUNCTION_CALL_BLOCK => BlockStyle::FunctionCall,
-        KindId::FUNCTION_CLAUSE_BLOCK | KindId::EQUAL_EXPR_BLOCK => BlockStyle::Function,
+        KindId::FUNCTION_CLAUSE_BLOCK | KindId::EQUAL_OP_EXPR_BLOCK => BlockStyle::Function,
         _ => panic!("{:?} is not a block node", kind_id),
     }
 }
@@ -117,7 +117,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::EXPR
         | KindId::FUNCTION_CALL_OPEN
         | KindId::REMOTE_EXPR
-        | KindId::EQUAL_EXPR_OPEN
+        | KindId::EQUAL_OP_EXPR_OPEN
         | KindId::EXPR_MAX => {
             let mut result = unit!();
             let mut comments = unit!();
@@ -326,7 +326,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         // block
         KindId::EXPORT_ATTRIBUTE_BLOCK
         | KindId::FUNCTION_CLAUSE_BLOCK
-        | KindId::EQUAL_EXPR_BLOCK
+        | KindId::EQUAL_OP_EXPR_BLOCK
         | KindId::FUNCTION_CALL_BLOCK => {
             let mut comments = unit!();
             let mut open = unit!();

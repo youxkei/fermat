@@ -110,7 +110,8 @@ module.exports = grammar({
     expr: ($) =>
       choice(
         prec(PREC.catch_, seq("catch", $.expr)),
-        $.equal_expr_block,
+        $.equal_op_expr_block,
+        //$.add_expr_block,
         //$.binary_op_expr,
         //$.unary_expr,
         //$.map_expr,
@@ -119,10 +120,10 @@ module.exports = grammar({
         $.remote_expr
       ),
 
-    equal_expr_block: ($) =>
-      prec.right(PREC.equal_exclam, seq($.equal_expr_open, $.expr)),
+    equal_op_expr_block: ($) =>
+      prec.right(PREC.equal_exclam, seq($.equal_op_expr_open, $.expr)),
 
-    equal_expr_open: ($) => seq($.expr, "="),
+    equal_op_expr_open: ($) => seq($.expr, "="),
 
     function_call_block: ($) =>
       seq($.function_call_open, optional($.exprs), optional(","), ")"),
