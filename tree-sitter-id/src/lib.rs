@@ -51,6 +51,15 @@ pub fn define_kind_id(_item: TokenStream) -> TokenStream {
         }
     });
 
+    let op_kind_id_idents = kind_ids.iter().filter_map(move |(_, kind_name)| {
+        if kind_name.ends_with("_OP") {
+            let ident = format_ident!("{}", kind_name);
+            Some(quote! { #ident })
+        } else {
+            None
+        }
+    });
+
     (quote! {
         #[repr(u16)]
         #[derive(Debug, Copy, Clone, PartialEq)]
@@ -70,6 +79,13 @@ pub fn define_kind_id(_item: TokenStream) -> TokenStream {
             fn is_close(&self) -> bool {
                 match self {
                     #(KindId::#close_kind_id_idents)|* => true,
+                    _ => false,
+                }
+            }
+
+            fn is_op(&self) -> bool {
+                match self {
+                    #(KindId::#op_kind_id_idents)|* => true,
                     _ => false,
                 }
             }
@@ -93,6 +109,7 @@ fn identize(token: &str) -> &str {
         ":" => "COLON",
         "\"" => "DOUBLE_QUOTE",
         "=" => "EQUAL",
+        "+" => "PLUS",
         _ => token,
     }
 }

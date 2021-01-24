@@ -59,7 +59,7 @@ fn block_style(kind_id: KindId) -> BlockStyle {
     match kind_id {
         KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::Export,
         KindId::FUNCTION_CALL_BLOCK => BlockStyle::FunctionCall,
-        KindId::FUNCTION_CLAUSE_BLOCK | KindId::EQUAL_OP_EXPR_BLOCK => BlockStyle::Function,
+        KindId::FUNCTION_CLAUSE_BLOCK => BlockStyle::Function,
         _ => panic!("{:?} is not a block node", kind_id),
     }
 }
@@ -114,11 +114,11 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::FUNCTION_CLAUSE_OPEN
         | KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
-        | KindId::EXPR
         | KindId::FUNCTION_CALL_OPEN
         | KindId::REMOTE_EXPR
-        | KindId::EQUAL_OP_EXPR_OPEN
-        | KindId::EXPR_MAX => {
+        | KindId::EXPR_MAX
+        | KindId::EQUAL_OP
+        | KindId::ADD_OP => {
             let mut result = unit!();
             let mut comments = unit!();
 
@@ -131,20 +131,11 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         comments = stack!(comments, node_to_layout_expr(child, source_code))
                     }
 
-                    KindId::HYPHEN_GT | KindId::EQUAL => {
+                    KindId::HYPHEN_GT => {
                         result = apposition!(
                             result,
                             text!(" "),
                             stack!(comments, node_to_layout_expr(child, source_code))
-                        );
-
-                        comments = unit!();
-                    }
-
-                    KindId::CATCH => {
-                        result = stack!(
-                            comments,
-                            apposition!(node_to_layout_expr(child, source_code), text!(" "))
                         );
 
                         comments = unit!();
@@ -323,10 +314,129 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             body
         }
 
+        // operands and a operator
+        KindId::EXPR => {
+            let mut lhs = unit!();
+            let mut comments_between_lhs_and_op = unit!();
+            let mut op = unit!();
+            let mut op_kind_id = KindId::ERROR;
+            let mut comments_between_op_and_rhs = unit!();
+            let mut rhs = unit!();
+
+            enum Phase {
+                Lhs,
+                Rhs,
+            }
+            let mut phase = Phase::Lhs;
+
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                match phase {
+                    Phase::Lhs => match self::kind_id(child) {
+                        KindId::MULTIPLE_NEWLINES => {}
+
+                        KindId::COMMENT | KindId::LINE_COMMENT => {
+                            comments_between_lhs_and_op = stack!(
+                                comments_between_lhs_and_op,
+                                node_to_layout_expr(child, source_code)
+                            )
+                        }
+
+                        kind_id => {
+                            if kind_id.is_op() {
+                                op = node_to_layout_expr(child, source_code);
+                                op_kind_id = kind_id;
+                                phase = Phase::Rhs;
+                            } else {
+                                lhs = node_to_layout_expr(child, source_code);
+                            }
+                        }
+                    },
+
+                    Phase::Rhs => match self::kind_id(child) {
+                        KindId::MULTIPLE_NEWLINES => {}
+
+                        KindId::COMMENT | KindId::LINE_COMMENT => {
+                            comments_between_op_and_rhs = stack!(
+                                comments_between_op_and_rhs,
+                                node_to_layout_expr(child, source_code)
+                            )
+                        }
+
+                        _ => rhs = node_to_layout_expr(child, source_code),
+                    },
+                }
+            }
+
+            if op.is_unit() {
+                lhs
+            } else {
+                let apposed = apposition!(
+                    lhs.clone(),
+                    text!(" "),
+                    stack!(
+                        comments_between_lhs_and_op.clone(),
+                        apposition!(
+                            op.clone(),
+                            text!(" "),
+                            stack!(comments_between_op_and_rhs.clone(), text!(""))
+                        )
+                    )
+                );
+
+                let stacked = match op_kind_id {
+                    KindId::ADD_OP => {
+                        stack!(
+                            apposition!(
+                                lhs,
+                                if comments_between_op_and_rhs.is_unit() {
+                                    unit!()
+                                } else {
+                                    text!(" ")
+                                },
+                                comments_between_lhs_and_op,
+                            ),
+                            apposition!(
+                                text!("  "),
+                                op,
+                                text!(" "),
+                                stack!(comments_between_op_and_rhs, text!(""))
+                            )
+                        )
+                    }
+
+                    KindId::EQUAL_OP => {
+                        stack!(
+                            apposition!(
+                                lhs,
+                                text!(" "),
+                                stack!(
+                                    comments_between_lhs_and_op,
+                                    apposition!(
+                                        op,
+                                        if comments_between_op_and_rhs.is_unit() {
+                                            unit!()
+                                        } else {
+                                            text!(" ")
+                                        },
+                                        comments_between_op_and_rhs,
+                                    )
+                                ),
+                            ),
+                            text!("    ")
+                        )
+                    }
+
+                    _ => panic!("{:?} is not a operator", op_kind_id),
+                };
+
+                apposition!(choice!(stacked, apposed), rhs)
+            }
+        }
+
         // block
         KindId::EXPORT_ATTRIBUTE_BLOCK
         | KindId::FUNCTION_CLAUSE_BLOCK
-        | KindId::EQUAL_OP_EXPR_BLOCK
         | KindId::FUNCTION_CALL_BLOCK => {
             let mut comments = unit!();
             let mut open = unit!();
@@ -473,10 +583,16 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::COLON
         | KindId::DOUBLE_QUOTE
         | KindId::EQUAL
+        | KindId::PLUS
         | KindId::MODULE
         | KindId::EXPORT
         | KindId::WHEN
-        | KindId::CATCH
+        | KindId::BOR
+        | KindId::BXOR
+        | KindId::BSL
+        | KindId::BSR
+        | KindId::OR
+        | KindId::XOR
         | KindId::VARIABLE
         | KindId::ATOM
         | KindId::INTEGER

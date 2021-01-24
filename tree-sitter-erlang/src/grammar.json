@@ -347,14 +347,39 @@
       "type": "CHOICE",
       "members": [
         {
-          "type": "PREC",
-          "value": 1,
+          "type": "PREC_RIGHT",
+          "value": 100,
           "content": {
             "type": "SEQ",
             "members": [
               {
-                "type": "STRING",
-                "value": "catch"
+                "type": "SYMBOL",
+                "name": "expr"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "equal_op"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "expr"
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_RIGHT",
+          "value": 400,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "expr"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "add_op"
               },
               {
                 "type": "SYMBOL",
@@ -365,45 +390,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "equal_op_expr_block"
-        },
-        {
-          "type": "SYMBOL",
           "name": "function_call_block"
         },
         {
           "type": "SYMBOL",
           "name": "remote_expr"
-        }
-      ]
-    },
-    "equal_op_expr_block": {
-      "type": "PREC_RIGHT",
-      "value": 100,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "equal_op_expr_open"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "expr"
-          }
-        ]
-      }
-    },
-    "equal_op_expr_open": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "expr"
-        },
-        {
-          "type": "STRING",
-          "value": "="
         }
       ]
     },
@@ -500,6 +491,52 @@
         }
       ]
     },
+    "equal_op": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "="
+        }
+      ]
+    },
+    "add_op": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "+"
+        },
+        {
+          "type": "STRING",
+          "value": "-"
+        },
+        {
+          "type": "STRING",
+          "value": "bor"
+        },
+        {
+          "type": "STRING",
+          "value": "bxor"
+        },
+        {
+          "type": "STRING",
+          "value": "bsl"
+        },
+        {
+          "type": "STRING",
+          "value": "bsr"
+        },
+        {
+          "type": "STRING",
+          "value": "or"
+        },
+        {
+          "type": "STRING",
+          "value": "xor"
+        }
+      ]
+    },
     "variable": {
       "type": "TOKEN",
       "content": {
@@ -513,6 +550,10 @@
         {
           "type": "SYMBOL",
           "name": "atom"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "integer"
         },
         {
           "type": "SYMBOL",

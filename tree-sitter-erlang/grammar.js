@@ -109,9 +109,9 @@ module.exports = grammar({
 
     expr: ($) =>
       choice(
-        prec(PREC.catch_, seq("catch", $.expr)),
-        $.equal_op_expr_block,
-        //$.add_expr_block,
+        //prec(PREC.catch_, seq(alias("catch", "catch_op"), $.expr)),
+        prec.right(PREC.equal_exclam, seq($.expr, $.equal_op, $.expr)),
+        prec.right(PREC.add_op, seq($.expr, $.add_op, $.expr)),
         //$.binary_op_expr,
         //$.unary_expr,
         //$.map_expr,
@@ -119,11 +119,6 @@ module.exports = grammar({
         //$.record_expr,
         $.remote_expr
       ),
-
-    equal_op_expr_block: ($) =>
-      prec.right(PREC.equal_exclam, seq($.equal_op_expr_open, $.expr)),
-
-    equal_op_expr_open: ($) => seq($.expr, "="),
 
     function_call_block: ($) =>
       seq($.function_call_open, optional($.exprs), optional(","), ")"),
@@ -149,9 +144,13 @@ module.exports = grammar({
     //    $.pat_expr_max
     //  ),
 
+    equal_op: (_) => seq("="),
+
+    add_op: (_) => choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor"),
+
     variable: (_) => token(/[A-Z][a-zA-Z0-9_]*/),
 
-    _atomic: ($) => choice($.atom, $.strings),
+    _atomic: ($) => choice($.atom, $.integer, $.strings),
 
     atom: (_) => token(choice(/'(\\.|[^'])*'/, /[a-z][a-zA-Z0-9_@]*/)),
 
