@@ -115,6 +115,10 @@
           "named": true
         },
         {
+          "type": "expr",
+          "named": true
+        },
+        {
           "type": "function_call_block",
           "named": true
         },
@@ -437,6 +441,10 @@
   {
     "type": "atom",
     "named": true
+  },
+  {
+    "type": "catch",
+    "named": false
   },
   {
     "type": "comment",

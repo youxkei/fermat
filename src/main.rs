@@ -141,6 +141,15 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         comments = unit!();
                     }
 
+                    KindId::CATCH => {
+                        result = stack!(
+                            comments,
+                            apposition!(node_to_layout_expr(child, source_code), text!(" "))
+                        );
+
+                        comments = unit!();
+                    }
+
                     _ => {
                         result = apposition!(
                             result,
@@ -467,6 +476,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::MODULE
         | KindId::EXPORT
         | KindId::WHEN
+        | KindId::CATCH
         | KindId::VARIABLE
         | KindId::ATOM
         | KindId::INTEGER

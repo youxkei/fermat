@@ -9,4 +9,4 @@
 main() ->
     %% line comment 1
     Result =
-        io:format("Lorem ipsum dolor sit amet").
+        catch io:format("Lorem ipsum dolor sit amet").

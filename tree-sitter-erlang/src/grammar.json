@@ -347,6 +347,23 @@
       "type": "CHOICE",
       "members": [
         {
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "catch"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "expr"
+              }
+            ]
+          }
+        },
+        {
           "type": "SYMBOL",
           "name": "equal_expr_block"
         },
