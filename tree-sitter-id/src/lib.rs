@@ -110,6 +110,7 @@ fn identize(token: &str) -> &str {
         "\"" => "DOUBLE_QUOTE",
         "=" => "EQUAL",
         "+" => "PLUS",
+        "!" => "EXCLAM",
         _ => token,
     }
 }

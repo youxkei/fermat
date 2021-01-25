@@ -68,26 +68,24 @@ fn main() {
     let source_code = fs::read_to_string("hello.erl").unwrap();
 
     let config = Config {
-        right_margin: 49,
+        right_margin: 50,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
     };
 
-    println!(
-        "{}|\n{}",
-        repeat(' ')
-            .take((config.right_margin - 1) as usize)
-            .collect::<String>(),
-        format(&source_code, &config),
-    );
+    println!("{}", format(&source_code, &config),);
 }
 
 fn format(source_code: &str, config: &Config) -> String {
     let layout_expr = parse(&source_code);
     let layout_fun = LayoutFun::from_layout_expr(&*layout_expr, &config);
 
-    layout_fun.at(0).layout_expr.format(0, false).0
+    let calculated = layout_fun.at(0);
+
+    println!("cost: {}", calculated.cost);
+
+    calculated.layout_expr.format(0, false).0
 }
 
 fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
@@ -115,9 +113,12 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
         | KindId::FUNCTION_CALL_OPEN
+        | KindId::CATCH_EXPR
+        | KindId::PREFIX_EXPR
         | KindId::REMOTE_EXPR
-        | KindId::EXPR_MAX
+        | KindId::CATCH_OP
         | KindId::EQUAL_OP
+        | KindId::EXCLAM_OP
         | KindId::ADD_OP => {
             let mut result = unit!();
             let mut comments = unit!();
@@ -314,123 +315,72 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             body
         }
 
-        // operands and a operator
-        KindId::EXPR => {
-            let mut lhs = unit!();
-            let mut comments_between_lhs_and_op = unit!();
-            let mut op = unit!();
-            let mut op_kind_id = KindId::ERROR;
-            let mut comments_between_op_and_rhs = unit!();
-            let mut rhs = unit!();
-
-            enum Phase {
-                Lhs,
-                Rhs,
-            }
-            let mut phase = Phase::Lhs;
+        // operands and binary operators
+        KindId::EQUAL_EXCLAM_EXPR
+        | KindId::ORELSE_EXPR
+        | KindId::ANDALSO_EXPR
+        | KindId::COMP_EXPR
+        | KindId::LIST_EXPR
+        | KindId::ADD_EXPR
+        | KindId::MULT_EXPR => {
+            let mut operands = vec![];
+            let mut operators = vec![];
+            let mut comments = unit!();
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
-                match phase {
-                    Phase::Lhs => match self::kind_id(child) {
-                        KindId::MULTIPLE_NEWLINES => {}
+                match self::kind_id(child) {
+                    KindId::MULTIPLE_NEWLINES => {}
 
-                        KindId::COMMENT | KindId::LINE_COMMENT => {
-                            comments_between_lhs_and_op = stack!(
-                                comments_between_lhs_and_op,
-                                node_to_layout_expr(child, source_code)
-                            )
+                    KindId::COMMENT | KindId::LINE_COMMENT => {
+                        comments = stack!(comments, node_to_layout_expr(child, source_code))
+                    }
+
+                    kind_id => {
+                        if kind_id.is_op() {
+                            operators.push((
+                                kind_id,
+                                stack!(comments, node_to_layout_expr(child, source_code)),
+                            ));
+                        } else {
+                            operands
+                                .push(stack!(comments, node_to_layout_expr(child, source_code)));
                         }
 
-                        kind_id => {
-                            if kind_id.is_op() {
-                                op = node_to_layout_expr(child, source_code);
-                                op_kind_id = kind_id;
-                                phase = Phase::Rhs;
-                            } else {
-                                lhs = node_to_layout_expr(child, source_code);
-                            }
-                        }
-                    },
-
-                    Phase::Rhs => match self::kind_id(child) {
-                        KindId::MULTIPLE_NEWLINES => {}
-
-                        KindId::COMMENT | KindId::LINE_COMMENT => {
-                            comments_between_op_and_rhs = stack!(
-                                comments_between_op_and_rhs,
-                                node_to_layout_expr(child, source_code)
-                            )
-                        }
-
-                        _ => rhs = node_to_layout_expr(child, source_code),
-                    },
+                        comments = unit!();
+                    }
                 }
             }
 
-            if op.is_unit() {
-                lhs
+            if operators.len() == 0 {
+                operands[0].clone()
             } else {
-                let apposed = apposition!(
-                    lhs.clone(),
-                    text!(" "),
-                    stack!(
-                        comments_between_lhs_and_op.clone(),
-                        apposition!(
-                            op.clone(),
-                            text!(" "),
-                            stack!(comments_between_op_and_rhs.clone(), text!(""))
-                        )
-                    )
-                );
+                let mut apposed = operands[0].clone();
+                let mut stacked = apposed.clone();
 
-                let stacked = match op_kind_id {
-                    KindId::ADD_OP => {
-                        stack!(
-                            apposition!(
-                                lhs,
-                                if comments_between_op_and_rhs.is_unit() {
-                                    unit!()
-                                } else {
-                                    text!(" ")
-                                },
-                                comments_between_lhs_and_op,
-                            ),
-                            apposition!(
-                                text!("  "),
-                                op,
-                                text!(" "),
-                                stack!(comments_between_op_and_rhs, text!(""))
+                for ((kind_id, operator), operand) in operators.into_iter().zip(operands.drain(1..))
+                {
+                    apposed = apposition!(
+                        apposed,
+                        text!(" "),
+                        operator.clone(),
+                        text!(" "),
+                        operand.clone()
+                    );
+
+                    match kind_id {
+                        KindId::EQUAL_OP => {
+                            stacked = stack!(
+                                apposition!(stacked, text!(" "), operator),
+                                apposition!(text!("    "), operand),
                             )
-                        )
+                        }
+
+                        _ => stacked = stack!(stacked, apposition!(operator, text!(" "), operand)),
                     }
+                }
 
-                    KindId::EQUAL_OP => {
-                        stack!(
-                            apposition!(
-                                lhs,
-                                text!(" "),
-                                stack!(
-                                    comments_between_lhs_and_op,
-                                    apposition!(
-                                        op,
-                                        if comments_between_op_and_rhs.is_unit() {
-                                            unit!()
-                                        } else {
-                                            text!(" ")
-                                        },
-                                        comments_between_op_and_rhs,
-                                    )
-                                ),
-                            ),
-                            text!("    ")
-                        )
-                    }
-
-                    _ => panic!("{:?} is not a operator", op_kind_id),
-                };
-
-                apposition!(choice!(stacked, apposed), rhs)
+                choice!(stacked, apposed)
             }
         }
 
@@ -584,9 +534,11 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::DOUBLE_QUOTE
         | KindId::EQUAL
         | KindId::PLUS
+        | KindId::EXCLAM
         | KindId::MODULE
         | KindId::EXPORT
         | KindId::WHEN
+        | KindId::CATCH
         | KindId::BOR
         | KindId::BXOR
         | KindId::BSL
