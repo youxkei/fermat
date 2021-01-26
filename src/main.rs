@@ -83,8 +83,6 @@ fn format(source_code: &str, config: &Config) -> String {
 
     let calculated = layout_fun.at(0);
 
-    println!("cost: {}", calculated.cost);
-
     calculated.layout_expr.format(0, false).0
 }
 

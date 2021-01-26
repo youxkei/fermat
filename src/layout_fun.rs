@@ -260,7 +260,7 @@ impl<'a> LayoutFun<'a> {
                 }
 
                 let mut new_layout_fun = AvlTree::Empty;
-                let mut previous: Option<(Position, i32, i32)> = None;
+                let mut previous: Option<(Position, LayoutExpr<'a>, i32, i32)> = None;
 
                 for knot in knots.union(&adding_knots).cloned() {
                     let lhs_layout = lhs.at(knot);
@@ -275,12 +275,19 @@ impl<'a> LayoutFun<'a> {
                         rhs_layout
                     };
 
+                    let layout_expr = layout.layout_expr.clone();
                     let cost = layout.cost;
                     let cost_gradient = layout.cost_gradient;
 
                     match previous {
-                        Some((previous_knot, previous_cost, previous_cost_gradient)) => {
-                            if previous_cost_gradient != layout.cost_gradient
+                        Some((
+                            previous_knot,
+                            previous_layout_expr,
+                            previous_cost,
+                            previous_cost_gradient,
+                        )) => {
+                            if previous_layout_expr != layout_expr
+                                || previous_cost_gradient != layout.cost_gradient
                                 || previous_cost + (knot - previous_knot) * previous_cost_gradient
                                     != layout.cost
                             {
@@ -290,7 +297,7 @@ impl<'a> LayoutFun<'a> {
                         None => new_layout_fun = new_layout_fun.insert(knot, layout),
                     }
 
-                    previous = Some((knot, cost, cost_gradient))
+                    previous = Some((knot, layout_expr, cost, cost_gradient));
                 }
 
                 LayoutFun::Fun(Rc::new(new_layout_fun))
@@ -364,6 +371,7 @@ impl<'a> LayoutFun<'a> {
 #[cfg(test)]
 mod layout_fun_tests {
     use super::{Config, LayoutFun};
+    use crate::layout_expr::layout_expr;
     use insta::assert_debug_snapshot;
 
     #[test]
@@ -621,7 +629,7 @@ mod layout_fun_tests {
         };
 
         assert_debug_snapshot!(LayoutFun::from_layout_expr(
-            &*crate::layout_expr::layout_expr!(apposition(
+            &*layout_expr!(apposition(
                 choice(apposition("Foobarbaz =", " "), stack("Foobarbaz =", "    "),),
                 choice(
                     apposition("#record{", "field = 1", "}"),
@@ -635,6 +643,28 @@ mod layout_fun_tests {
             config
         )
         .to_vec())
+    }
+
+    #[test]
+    fn from_layout_expr_nested_choice() {
+        let config = &Config {
+            right_margin: 50,
+            newline_cost: 1,
+            beyond_right_margin_cost: 10000,
+            height_cost: 100,
+        };
+
+        let add_expr = layout_expr!(choice(
+            stack("12345678901234567890", "+ 12345678901234567890"),
+            "12345678901234567890 + 12345678901234567890",
+        ));
+
+        let equal_expr = layout_expr!(choice(
+            stack("Result =", apposition("    ", add_expr.clone())),
+            apposition("Result = ", add_expr),
+        ));
+
+        assert_debug_snapshot!(LayoutFun::from_layout_expr(&*equal_expr, config).to_vec())
     }
 }
 

@@ -1,0 +1,180 @@
+---
+source: src/layout_fun.rs
+expression: "LayoutFun::from_layout_expr(&*equal_expr, config).to_vec()"
+---
+[
+    (
+        0,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Result =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Text(
+                        "12345678901234567890 + 12345678901234567890",
+                    ),
+                ),
+            ),
+            span: 47,
+            height: 2,
+            cost: 1,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        3,
+        Layout {
+            layout_expr: Apposition(
+                Text(
+                    "Result = ",
+                ),
+                Stack(
+                    Text(
+                        "12345678901234567890",
+                    ),
+                    Text(
+                        "+ 12345678901234567890",
+                    ),
+                ),
+            ),
+            span: 31,
+            height: 2,
+            cost: 1,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        19,
+        Layout {
+            layout_expr: Apposition(
+                Text(
+                    "Result = ",
+                ),
+                Stack(
+                    Text(
+                        "12345678901234567890",
+                    ),
+                    Text(
+                        "+ 12345678901234567890",
+                    ),
+                ),
+            ),
+            span: 31,
+            height: 2,
+            cost: 1,
+            cost_gradient: 10000,
+        },
+    ),
+    (
+        20,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Result =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Stack(
+                        Text(
+                            "12345678901234567890",
+                        ),
+                        Text(
+                            "+ 12345678901234567890",
+                        ),
+                    ),
+                ),
+            ),
+            span: 26,
+            height: 3,
+            cost: 2,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        24,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Result =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Stack(
+                        Text(
+                            "12345678901234567890",
+                        ),
+                        Text(
+                            "+ 12345678901234567890",
+                        ),
+                    ),
+                ),
+            ),
+            span: 26,
+            height: 3,
+            cost: 2,
+            cost_gradient: 10000,
+        },
+    ),
+    (
+        26,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Result =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Stack(
+                        Text(
+                            "12345678901234567890",
+                        ),
+                        Text(
+                            "+ 12345678901234567890",
+                        ),
+                    ),
+                ),
+            ),
+            span: 26,
+            height: 3,
+            cost: 20002,
+            cost_gradient: 20000,
+        },
+    ),
+    (
+        42,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "Result =",
+                ),
+                Apposition(
+                    Text(
+                        "    ",
+                    ),
+                    Stack(
+                        Text(
+                            "12345678901234567890",
+                        ),
+                        Text(
+                            "+ 12345678901234567890",
+                        ),
+                    ),
+                ),
+            ),
+            span: 26,
+            height: 3,
+            cost: 340002,
+            cost_gradient: 30000,
+        },
+    ),
+]
