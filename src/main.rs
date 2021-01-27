@@ -107,11 +107,17 @@ fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
     let tree = parser.parse(source_code, None).unwrap();
     let root_node = tree.root_node();
 
-    node_to_layout_expr(root_node, source_code)
+    node_to_layout_expr(root_node, source_code, 0)
 }
 
-fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
+fn node_to_layout_expr<'a>(
+    node: Node<'_>,
+    source_code: &'a str,
+    choice_nest_level: u8,
+) -> Rc<LayoutExpr<'a>> {
     let kind_id = kind_id(node);
+
+    dbg!(node, choice_nest_level);
 
     match kind_id {
         // elements that should be apposed
@@ -139,14 +145,20 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     KindId::MULTIPLE_NEWLINES => {}
 
                     KindId::COMMENT | KindId::LINE_COMMENT => {
-                        comments = stack!(comments, node_to_layout_expr(child, source_code))
+                        comments = stack!(
+                            comments,
+                            node_to_layout_expr(child, source_code, choice_nest_level)
+                        )
                     }
 
                     KindId::HYPHEN_GT => {
                         result = apposition!(
                             result,
                             text!(" "),
-                            stack!(comments, node_to_layout_expr(child, source_code))
+                            stack!(
+                                comments,
+                                node_to_layout_expr(child, source_code, choice_nest_level)
+                            )
                         );
 
                         comments = unit!();
@@ -160,7 +172,10 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             } else {
                                 text!(" ")
                             },
-                            stack!(comments, node_to_layout_expr(child, source_code))
+                            stack!(
+                                comments,
+                                node_to_layout_expr(child, source_code, choice_nest_level)
+                            )
                         );
 
                         comments = unit!();
@@ -189,7 +204,10 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             for child in node.children(&mut cursor) {
                 match self::kind_id(child) {
                     KindId::COMMENT => {
-                        comments = stack!(comments, node_to_layout_expr(child, source_code));
+                        comments = stack!(
+                            comments,
+                            node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                        );
 
                         should_stack = true;
                     }
@@ -197,21 +215,25 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     KindId::COMMA | KindId::SEMICOLON | KindId::PERIOD => {
                         if apposable {
                             if comments.is_unit() {
-                                element =
-                                    apposition!(element, node_to_layout_expr(child, source_code));
+                                element = apposition!(
+                                    element,
+                                    node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                                );
                             } else {
                                 element = apposition!(element, text!(" "), comments);
                                 elements.push(element);
                                 comments = unit!();
 
-                                element = node_to_layout_expr(child, source_code);
+                                element =
+                                    node_to_layout_expr(child, source_code, choice_nest_level + 1);
                             }
                         } else {
                             elements.push(element);
                             elements.push(comments);
                             comments = unit!();
 
-                            element = node_to_layout_expr(child, source_code);
+                            element =
+                                node_to_layout_expr(child, source_code, choice_nest_level + 1);
                         }
 
                         apposable = true;
@@ -230,7 +252,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         }
                         comments = unit!();
 
-                        element = node_to_layout_expr(child, source_code);
+                        element = node_to_layout_expr(child, source_code, choice_nest_level + 1);
 
                         apposable = is_apposable(kind_id);
                         should_stack |= !apposable;
@@ -286,7 +308,10 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     KindId::COMMA | KindId::SEMICOLON | KindId::MULTIPLE_NEWLINES => {}
 
                     KindId::COMMENT => {
-                        comments = stack!(comments, node_to_layout_expr(child, source_code));
+                        comments = stack!(
+                            comments,
+                            node_to_layout_expr(child, source_code, choice_nest_level)
+                        );
                     }
 
                     kind_id => {
@@ -302,7 +327,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         comments = unit!();
 
                         body = stack!(body, line);
-                        line = node_to_layout_expr(child, source_code);
+                        line = node_to_layout_expr(child, source_code, choice_nest_level);
 
                         apposable = is_apposable(kind_id);
                         last_line_comment = kind_id == KindId::LINE_COMMENT;
@@ -344,18 +369,26 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     KindId::MULTIPLE_NEWLINES => {}
 
                     KindId::COMMENT | KindId::LINE_COMMENT => {
-                        comments = stack!(comments, node_to_layout_expr(child, source_code))
+                        comments = stack!(
+                            comments,
+                            node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                        )
                     }
 
                     kind_id => {
                         if kind_id.is_op() {
                             operators.push((
                                 kind_id,
-                                stack!(comments, node_to_layout_expr(child, source_code)),
+                                stack!(
+                                    comments,
+                                    node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                                ),
                             ));
                         } else {
-                            operands
-                                .push(stack!(comments, node_to_layout_expr(child, source_code)));
+                            operands.push(stack!(
+                                comments,
+                                node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                            ));
                         }
 
                         comments = unit!();
@@ -417,7 +450,10 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     KindId::COMMA | KindId::SEMICOLON => {}
 
                     KindId::COMMENT => {
-                        comments = stack!(comments, node_to_layout_expr(child, source_code));
+                        comments = stack!(
+                            comments,
+                            node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                        );
                         has_non_apposable = true;
                     }
 
@@ -429,7 +465,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                         }
 
                         if kind_id.is_open() {
-                            open = node_to_layout_expr(child, source_code);
+                            open = node_to_layout_expr(child, source_code, choice_nest_level + 1);
                             after_open = true;
 
                             continue;
@@ -456,10 +492,10 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                             }
                             line = unit!();
 
-                            close = node_to_layout_expr(child, source_code);
+                            close = node_to_layout_expr(child, source_code, choice_nest_level + 1);
                         } else {
                             body = stack!(body, line);
-                            line = node_to_layout_expr(child, source_code);
+                            line = node_to_layout_expr(child, source_code, choice_nest_level + 1);
 
                             apposable = is_apposable(kind_id);
                             has_non_apposable |= !apposable;
@@ -478,57 +514,47 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                 body = stack!(body, line);
             }
 
-            let block_style = block_style(kind_id);
-
-            let stacked = match block_style {
-                BlockStyle::Export | BlockStyle::List => stack!(
-                    open.clone(),
-                    apposition!(text!(" "), body.clone()),
-                    close.clone()
-                ),
+            match block_style(kind_id) {
+                BlockStyle::Export => {
+                    choice!(
+                        stack!(
+                            open.clone(),
+                            apposition!(text!(" "), body.clone()),
+                            close.clone()
+                        ),
+                        if has_non_apposable {
+                            unit!()
+                        } else {
+                            apposition!(open, multi_line_cost!(body), close)
+                        }
+                    )
+                }
 
                 BlockStyle::Function => {
-                    stack!(open.clone(), apposition!(text!("    "), body.clone()))
+                    choice!(
+                        stack!(open.clone(), apposition!(text!("    "), body.clone())),
+                        apposition!(open, text!(" "), multi_line_cost!(body)),
+                    )
                 }
 
                 BlockStyle::FunctionCall => {
-                    if last_comment {
-                        stack!(
-                            open.clone(),
-                            apposition!(text!("  "), stack!(body.clone(), close.clone())),
-                        )
-                    } else {
-                        stack!(
-                            open.clone(),
-                            apposition!(text!("  "), body.clone(), close.clone()),
-                        )
-                    }
-                }
-            };
-
-            let apposed = match block_style {
-                BlockStyle::Export => {
-                    if has_non_apposable {
-                        unit!()
-                    } else {
-                        apposition!(open, multi_line_cost!(body), close)
-                    }
+                    apposition!(
+                        choice!(stack!(open.clone(), text!("  "),), open),
+                        if last_comment {
+                            stack!(body, close)
+                        } else {
+                            apposition!(body, close)
+                        }
+                    )
                 }
 
-                BlockStyle::Function => {
-                    apposition!(open, text!(" "), multi_line_cost!(body))
-                }
-
-                BlockStyle::FunctionCall | BlockStyle::List => {
-                    if last_comment {
-                        apposition!(open, stack!(body, close))
-                    } else {
+                BlockStyle::List => {
+                    choice!(
+                        apposition!(open.clone(), body.clone(), close.clone()),
                         apposition!(open, body, close)
-                    }
+                    )
                 }
-            };
-
-            choice!(stacked, apposed)
+            }
         }
 
         // text
