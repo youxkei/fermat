@@ -51,6 +51,7 @@ module.exports = grammar({
     [$.export_attribute_mfas],
     [$.exprs],
     [$.function_clauses],
+    [$.list_elements],
   ],
 
   rules: {
@@ -109,6 +110,8 @@ module.exports = grammar({
 
     catch_expr: ($) => seq(optional($.catch_op), $.equal_exclam_expr),
 
+    catch_op: (_) => seq("catch"),
+
     equal_exclam_expr: ($) =>
       seq(
         $.orelse_expr,
@@ -117,6 +120,10 @@ module.exports = grammar({
         // '=' and '!' are unlikely to be nested.
         optional(seq(choice($.equal_op, $.exclam_op), $.equal_exclam_expr))
       ),
+
+    equal_op: (_) => choice("="),
+
+    exclam_op: (_) => choice("!"),
 
     orelse_expr: ($) => seq($.andalso_expr),
 
@@ -127,6 +134,8 @@ module.exports = grammar({
     list_expr: ($) => seq($.add_expr),
 
     add_expr: ($) => seq($.mult_expr, repeat(seq($.add_op, $.mult_expr))),
+
+    add_op: (_) => choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor"),
 
     mult_expr: ($) => seq($.prefix_expr),
 
@@ -159,15 +168,11 @@ module.exports = grammar({
     //    $.pat_expr_max
     //  ),
 
-    _primary_expr: ($) => choice($.variable, $._atomic),
+    _primary_expr: ($) => choice($.list_block, $.variable, $._atomic),
 
-    catch_op: (_) => seq("catch"),
+    list_block: ($) => seq("[", optional($.list_elements), optional(","), "]"),
 
-    equal_op: (_) => choice("="),
-
-    exclam_op: (_) => choice("!"),
-
-    add_op: (_) => choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor"),
+    list_elements: ($) => repeatSep1($.catch_expr, ","),
 
     variable: (_) => token(/[A-Z][a-zA-Z0-9_]*/),
 

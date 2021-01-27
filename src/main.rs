@@ -53,6 +53,17 @@ enum BlockStyle {
      *     ok.
      */
     Function,
+
+    /*
+     * apposition:
+     * [1, 2, 3]
+     *
+     * stack:
+     * [
+     *  1, 2, 3
+     * ]
+     */
+    List,
 }
 
 fn block_style(kind_id: KindId) -> BlockStyle {
@@ -60,6 +71,7 @@ fn block_style(kind_id: KindId) -> BlockStyle {
         KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::Export,
         KindId::FUNCTION_CALL_BLOCK => BlockStyle::FunctionCall,
         KindId::FUNCTION_CLAUSE_BLOCK => BlockStyle::Function,
+        KindId::LIST_BLOCK => BlockStyle::List,
         _ => panic!("{:?} is not a block node", kind_id),
     }
 }
@@ -161,10 +173,11 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
         // elements that should be stacked or apposed
         KindId::SOURCE_FILE
+        | KindId::EXPORT_ATTRIBUTE_MFAS
         | KindId::FUNCTION_CLAUSES
         | KindId::EXPRS
         | KindId::FUNCTION_CLAUSE_EXPRS
-        | KindId::EXPORT_ATTRIBUTE_MFAS
+        | KindId::LIST_ELEMENTS
         | KindId::STRINGS => {
             let mut elements = vec![];
             let mut element = unit!();
@@ -385,7 +398,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         // block
         KindId::EXPORT_ATTRIBUTE_BLOCK
         | KindId::FUNCTION_CLAUSE_BLOCK
-        | KindId::FUNCTION_CALL_BLOCK => {
+        | KindId::FUNCTION_CALL_BLOCK
+        | KindId::LIST_BLOCK => {
             let mut comments = unit!();
             let mut open = unit!();
             let mut close = unit!();
@@ -467,7 +481,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             let block_style = block_style(kind_id);
 
             let stacked = match block_style {
-                BlockStyle::Export => stack!(
+                BlockStyle::Export | BlockStyle::List => stack!(
                     open.clone(),
                     apposition!(text!(" "), body.clone()),
                     close.clone()
@@ -505,7 +519,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
                     apposition!(open, text!(" "), multi_line_cost!(body))
                 }
 
-                BlockStyle::FunctionCall => {
+                BlockStyle::FunctionCall | BlockStyle::List => {
                     if last_comment {
                         apposition!(open, stack!(body, close))
                     } else {

@@ -364,6 +364,15 @@
         }
       ]
     },
+    "catch_op": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "catch"
+        }
+      ]
+    },
     "equal_exclam_expr": {
       "type": "SEQ",
       "members": [
@@ -400,6 +409,24 @@
               "type": "BLANK"
             }
           ]
+        }
+      ]
+    },
+    "equal_op": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "="
+        }
+      ]
+    },
+    "exclam_op": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "!"
         }
       ]
     },
@@ -461,6 +488,43 @@
               }
             ]
           }
+        }
+      ]
+    },
+    "add_op": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "+"
+        },
+        {
+          "type": "STRING",
+          "value": "-"
+        },
+        {
+          "type": "STRING",
+          "value": "bor"
+        },
+        {
+          "type": "STRING",
+          "value": "bxor"
+        },
+        {
+          "type": "STRING",
+          "value": "bsl"
+        },
+        {
+          "type": "STRING",
+          "value": "bsr"
+        },
+        {
+          "type": "STRING",
+          "value": "or"
+        },
+        {
+          "type": "STRING",
+          "value": "xor"
         }
       ]
     },
@@ -571,6 +635,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "list_block"
+        },
+        {
+          "type": "SYMBOL",
           "name": "variable"
         },
         {
@@ -579,67 +647,65 @@
         }
       ]
     },
-    "catch_op": {
+    "list_block": {
       "type": "SEQ",
       "members": [
         {
           "type": "STRING",
-          "value": "catch"
+          "value": "["
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "list_elements"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "]"
         }
       ]
     },
-    "equal_op": {
-      "type": "CHOICE",
+    "list_elements": {
+      "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "="
-        }
-      ]
-    },
-    "exclam_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "!"
-        }
-      ]
-    },
-    "add_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "+"
+          "type": "SYMBOL",
+          "name": "catch_expr"
         },
         {
-          "type": "STRING",
-          "value": "-"
-        },
-        {
-          "type": "STRING",
-          "value": "bor"
-        },
-        {
-          "type": "STRING",
-          "value": "bxor"
-        },
-        {
-          "type": "STRING",
-          "value": "bsl"
-        },
-        {
-          "type": "STRING",
-          "value": "bsr"
-        },
-        {
-          "type": "STRING",
-          "value": "or"
-        },
-        {
-          "type": "STRING",
-          "value": "xor"
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "SYMBOL",
+                "name": "catch_expr"
+              }
+            ]
+          }
         }
       ]
     },
@@ -838,6 +904,9 @@
     ],
     [
       "function_clauses"
+    ],
+    [
+      "list_elements"
     ]
   ],
   "externals": [],
