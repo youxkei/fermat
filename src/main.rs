@@ -129,8 +129,7 @@ fn node_to_layout_expr<'a>(
         | KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
         | KindId::FUNCTION_CALL_OPEN
-        | KindId::CATCH_EXPR
-        | KindId::PREFIX_EXPR
+        | KindId::UNARRY_EXPR
         | KindId::REMOTE_EXPR
         | KindId::CATCH_OP
         | KindId::EQUAL_OP
@@ -351,80 +350,117 @@ fn node_to_layout_expr<'a>(
             body
         }
 
-        // operands and binary operators
-        KindId::EQUAL_EXCLAM_EXPR
-        | KindId::ORELSE_EXPR
-        | KindId::ANDALSO_EXPR
-        | KindId::COMP_EXPR
-        | KindId::LIST_EXPR
-        | KindId::ADD_EXPR
-        | KindId::MULT_EXPR => {
-            let mut operands = vec![];
-            let mut operators = vec![];
-            let mut comments = unit!();
+        // binary expression
+        KindId::BINARY_EXPR => {
+            let mut lhs = unit!();
+            let mut comments_between_lhs_and_op = unit!();
+            let mut op = unit!();
+            let mut op_kind_id = KindId::ERROR;
+            let mut comments_between_op_and_rhs = unit!();
+            let mut rhs = unit!();
+
+            enum Phase {
+                Lhs,
+                Rhs,
+            }
+            let mut phase = Phase::Lhs;
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
-                match self::kind_id(child) {
-                    KindId::MULTIPLE_NEWLINES => {}
+                match phase {
+                    Phase::Lhs => match self::kind_id(child) {
+                        KindId::MULTIPLE_NEWLINES => {}
 
-                    KindId::COMMENT | KindId::LINE_COMMENT => {
-                        comments = stack!(
-                            comments,
-                            node_to_layout_expr(child, source_code, choice_nest_level + 1)
-                        )
-                    }
-
-                    kind_id => {
-                        if kind_id.is_op() {
-                            operators.push((
-                                kind_id,
-                                stack!(
-                                    comments,
-                                    node_to_layout_expr(child, source_code, choice_nest_level + 1)
-                                ),
-                            ));
-                        } else {
-                            operands.push(stack!(
-                                comments,
+                        KindId::COMMENT | KindId::LINE_COMMENT => {
+                            comments_between_lhs_and_op = stack!(
+                                comments_between_lhs_and_op,
                                 node_to_layout_expr(child, source_code, choice_nest_level + 1)
-                            ));
-                        }
-
-                        comments = unit!();
-                    }
-                }
-            }
-
-            if operators.len() == 0 {
-                operands[0].clone()
-            } else {
-                let mut apposed = operands[0].clone();
-                let mut stacked = apposed.clone();
-
-                for ((kind_id, operator), operand) in operators.into_iter().zip(operands.drain(1..))
-                {
-                    apposed = apposition!(
-                        apposed,
-                        text!(" "),
-                        operator.clone(),
-                        text!(" "),
-                        operand.clone()
-                    );
-
-                    match kind_id {
-                        KindId::EQUAL_OP => {
-                            stacked = stack!(
-                                apposition!(stacked, text!(" "), operator),
-                                apposition!(text!("    "), operand),
                             )
                         }
 
-                        _ => stacked = stack!(stacked, apposition!(operator, text!(" "), operand)),
-                    }
+                        kind_id => {
+                            if kind_id.is_op() {
+                                op = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                                op_kind_id = kind_id;
+                                phase = Phase::Rhs;
+                            } else {
+                                lhs =
+                                    node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                            }
+                        }
+                    },
+
+                    Phase::Rhs => match self::kind_id(child) {
+                        KindId::MULTIPLE_NEWLINES => {}
+
+                        KindId::COMMENT | KindId::LINE_COMMENT => {
+                            comments_between_op_and_rhs = stack!(
+                                comments_between_op_and_rhs,
+                                node_to_layout_expr(child, source_code, choice_nest_level)
+                            )
+                        }
+
+                        _ => rhs = node_to_layout_expr(child, source_code, choice_nest_level),
+                    },
+                }
+            }
+
+            match op_kind_id {
+                KindId::EXCLAM_OP | KindId::ADD_OP => {
+                    apposition!(
+                        choice!(
+                            stack!(
+                                apposition!(
+                                    lhs.clone(),
+                                    if comments_between_lhs_and_op.is_unit() {
+                                        unit!()
+                                    } else {
+                                        apposition!(text!(" "), comments_between_lhs_and_op.clone())
+                                    },
+                                ),
+                                text!("")
+                            ),
+                            apposition!(
+                                lhs,
+                                text!(" "),
+                                if comments_between_lhs_and_op.is_unit() {
+                                    unit!()
+                                } else {
+                                    stack!(comments_between_lhs_and_op, text!(""))
+                                },
+                            )
+                        ),
+                        apposition!(op, text!(" "), stack!(comments_between_op_and_rhs, rhs))
+                    )
                 }
 
-                choice!(stacked, apposed)
+                KindId::EQUAL_OP => {
+                    apposition!(
+                        choice!(
+                            stack!(
+                                apposition!(
+                                    lhs.clone(),
+                                    text!(" "),
+                                    stack!(comments_between_lhs_and_op.clone(), op.clone()),
+                                ),
+                                text!("    ")
+                            ),
+                            apposition!(
+                                lhs,
+                                text!(" "),
+                                if comments_between_lhs_and_op.is_unit() {
+                                    op
+                                } else {
+                                    stack!(comments_between_lhs_and_op, op)
+                                },
+                                text!(" "),
+                            )
+                        ),
+                        stack!(comments_between_op_and_rhs, rhs)
+                    )
+                }
+
+                _ => panic!("{:?} is not covered", op_kind_id),
             }
         }
 

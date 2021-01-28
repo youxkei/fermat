@@ -106,49 +106,35 @@ module.exports = grammar({
     function_clause_exprs_trailing_comma: ($) =>
       seq(alias($.exprs, "function_clause_exprs"), optional(",")),
 
-    exprs: ($) => repeatComma1($.catch_expr),
+    exprs: ($) => repeatComma1($._expr),
 
-    catch_expr: ($) => seq(optional($.catch_op), $.equal_exclam_expr),
+    _expr: ($) =>
+      choice(
+        $.binary_expr,
+        $.unarry_expr,
+        $.remote_expr,
+        $.function_call_block,
+        $._primary_expr
+      ),
 
-    catch_op: (_) => seq("catch"),
-
-    equal_exclam_expr: ($) =>
-      seq(
-        $.orelse_expr,
-        // Do not use repeat to avoid that '=' and '!' is mixed up.
-        // While this leads choice nesting, it is acceptable because
-        // '=' and '!' are unlikely to be nested.
-        optional(seq(choice($.equal_op, $.exclam_op), $.equal_exclam_expr))
+    binary_expr: ($) =>
+      choice(
+        prec.right(
+          PREC.equal_exclam,
+          seq($._expr, choice($.equal_op, $.exclam_op), $._expr)
+        ),
+        prec.right(PREC.add_op, seq($._expr, $.add_op, $._expr))
       ),
 
     equal_op: (_) => choice("="),
 
     exclam_op: (_) => choice("!"),
 
-    orelse_expr: ($) => seq($.andalso_expr),
-
-    andalso_expr: ($) => seq($.comp_expr),
-
-    comp_expr: ($) => seq($.list_expr),
-
-    list_expr: ($) => seq($.add_expr),
-
-    add_expr: ($) => seq($.mult_expr, repeat(seq($.add_op, $.mult_expr))),
-
     add_op: (_) => choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor"),
 
-    mult_expr: ($) => seq($.prefix_expr),
+    unarry_expr: ($) => choice(prec(PREC.catch_, seq($.catch_op, $._expr))),
 
-    prefix_expr: ($) => seq($._other_expr),
-
-    _other_expr: ($) =>
-      choice(
-        $.remote_expr,
-        $.function_call_block,
-        // $.map_expr,
-        // $.record_expr,
-        $._primary_expr
-      ),
+    catch_op: (_) => choice("catch"),
 
     remote_expr: ($) => seq($._primary_expr, ":", $._primary_expr),
 
@@ -172,7 +158,7 @@ module.exports = grammar({
 
     list_block: ($) => seq("[", optional($.list_elements), optional(","), "]"),
 
-    list_elements: ($) => repeatSep1($.catch_expr, ","),
+    list_elements: ($) => repeatSep1($._expr, ","),
 
     variable: (_) => token(/[A-Z][a-zA-Z0-9_]*/),
 
