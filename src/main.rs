@@ -773,6 +773,11 @@ mod parse_test {
     }
 
     #[test]
+    fn elements_that_should_be_stacked() {
+        todo!()
+    }
+
+    #[test]
     fn elements_that_should_be_stacked_or_apposed() {
         assert_parse!(
             "keep empty lines",
@@ -891,6 +896,16 @@ mod parse_test {
                      .
             "#},
         );
+    }
+
+    #[test]
+    fn binary_expression_add() {
+        todo!()
+    }
+
+    #[test]
+    fn binary_expression_equal() {
+        todo!()
     }
 
     #[test]
@@ -1184,6 +1199,16 @@ mod format_test {
                         ]).
             "#},
         );
+    }
+
+    #[test]
+    fn binary_expression_add() {
+        todo!()
+    }
+
+    #[test]
+    fn binary_expression_equal() {
+        todo!()
     }
 
     #[test]
