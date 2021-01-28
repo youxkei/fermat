@@ -117,7 +117,7 @@ fn node_to_layout_expr<'a>(
 ) -> Rc<LayoutExpr<'a>> {
     let kind_id = kind_id(node);
 
-    dbg!(node, choice_nest_level);
+    dbg!((node, choice_nest_level));
 
     match kind_id {
         // elements that should be apposed
