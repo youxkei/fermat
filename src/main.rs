@@ -185,14 +185,86 @@ fn node_to_layout_expr<'a>(
             result
         }
 
-        // elements that should be stacked or apposed
+        // elements that shoud be stacked
         KindId::SOURCE_FILE
-        | KindId::EXPORT_ATTRIBUTE_MFAS
         | KindId::FUNCTION_CLAUSES
-        | KindId::EXPRS
         | KindId::FUNCTION_CLAUSE_EXPRS
-        | KindId::LIST_ELEMENTS
         | KindId::STRINGS => {
+            let mut result = unit!();
+            let mut element = unit!();
+            let mut comments = unit!();
+            let mut apposable = false;
+
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                match self::kind_id(child) {
+                    KindId::COMMENT => {
+                        comments = stack!(
+                            comments,
+                            node_to_layout_expr(child, source_code, choice_nest_level)
+                        );
+                    }
+
+                    KindId::COMMA | KindId::SEMICOLON | KindId::PERIOD => {
+                        if apposable {
+                            if comments.is_unit() {
+                                element = apposition!(
+                                    element,
+                                    node_to_layout_expr(child, source_code, choice_nest_level)
+                                );
+                            } else {
+                                element = apposition!(element, text!(" "), comments);
+                                result = stack!(result, element);
+                                comments = unit!();
+
+                                element =
+                                    node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                            }
+                        } else {
+                            result = stack!(result, element, comments);
+                            comments = unit!();
+
+                            element =
+                                node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                        }
+
+                        apposable = true;
+                    }
+
+                    kind_id => {
+                        if apposable {
+                            if !comments.is_unit() {
+                                element = apposition!(element, text!(" "), comments);
+                            }
+
+                            result = stack!(result, element);
+                        } else {
+                            result = stack!(result, element, comments);
+                        }
+                        comments = unit!();
+
+                        element = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+
+                        apposable = is_apposable(kind_id);
+                    }
+                }
+            }
+
+            if apposable {
+                if !comments.is_unit() {
+                    element = apposition!(element, text!(" "), comments);
+                }
+
+                result = stack!(result, element);
+            } else {
+                result = stack!(result, element, comments);
+            }
+
+            result
+        }
+
+        // elements that should be stacked or apposed
+        KindId::EXPORT_ATTRIBUTE_MFAS | KindId::EXPRS | KindId::LIST_ELEMENTS => {
             let mut elements = vec![];
             let mut element = unit!();
             let mut comments = unit!();
@@ -284,7 +356,7 @@ fn node_to_layout_expr<'a>(
                 }
             }
 
-            if should_stack || self::should_stack(node) {
+            if should_stack {
                 stacked_elements
             } else {
                 choice!(stacked_elements, apposed_elements)
@@ -642,16 +714,6 @@ fn is_apposable(kind_id: KindId) -> bool {
     match kind_id {
         KindId::MULTIPLE_NEWLINES | KindId::COMMENT | KindId::LINE_COMMENT => false,
         _ => true,
-    }
-}
-
-fn should_stack(node: Node<'_>) -> bool {
-    match kind_id(node) {
-        KindId::SOURCE_FILE => true,
-        KindId::FUNCTION_CLAUSES => true,
-        KindId::FUNCTION_CLAUSE_EXPRS => true,
-        KindId::STRINGS => true,
-        _ => false,
     }
 }
 
