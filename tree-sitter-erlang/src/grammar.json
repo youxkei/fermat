@@ -582,7 +582,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "list_block"
+          "name": "list"
         },
         {
           "type": "SYMBOL",
@@ -594,7 +594,7 @@
         }
       ]
     },
-    "list_block": {
+    "list": {
       "type": "SEQ",
       "members": [
         {

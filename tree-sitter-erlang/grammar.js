@@ -154,9 +154,9 @@ module.exports = grammar({
     //    $.pat_expr_max
     //  ),
 
-    _primary_expr: ($) => choice($.list_block, $.variable, $._atomic),
+    _primary_expr: ($) => choice($.list, $.variable, $._atomic),
 
-    list_block: ($) => seq("[", optional($.list_elements), optional(","), "]"),
+    list: ($) => seq("[", optional($.list_elements), optional(","), "]"),
 
     list_elements: ($) => repeatSep1($._expr, ","),
 

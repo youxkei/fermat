@@ -53,17 +53,6 @@ enum BlockStyle {
      *     ok.
      */
     Function,
-
-    /*
-     * apposition:
-     * [1, 2, 3]
-     *
-     * stack:
-     * [
-     *  1, 2, 3
-     * ]
-     */
-    List,
 }
 
 fn block_style(kind_id: KindId) -> BlockStyle {
@@ -71,7 +60,6 @@ fn block_style(kind_id: KindId) -> BlockStyle {
         KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::Export,
         KindId::FUNCTION_CALL_BLOCK => BlockStyle::FunctionCall,
         KindId::FUNCTION_CLAUSE_BLOCK => BlockStyle::Function,
-        KindId::LIST_BLOCK => BlockStyle::List,
         _ => panic!("{:?} is not a block node", kind_id),
     }
 }
@@ -134,7 +122,8 @@ fn node_to_layout_expr<'a>(
         | KindId::CATCH_OP
         | KindId::EQUAL_OP
         | KindId::EXCLAM_OP
-        | KindId::ADD_OP => {
+        | KindId::ADD_OP
+        | KindId::LIST => {
             let mut result = unit!();
             let mut comments = unit!();
 
@@ -218,14 +207,13 @@ fn node_to_layout_expr<'a>(
                                 comments = unit!();
 
                                 element =
-                                    node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                                    node_to_layout_expr(child, source_code, choice_nest_level);
                             }
                         } else {
                             result = stack!(result, element, comments);
                             comments = unit!();
 
-                            element =
-                                node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                            element = node_to_layout_expr(child, source_code, choice_nest_level);
                         }
 
                         apposable = true;
@@ -243,7 +231,7 @@ fn node_to_layout_expr<'a>(
                         }
                         comments = unit!();
 
-                        element = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                        element = node_to_layout_expr(child, source_code, choice_nest_level);
 
                         apposable = is_apposable(kind_id);
                     }
@@ -539,8 +527,7 @@ fn node_to_layout_expr<'a>(
         // block
         KindId::EXPORT_ATTRIBUTE_BLOCK
         | KindId::FUNCTION_CLAUSE_BLOCK
-        | KindId::FUNCTION_CALL_BLOCK
-        | KindId::LIST_BLOCK => {
+        | KindId::FUNCTION_CALL_BLOCK => {
             let mut comments = unit!();
             let mut open = unit!();
             let mut close = unit!();
@@ -653,13 +640,6 @@ fn node_to_layout_expr<'a>(
                         } else {
                             apposition!(body, close)
                         }
-                    )
-                }
-
-                BlockStyle::List => {
-                    choice!(
-                        apposition!(open.clone(), body.clone(), close.clone()),
-                        apposition!(open, body, close)
                     )
                 }
             }

@@ -41,7 +41,7 @@
           "named": true
         },
         {
-          "type": "list_block",
+          "type": "list",
           "named": true
         },
         {
@@ -172,7 +172,7 @@
           "named": true
         },
         {
-          "type": "list_block",
+          "type": "list",
           "named": true
         },
         {
@@ -295,7 +295,7 @@
           "named": true
         },
         {
-          "type": "list_block",
+          "type": "list",
           "named": true
         },
         {
@@ -376,7 +376,7 @@
     }
   },
   {
-    "type": "list_block",
+    "type": "list",
     "named": true,
     "fields": {},
     "children": {
@@ -415,7 +415,7 @@
           "named": true
         },
         {
-          "type": "list_block",
+          "type": "list",
           "named": true
         },
         {
@@ -474,7 +474,7 @@
           "named": true
         },
         {
-          "type": "list_block",
+          "type": "list",
           "named": true
         },
         {
@@ -552,7 +552,7 @@
           "named": true
         },
         {
-          "type": "list_block",
+          "type": "list",
           "named": true
         },
         {
