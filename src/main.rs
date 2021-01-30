@@ -5,13 +5,12 @@ mod layout_expr;
 mod layout_fun;
 
 use std::fs;
-use std::iter::repeat;
 use std::rc::Rc;
 
 use tree_sitter::{Language, Node, Parser};
 
 use layout_expr::{apposition, choice, multi_line_cost, stack, text, unit, LayoutExpr};
-use layout_fun::{Config, LayoutFun};
+use layout_fun::{Config as LayoutFunConfig, LayoutFun};
 
 extern "C" {
     fn tree_sitter_erlang() -> Language;
@@ -55,6 +54,10 @@ enum BlockStyle {
     Function,
 }
 
+struct Config {
+    max_choice_nest_level: u8,
+}
+
 fn block_style(kind_id: KindId) -> BlockStyle {
     match kind_id {
         KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::Export,
@@ -67,26 +70,30 @@ fn block_style(kind_id: KindId) -> BlockStyle {
 fn main() {
     let source_code = fs::read_to_string("hello.erl").unwrap();
 
-    let config = Config {
+    let layout_fun_config = &LayoutFunConfig {
         right_margin: 50,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
     };
 
-    println!("{}", format(&source_code, &config),);
+    let config = &Config {
+        max_choice_nest_level: 6,
+    };
+
+    println!("{}", format(&source_code, config, layout_fun_config));
 }
 
-fn format(source_code: &str, config: &Config) -> String {
-    let layout_expr = parse(&source_code);
-    let layout_fun = LayoutFun::from_layout_expr(&*layout_expr, &config);
+fn format(source_code: &str, config: &Config, layout_fun_config: &LayoutFunConfig) -> String {
+    let layout_expr = parse(source_code, config);
+    let layout_fun = LayoutFun::from_layout_expr(&*layout_expr, layout_fun_config);
 
     let calculated = layout_fun.at(0);
 
     calculated.layout_expr.format(0, false).0
 }
 
-fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
+fn parse<'a>(source_code: &'a str, config: &Config) -> Rc<LayoutExpr<'a>> {
     let mut parser = Parser::new();
 
     let language = unsafe { tree_sitter_erlang() };
@@ -95,17 +102,16 @@ fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
     let tree = parser.parse(source_code, None).unwrap();
     let root_node = tree.root_node();
 
-    node_to_layout_expr(root_node, source_code, 0)
+    node_to_layout_expr(root_node, source_code, config, 0)
 }
 
 fn node_to_layout_expr<'a>(
     node: Node<'_>,
     source_code: &'a str,
+    config: &Config,
     choice_nest_level: u8,
 ) -> Rc<LayoutExpr<'a>> {
     let kind_id = kind_id(node);
-
-    dbg!((node, choice_nest_level));
 
     match kind_id {
         KindId::FORM
@@ -122,30 +128,32 @@ fn node_to_layout_expr<'a>(
         | KindId::EQUAL_OP
         | KindId::EXCLAM_OP
         | KindId::ADD_OP
-        | KindId::LIST => node_to_apposed_layout_expr(node, source_code, choice_nest_level),
+        | KindId::LIST => node_to_apposed_layout_expr(node, source_code, config, choice_nest_level),
 
         KindId::SOURCE_FILE
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE_EXPRS
-        | KindId::STRINGS => node_to_stacked_layout_expr(node, source_code, choice_nest_level),
+        | KindId::STRINGS => {
+            node_to_stacked_layout_expr(node, source_code, config, choice_nest_level)
+        }
 
         KindId::EXPORT_ATTRIBUTE_MFAS | KindId::EXPRS | KindId::LIST_ELEMENTS => {
-            node_to_stacked_or_apposed_layout_expr(node, source_code, choice_nest_level)
+            node_to_stacked_or_apposed_layout_expr(node, source_code, config, choice_nest_level)
         }
 
         KindId::FUNCTION_CLAUSES_TRAILING_SEMICOLON
         | KindId::FUNCTION_CLAUSE_EXPRS_TRAILING_COMMA => {
-            trailing_separator_node_to_layout_expr(node, source_code, choice_nest_level)
+            trailing_separator_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
         KindId::BINARY_EXPR => {
-            binary_expression_node_to_layout_expr(node, source_code, choice_nest_level)
+            binary_expression_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
         KindId::EXPORT_ATTRIBUTE_BLOCK
         | KindId::FUNCTION_CLAUSE_BLOCK
         | KindId::FUNCTION_CALL_BLOCK => {
-            block_node_to_layout_expr(node, source_code, choice_nest_level)
+            block_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
         KindId::HYPHEN_GT
@@ -178,9 +186,7 @@ fn node_to_layout_expr<'a>(
         | KindId::INTEGER
         | KindId::STRING
         | KindId::COMMENT
-        | KindId::LINE_COMMENT => {
-            text!(&source_code[node.start_byte()..node.end_byte()])
-        }
+        | KindId::LINE_COMMENT => text!(&source_code[node.start_byte()..node.end_byte()]),
 
         KindId::MULTIPLE_NEWLINES => text!(""),
 
@@ -191,6 +197,7 @@ fn node_to_layout_expr<'a>(
 fn node_to_apposed_layout_expr<'a>(
     node: Node<'_>,
     source_code: &'a str,
+    config: &Config,
     choice_nest_level: u8,
 ) -> Rc<LayoutExpr<'a>> {
     let mut result = unit!();
@@ -204,7 +211,7 @@ fn node_to_apposed_layout_expr<'a>(
             KindId::COMMENT | KindId::LINE_COMMENT => {
                 comments = stack!(
                     comments,
-                    node_to_layout_expr(child, source_code, choice_nest_level)
+                    node_to_layout_expr(child, source_code, config, choice_nest_level)
                 )
             }
 
@@ -214,7 +221,7 @@ fn node_to_apposed_layout_expr<'a>(
                     text!(" "),
                     stack!(
                         comments,
-                        node_to_layout_expr(child, source_code, choice_nest_level)
+                        node_to_layout_expr(child, source_code, config, choice_nest_level)
                     )
                 );
 
@@ -231,7 +238,7 @@ fn node_to_apposed_layout_expr<'a>(
                     },
                     stack!(
                         comments,
-                        node_to_layout_expr(child, source_code, choice_nest_level)
+                        node_to_layout_expr(child, source_code, config, choice_nest_level)
                     )
                 );
 
@@ -246,6 +253,7 @@ fn node_to_apposed_layout_expr<'a>(
 fn node_to_stacked_layout_expr<'a>(
     node: Node<'_>,
     source_code: &'a str,
+    config: &Config,
     choice_nest_level: u8,
 ) -> Rc<LayoutExpr<'a>> {
     let mut result = unit!();
@@ -259,7 +267,7 @@ fn node_to_stacked_layout_expr<'a>(
             KindId::COMMENT => {
                 comments = stack!(
                     comments,
-                    node_to_layout_expr(child, source_code, choice_nest_level)
+                    node_to_layout_expr(child, source_code, config, choice_nest_level)
                 );
             }
 
@@ -268,20 +276,21 @@ fn node_to_stacked_layout_expr<'a>(
                     if comments.is_unit() {
                         element = apposition!(
                             element,
-                            node_to_layout_expr(child, source_code, choice_nest_level)
+                            node_to_layout_expr(child, source_code, config, choice_nest_level)
                         );
                     } else {
                         element = apposition!(element, text!(" "), comments);
                         result = stack!(result, element);
                         comments = unit!();
 
-                        element = node_to_layout_expr(child, source_code, choice_nest_level);
+                        element =
+                            node_to_layout_expr(child, source_code, config, choice_nest_level);
                     }
                 } else {
                     result = stack!(result, element, comments);
                     comments = unit!();
 
-                    element = node_to_layout_expr(child, source_code, choice_nest_level);
+                    element = node_to_layout_expr(child, source_code, config, choice_nest_level);
                 }
 
                 apposable = true;
@@ -299,7 +308,7 @@ fn node_to_stacked_layout_expr<'a>(
                 }
                 comments = unit!();
 
-                element = node_to_layout_expr(child, source_code, choice_nest_level);
+                element = node_to_layout_expr(child, source_code, config, choice_nest_level);
 
                 apposable = is_apposable(kind_id);
             }
@@ -322,6 +331,7 @@ fn node_to_stacked_layout_expr<'a>(
 fn node_to_stacked_or_apposed_layout_expr<'a>(
     node: Node<'_>,
     source_code: &'a str,
+    config: &Config,
     choice_nest_level: u8,
 ) -> Rc<LayoutExpr<'a>> {
     let mut elements = vec![];
@@ -336,7 +346,7 @@ fn node_to_stacked_or_apposed_layout_expr<'a>(
             KindId::COMMENT => {
                 comments = stack!(
                     comments,
-                    node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                    node_to_layout_expr(child, source_code, config, choice_nest_level + 1)
                 );
 
                 should_stack = true;
@@ -347,21 +357,23 @@ fn node_to_stacked_or_apposed_layout_expr<'a>(
                     if comments.is_unit() {
                         element = apposition!(
                             element,
-                            node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                            node_to_layout_expr(child, source_code, config, choice_nest_level + 1)
                         );
                     } else {
                         element = apposition!(element, text!(" "), comments);
                         elements.push(element);
                         comments = unit!();
 
-                        element = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                        element =
+                            node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
                     }
                 } else {
                     elements.push(element);
                     elements.push(comments);
                     comments = unit!();
 
-                    element = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                    element =
+                        node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
                 }
 
                 apposable = true;
@@ -380,7 +392,7 @@ fn node_to_stacked_or_apposed_layout_expr<'a>(
                 }
                 comments = unit!();
 
-                element = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                element = node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
 
                 apposable = is_apposable(kind_id);
                 should_stack |= !apposable;
@@ -406,13 +418,13 @@ fn node_to_stacked_or_apposed_layout_expr<'a>(
         stacked_elements = stack!(stacked_elements, element.clone());
 
         if apposed_elements == unit!() {
-            apposed_elements = multi_line_cost!(element);
+            apposed_elements = element;
         } else {
-            apposed_elements = apposition!(apposed_elements, text!(" "), multi_line_cost!(element));
+            apposed_elements = apposition!(apposed_elements, text!(" "), element);
         }
     }
 
-    if should_stack {
+    if should_stack || choice_nest_level > config.max_choice_nest_level {
         stacked_elements
     } else {
         choice!(stacked_elements, apposed_elements)
@@ -422,6 +434,7 @@ fn node_to_stacked_or_apposed_layout_expr<'a>(
 fn trailing_separator_node_to_layout_expr<'a>(
     node: Node<'_>,
     source_code: &'a str,
+    config: &Config,
     choice_nest_level: u8,
 ) -> Rc<LayoutExpr<'a>> {
     let mut comments = unit!();
@@ -439,7 +452,7 @@ fn trailing_separator_node_to_layout_expr<'a>(
             KindId::COMMENT => {
                 comments = stack!(
                     comments,
-                    node_to_layout_expr(child, source_code, choice_nest_level)
+                    node_to_layout_expr(child, source_code, config, choice_nest_level)
                 );
             }
 
@@ -456,7 +469,7 @@ fn trailing_separator_node_to_layout_expr<'a>(
                 comments = unit!();
 
                 body = stack!(body, line);
-                line = node_to_layout_expr(child, source_code, choice_nest_level);
+                line = node_to_layout_expr(child, source_code, config, choice_nest_level);
 
                 apposable = is_apposable(kind_id);
                 last_line_comment = kind_id == KindId::LINE_COMMENT;
@@ -483,6 +496,7 @@ fn trailing_separator_node_to_layout_expr<'a>(
 fn binary_expression_node_to_layout_expr<'a>(
     node: Node<'_>,
     source_code: &'a str,
+    config: &Config,
     choice_nest_level: u8,
 ) -> Rc<LayoutExpr<'a>> {
     let mut lhs = unit!();
@@ -507,17 +521,18 @@ fn binary_expression_node_to_layout_expr<'a>(
                 KindId::COMMENT | KindId::LINE_COMMENT => {
                     comments_between_lhs_and_op = stack!(
                         comments_between_lhs_and_op,
-                        node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                        node_to_layout_expr(child, source_code, config, choice_nest_level + 1)
                     )
                 }
 
                 kind_id => {
                     if kind_id.is_op() {
-                        op = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                        op = node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
                         op_kind_id = kind_id;
                         phase = Phase::Rhs;
                     } else {
-                        lhs = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                        lhs =
+                            node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
                     }
                 }
             },
@@ -528,11 +543,11 @@ fn binary_expression_node_to_layout_expr<'a>(
                 KindId::COMMENT | KindId::LINE_COMMENT => {
                     comments_between_op_and_rhs = stack!(
                         comments_between_op_and_rhs,
-                        node_to_layout_expr(child, source_code, choice_nest_level)
+                        node_to_layout_expr(child, source_code, config, choice_nest_level)
                     )
                 }
 
-                _ => rhs = node_to_layout_expr(child, source_code, choice_nest_level),
+                _ => rhs = node_to_layout_expr(child, source_code, config, choice_nest_level),
             },
         }
     }
@@ -599,6 +614,7 @@ fn binary_expression_node_to_layout_expr<'a>(
 fn block_node_to_layout_expr<'a>(
     node: Node<'_>,
     source_code: &'a str,
+    config: &Config,
     choice_nest_level: u8,
 ) -> Rc<LayoutExpr<'a>> {
     let kind_id = kind_id(node);
@@ -622,7 +638,7 @@ fn block_node_to_layout_expr<'a>(
             KindId::COMMENT => {
                 comments = stack!(
                     comments,
-                    node_to_layout_expr(child, source_code, choice_nest_level + 1)
+                    node_to_layout_expr(child, source_code, config, choice_nest_level + 1)
                 );
                 has_non_apposable = true;
             }
@@ -635,7 +651,7 @@ fn block_node_to_layout_expr<'a>(
                 }
 
                 if kind_id.is_open() {
-                    open = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                    open = node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
                     after_open = true;
 
                     continue;
@@ -662,10 +678,10 @@ fn block_node_to_layout_expr<'a>(
                     }
                     line = unit!();
 
-                    close = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                    close = node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
                 } else {
                     body = stack!(body, line);
-                    line = node_to_layout_expr(child, source_code, choice_nest_level + 1);
+                    line = node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
 
                     apposable = is_apposable(kind_id);
                     has_non_apposable |= !apposable;
@@ -709,7 +725,7 @@ fn block_node_to_layout_expr<'a>(
 
         BlockStyle::FunctionCall => {
             apposition!(
-                choice!(stack!(open.clone(), text!("  "),), open),
+                choice!(stack!(open.clone(), text!("  ")), open),
                 if last_comment {
                     stack!(body, close)
                 } else {
