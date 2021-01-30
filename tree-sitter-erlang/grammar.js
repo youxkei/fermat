@@ -47,12 +47,7 @@ module.exports = grammar({
     $._spaces,
   ],
 
-  conflicts: ($) => [
-    [$.export_attribute_mfas],
-    [$.exprs],
-    [$.function_clauses],
-    [$.list_elements],
-  ],
+  conflicts: ($) => [[$.function_clauses]],
 
   rules: {
     source_file: ($) => repeat1($.form),
@@ -79,9 +74,7 @@ module.exports = grammar({
       seq("-", "export", "(", $.export_attribute_block, ")"),
 
     export_attribute_block: ($) =>
-      seq("[", optional($.export_attribute_mfas), optional(","), "]"),
-
-    export_attribute_mfas: ($) => repeatComma1($.export_attribute_mfa),
+      seq("[", repeatComma1($.export_attribute_mfa), optional(","), "]"),
 
     export_attribute_mfa: ($) => seq($.atom, "/", $.integer),
 
@@ -94,7 +87,7 @@ module.exports = grammar({
     function_clauses: ($) => repeatSep1($.function_clause_block, ";"),
 
     function_clause_block: ($) =>
-      seq($.function_clause_open, $.function_clause_exprs_trailing_comma),
+      seq($.function_clause_open, repeatComma1($._expr), optional(",")),
 
     function_clause_open: ($) =>
       seq($.atom, $.pat_argument_list, optional($.clause_guard), "->"),
@@ -102,11 +95,6 @@ module.exports = grammar({
     pat_argument_list: ($) => seq("(", /*repeatComma($.pat_expr),*/ ")"),
 
     clause_guard: ($) => seq("when" /*, $.guard*/),
-
-    function_clause_exprs_trailing_comma: ($) =>
-      seq(alias($.exprs, "function_clause_exprs"), optional(",")),
-
-    exprs: ($) => repeatComma1($._expr),
 
     _expr: ($) =>
       choice(
@@ -139,7 +127,7 @@ module.exports = grammar({
     remote_expr: ($) => seq($._primary_expr, ":", $._primary_expr),
 
     function_call_block: ($) =>
-      seq($.function_call_open, optional($.exprs), optional(","), ")"),
+      seq($.function_call_open, repeatComma($._expr), optional(","), ")"),
 
     function_call_open: ($) => seq($.remote_expr, "("),
 
@@ -156,9 +144,7 @@ module.exports = grammar({
 
     _primary_expr: ($) => choice($.list, $.variable, $._atomic),
 
-    list: ($) => seq("[", optional($.list_elements), optional(","), "]"),
-
-    list_elements: ($) => repeatSep1($._expr, ","),
+    list: ($) => seq("[", repeatSep1($._expr, ","), optional(","), "]"),
 
     variable: (_) => token(/[A-Z][a-zA-Z0-9_]*/),
 

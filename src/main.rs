@@ -18,53 +18,8 @@ extern "C" {
 
 tree_sitter_id::define_kind_id! {}
 
-enum BlockStyle {
-    /*
-     * apposition:
-     * -export([foo/1, bar/2]).
-     *
-     * stack:
-     * -export([
-     *          foo/1,
-     *          bar/2
-     *         ]).
-     */
-    Export,
-
-    /*
-     * apposition:
-     * function_name("foo bar")
-     * function_name("foo", % comment
-     *               "bar")
-     *
-     * stack:
-     * function_name(
-     *   "foo bar")
-     */
-    FunctionCall,
-
-    /*
-     * apposition:
-     * function() -> ok.
-     *
-     * stack:
-     * function() ->
-     *     ok.
-     */
-    Function,
-}
-
 struct Config {
     max_choice_nest_level: u8,
-}
-
-fn block_style(kind_id: KindId) -> BlockStyle {
-    match kind_id {
-        KindId::EXPORT_ATTRIBUTE_BLOCK => BlockStyle::Export,
-        KindId::FUNCTION_CALL_BLOCK => BlockStyle::FunctionCall,
-        KindId::FUNCTION_CLAUSE_BLOCK => BlockStyle::Function,
-        _ => panic!("{:?} is not a block node", kind_id),
-    }
 }
 
 fn main() {
@@ -127,22 +82,15 @@ fn node_to_layout_expr<'a>(
         | KindId::CATCH_OP
         | KindId::EQUAL_OP
         | KindId::EXCLAM_OP
-        | KindId::ADD_OP
-        | KindId::LIST => node_to_apposed_layout_expr(node, source_code, config, choice_nest_level),
+        | KindId::ADD_OP => {
+            node_to_apposed_layout_expr(node, source_code, config, choice_nest_level)
+        }
 
-        KindId::SOURCE_FILE
-        | KindId::FUNCTION_CLAUSES
-        | KindId::FUNCTION_CLAUSE_EXPRS
-        | KindId::STRINGS => {
+        KindId::SOURCE_FILE | KindId::FUNCTION_CLAUSES | KindId::STRINGS => {
             node_to_stacked_layout_expr(node, source_code, config, choice_nest_level)
         }
 
-        KindId::EXPORT_ATTRIBUTE_MFAS | KindId::EXPRS | KindId::LIST_ELEMENTS => {
-            node_to_stacked_or_apposed_layout_expr(node, source_code, config, choice_nest_level)
-        }
-
-        KindId::FUNCTION_CLAUSES_TRAILING_SEMICOLON
-        | KindId::FUNCTION_CLAUSE_EXPRS_TRAILING_COMMA => {
+        KindId::FUNCTION_CLAUSES_TRAILING_SEMICOLON => {
             trailing_separator_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
@@ -152,9 +100,8 @@ fn node_to_layout_expr<'a>(
 
         KindId::EXPORT_ATTRIBUTE_BLOCK
         | KindId::FUNCTION_CLAUSE_BLOCK
-        | KindId::FUNCTION_CALL_BLOCK => {
-            block_node_to_layout_expr(node, source_code, config, choice_nest_level)
-        }
+        | KindId::FUNCTION_CALL_BLOCK
+        | KindId::LIST => block_node_to_layout_expr(node, source_code, config, choice_nest_level),
 
         KindId::HYPHEN_GT
         | KindId::PAREN_OPEN
@@ -619,120 +566,252 @@ fn block_node_to_layout_expr<'a>(
 ) -> Rc<LayoutExpr<'a>> {
     let kind_id = kind_id(node);
 
+    let choice_nest = match kind_id {
+        KindId::EXPORT_ATTRIBUTE_BLOCK => 1,
+        KindId::FUNCTION_CLAUSE_BLOCK => 1,
+        KindId::FUNCTION_CALL_BLOCK => 2,
+        KindId::LIST => 1,
+        _ => panic!("{:?} is not covered", kind_id),
+    };
+
+    let mut elements = vec![];
+
     let mut comments = unit!();
     let mut open = unit!();
     let mut close = unit!();
-    let mut body = unit!();
-    let mut line = unit!();
+    let mut element = unit!();
+    let mut separator = unit!();
 
     let mut after_open = false;
-    let mut apposable = false;
+    let mut element_apposable = false;
     let mut has_non_apposable = false;
     let mut last_comment = false;
 
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         match self::kind_id(child) {
-            KindId::COMMA | KindId::SEMICOLON => {}
-
             KindId::COMMENT => {
                 comments = stack!(
                     comments,
-                    node_to_layout_expr(child, source_code, config, choice_nest_level + 1)
+                    node_to_layout_expr(
+                        child,
+                        source_code,
+                        config,
+                        choice_nest_level + choice_nest
+                    )
                 );
+
                 has_non_apposable = true;
             }
 
+            KindId::COMMA | KindId::SEMICOLON => {
+                if !comments.is_unit() {
+                    if element_apposable {
+                        elements.push(apposition!(element, text!(" "), comments));
+                    } else {
+                        elements.push(element);
+                        elements.push(comments);
+                    }
+
+                    element = unit!();
+                    comments = unit!();
+                    separator = node_to_layout_expr(
+                        child,
+                        source_code,
+                        config,
+                        choice_nest_level + choice_nest,
+                    );
+
+                    last_comment = true;
+                } else {
+                    if !element_apposable {
+                        elements.push(element);
+                        element = unit!();
+                    }
+
+                    separator = node_to_layout_expr(
+                        child,
+                        source_code,
+                        config,
+                        choice_nest_level + choice_nest,
+                    );
+                }
+            }
+
             kind_id => {
-                if kind_id == KindId::MULTIPLE_NEWLINES && after_open {
+                if after_open {
                     after_open = false;
 
-                    continue;
+                    if kind_id == KindId::MULTIPLE_NEWLINES {
+                        continue;
+                    }
                 }
 
                 if kind_id.is_open() {
-                    open = node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
+                    open = node_to_layout_expr(
+                        child,
+                        source_code,
+                        config,
+                        choice_nest_level + choice_nest,
+                    );
                     after_open = true;
 
                     continue;
                 }
 
-                if apposable {
-                    if !comments.is_unit() {
-                        if line.is_unit() {
-                            line = apposition!(line, comments);
-                        } else {
-                            line = apposition!(line, text!(" "), comments);
-                        }
-
-                        last_comment = true;
-                    }
-                } else {
-                    line = stack!(line, comments)
-                }
-                comments = unit!();
-
                 if kind_id.is_close() {
-                    if !line.is_empty() {
-                        body = stack!(body, line);
-                    }
-                    line = unit!();
+                    close = node_to_layout_expr(
+                        child,
+                        source_code,
+                        config,
+                        choice_nest_level + choice_nest,
+                    );
 
-                    close = node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
-                } else {
-                    body = stack!(body, line);
-                    line = node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
+                    continue;
+                }
 
-                    apposable = is_apposable(kind_id);
-                    has_non_apposable |= !apposable;
-
-                    if kind_id == KindId::LINE_COMMENT {
-                        last_comment = true;
+                if !comments.is_unit() {
+                    if separator.is_unit() {
+                        elements.push(element);
+                        elements.push(comments);
                     } else {
-                        last_comment = false;
+                        elements.push(apposition!(element, separator, text!(" "), comments));
                     }
+                } else {
+                    elements.push(apposition!(element, separator))
+                }
+
+                comments = unit!();
+                separator = unit!();
+                element = node_to_layout_expr(
+                    child,
+                    source_code,
+                    config,
+                    choice_nest_level + choice_nest,
+                );
+
+                element_apposable = is_apposable(kind_id);
+                has_non_apposable |= !element_apposable;
+
+                if kind_id == KindId::LINE_COMMENT {
+                    last_comment = true;
+                } else {
+                    last_comment = false;
                 }
             }
         }
     }
 
-    if !line.is_empty() {
-        body = stack!(body, line);
+    if !comments.is_unit() {
+        if !element.is_unit() {
+            if element_apposable {
+                elements.push(apposition!(element, text!(" "), comments));
+            } else {
+                elements.push(element);
+            }
+        } else {
+            elements.push(comments);
+        }
+
+        last_comment = true;
+    } else {
+        if !element.is_empty() {
+            elements.push(element);
+        }
     }
 
-    match block_style(kind_id) {
-        BlockStyle::Export => {
-            choice!(
+    let mut num_elements = 0;
+
+    let mut stacked_elements = unit!();
+    let mut apposed_elements = unit!();
+
+    for element in elements {
+        if !element.is_unit() {
+            num_elements += 1;
+        }
+
+        stacked_elements = stack!(stacked_elements, element.clone());
+
+        if apposed_elements == unit!() {
+            apposed_elements = element;
+        } else {
+            apposed_elements = apposition!(apposed_elements, text!(" "), element);
+        }
+    }
+
+    match kind_id {
+        KindId::EXPORT_ATTRIBUTE_BLOCK => {
+            if has_non_apposable || last_comment {
+                stack!(open, apposition!(text!(" "), stacked_elements), close)
+            } else {
+                choice!(
+                    stack!(
+                        open.clone(),
+                        apposition!(text!(" "), stacked_elements),
+                        close.clone()
+                    ),
+                    apposition!(open, apposed_elements, close)
+                )
+            }
+        }
+
+        KindId::FUNCTION_CLAUSE_BLOCK => {
+            if num_elements > 1 {
                 stack!(
-                    open.clone(),
-                    apposition!(text!(" "), body.clone()),
-                    close.clone()
-                ),
-                if has_non_apposable {
-                    unit!()
-                } else {
-                    apposition!(open, multi_line_cost!(body), close)
-                }
-            )
+                    open,
+                    apposition!(
+                        text!("    "),
+                        stack!(
+                            stacked_elements,
+                            if last_comment { text!("") } else { unit!() }
+                        )
+                    )
+                )
+            } else {
+                apposition!(
+                    choice!(
+                        apposition!(open.clone(), text!(" ")),
+                        stack!(open, text!("    "))
+                    ),
+                    stack!(
+                        stacked_elements,
+                        if last_comment { text!("") } else { unit!() }
+                    )
+                )
+            }
         }
 
-        BlockStyle::Function => {
-            choice!(
-                stack!(open.clone(), apposition!(text!("    "), body.clone())),
-                apposition!(open, text!(" "), multi_line_cost!(body)),
-            )
+        KindId::FUNCTION_CALL_BLOCK => {
+            let body = if has_non_apposable || choice_nest_level > config.max_choice_nest_level {
+                stacked_elements
+            } else {
+                choice!(stacked_elements, apposed_elements)
+            };
+
+            let tail = if last_comment {
+                stack!(body, close)
+            } else {
+                apposition!(body, close)
+            };
+
+            if choice_nest_level > config.max_choice_nest_level {
+                stack!(open, apposition!(text!("    "), tail))
+            } else {
+                apposition!(choice!(stack!(open.clone(), text!("  ")), open), tail)
+            }
         }
 
-        BlockStyle::FunctionCall => {
-            apposition!(
-                choice!(stack!(open.clone(), text!("  ")), open),
-                if last_comment {
-                    stack!(body, close)
-                } else {
-                    apposition!(body, close)
-                }
-            )
+        KindId::LIST => {
+            let body = if choice_nest_level > config.max_choice_nest_level {
+                stacked_elements
+            } else {
+                choice!(stacked_elements, apposed_elements)
+            };
+
+            apposition!(open, body, close)
         }
+
+        _ => panic!("{:?} is not covered", kind_id),
     }
 }
 
@@ -749,22 +828,28 @@ fn is_apposable(kind_id: KindId) -> bool {
 
 #[cfg(test)]
 mod parse_test {
-    use super::parse;
+    use super::{parse, Config};
     use indoc::indoc;
 
     macro_rules! assert_parse {
         ($desc:literal, $source_code:expr $(,)?) => {{
             let source_code = $source_code;
+            let config = &Config {
+                max_choice_nest_level: 100,
+            };
             pretty_assertions::assert_eq!(
-                parse(source_code).format(0, false).0 + "\n",
+                parse(source_code, config).format(0, false).0 + "\n",
                 source_code,
                 $desc
             )
         }};
 
         ($desc:literal, $source_code:expr, $expected:expr $(,)?) => {{
+            let config = &Config {
+                max_choice_nest_level: 100,
+            };
             pretty_assertions::assert_eq!(
-                parse($source_code).format(0, false).0 + "\n",
+                parse($source_code, config).format(0, false).0 + "\n",
                 $expected,
                 $desc
             )
@@ -888,6 +973,7 @@ mod parse_test {
 
     #[test]
     fn trailing_separator_node_to_layout_expr() {
+        /*
         assert_parse!(
             "remove empty lines and trailing separator",
             indoc! {r#"
@@ -900,30 +986,31 @@ mod parse_test {
             "#},
             indoc! {r#"
                 main() ->
-                    ok % comment
-                       .
+                    ok
+
+                    % comment
+                    .
             "#},
         );
 
         assert_parse!(
             "comments indentation",
             indoc! {r#"
-                main() ->
-                    ok % comment 1
-                       % comment 2
-                    , % comment 3
-                      % comment 4
-                    .
+                main() -> ok % comment 1
+                             % comment 2
+                          , % comment 3
+                            % comment 4
+                          .
             "#},
             indoc! {r#"
-                main() ->
-                    ok % comment 1
-                       % comment 2
-                        % comment 3
-                        % comment 4
-                        .
+                main() -> ok % comment 1
+                             % comment 2
+                           % comment 3
+                           % comment 4
+                           .
             "#},
         );
+        */
 
         assert_parse!(
             "line comments indentation",
@@ -1015,17 +1102,15 @@ mod parse_test {
             indoc! {r#"
                 -export([
                          % comment 1
-                         % comment 2
-                         main/0 % comment 3
-                         , % comment 4
+                         main/0 % comment 2
+                         , % comment 3
                         ]).
             "#},
             indoc! {r#"
                 -export([
                          % comment 1
-                         % comment 2
-                         main/0 % comment 3
-                                % comment 4
+                         main/0 % comment 2
+                         % comment 3
                         ]).
             "#},
         );
@@ -1041,8 +1126,7 @@ mod parse_test {
                     ok.
             "#},
             indoc! {r#"
-                main() ->
-                    ok.
+                main() -> ok.
             "#},
         );
 
@@ -1069,12 +1153,10 @@ mod parse_test {
         assert_parse!(
             "remove trailing separator",
             indoc! {r#"
-                main() ->
-                    ok,.
+                main() -> ok,.
             "#},
             indoc! {r#"
-                main() ->
-                    ok.
+                main() -> ok.
             "#},
         );
     }
@@ -1084,58 +1166,52 @@ mod parse_test {
         assert_parse!(
             "remove some empty lines",
             indoc! {r#"
-                main() ->
-                    mod:function(
+                main() -> mod:function(
 
-                      "foo"
+                            "foo"
 
-                      ).
+                            ).
             "#},
             indoc! {r#"
-                main() ->
-                    mod:function(
-                      "foo").
+                main() -> mod:function(
+                            "foo").
             "#},
         );
 
         assert_parse!(
             "comments indentation",
             indoc! {r#"
-                main() ->
-                    mod:function(
-                      % comment 1
-                      % comment 2
-                      "foo" % comment 3
-                            % comment 4
-                      ).
+                main() -> mod:function(
+                            % comment 1
+                            % comment 2
+                            "foo" % comment 3
+                                  % comment 4
+                            ).
             "#},
         );
 
         assert_parse!(
             "line comments indentation",
             indoc! {r#"
-                main() ->
-                    mod:function(
-                      %% line comment 1
-                      %% line comment 2
-                      "foo"
-                      %% line comment 3
-                      %% line comment 4
-                      ).
+                main() -> mod:function(
+                            %% line comment 1
+                            %% line comment 2
+                            "foo"
+                            %% line comment 3
+                            %% line comment 4
+                            ).
             "#},
         );
 
         assert_parse!(
             "remove trailing separator",
             indoc! {r#"
-                main() ->
-                    mod:function(
-                      "foo",).
+                main() -> mod:function(
+                            "foo",).
             "#},
             indoc! {r#"
-                main() ->
-                    mod:function(
-                      "foo").
+                main() -> mod:function(
+                            "foo").
             "#},
         );
     }
@@ -1143,18 +1219,32 @@ mod parse_test {
 
 #[cfg(test)]
 mod format_test {
-    use super::format;
-    use super::layout_fun::Config;
+    use super::layout_fun::Config as LayoutFunConfig;
+    use super::{format, Config};
     use indoc::indoc;
 
     macro_rules! assert_format {
-        ($desc:literal, $config:expr, $source_code:expr $(,)?) => {{
+        ($desc:literal, $layout_fun_config:expr, $source_code:expr $(,)?) => {{
             let source_code = $source_code;
-            pretty_assertions::assert_eq!(format(source_code, &$config) + "\n", source_code, $desc)
+            let config = &Config{
+                max_choice_nest_level: 100
+            };
+            pretty_assertions::assert_eq!(
+                format(source_code, config, &$layout_fun_config) + "\n",
+                source_code,
+                $desc
+            )
         }};
 
-        ($desc:literal, $config:expr, $source_code:expr, $expected:expr $(,)?) => {{
-            pretty_assertions::assert_eq!(format($source_code, &$config) + "\n", $expected, $desc)
+        ($desc:literal, $layout_fun_config:expr, $source_code:expr, $expected:expr $(,)?) => {{
+            let config = &Config{
+                max_choice_nest_level: 100;
+            }
+            pretty_assertions::assert_eq!(
+                format($source_code, config, &$layout_fun_config) + "\n",
+                $expected,
+                $desc
+            )
         }};
     }
 
@@ -1162,7 +1252,7 @@ mod format_test {
     fn node_to_stacked_or_apposed_layout_expr() {
         assert_format!(
             "apposed",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1175,7 +1265,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to right margin",
-            Config {
+            LayoutFunConfig {
                 right_margin: 10,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1193,7 +1283,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to comments",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1211,7 +1301,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to line comments",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1234,7 +1324,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to empty lines",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1270,7 +1360,7 @@ mod format_test {
     fn export_style_block_expression_node_to_layout_expr() {
         assert_format!(
             "apposed",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1282,8 +1372,22 @@ mod format_test {
         );
 
         assert_format!(
+            "apposed with a multi line element",
+            LayoutFunConfig {
+                right_margin: 80,
+                newline_cost: 1,
+                beyond_right_margin_cost: 10000,
+                height_cost: 100,
+            },
+            indoc! {r#"
+                -export([foo/ % comment
+                              1]).
+            "#},
+        );
+
+        assert_format!(
             "stacked due to right margin",
-            Config {
+            LayoutFunConfig {
                 right_margin: 14,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1298,7 +1402,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to a before body comment",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1314,7 +1418,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to an after body comment",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1329,7 +1433,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to a before body line comment",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1345,7 +1449,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to an after body line comment",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1358,29 +1462,13 @@ mod format_test {
                         ]).
             "#},
         );
-
-        assert_format!(
-            "stacked due to a multi line body",
-            Config {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         foo/ % comment
-                              1
-                        ]).
-            "#},
-        );
     }
 
     #[test]
     fn function_style_block_expression_node_to_layout_expr() {
         assert_format!(
             "apposed",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1393,7 +1481,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to right margin",
-            Config {
+            LayoutFunConfig {
                 right_margin: 5,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1407,7 +1495,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to a before body comment",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1422,7 +1510,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to a before body line comment",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1437,7 +1525,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to a multi line body",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1455,7 +1543,7 @@ mod format_test {
     fn function_call_style_block_expression_node_to_layout_expr() {
         assert_format!(
             "apposed",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1470,7 +1558,7 @@ mod format_test {
 
         assert_format!(
             "apposed with multi line body",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1486,7 +1574,7 @@ mod format_test {
 
         assert_format!(
             "apposed with last comment",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1502,7 +1590,7 @@ mod format_test {
 
         assert_format!(
             "apposed with last line comment",
-            Config {
+            LayoutFunConfig {
                 right_margin: 80,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
@@ -1519,7 +1607,7 @@ mod format_test {
 
         assert_format!(
             "stacked due to right margin",
-            Config {
+            LayoutFunConfig {
                 right_margin: 23,
                 newline_cost: 1,
                 beyond_right_margin_cost: 10000,
