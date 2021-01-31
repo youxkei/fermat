@@ -591,10 +591,10 @@ fn is_apposable(kind_id: KindId) -> bool {
 
 #[cfg(test)]
 mod parse_test {
-    use super::{parse, Config};
+    use crate::{parse, Config};
     use indoc::indoc;
 
-    macro_rules! assert_parse {
+    macro assert_parse {
         ($desc:literal, $source_code:expr $(,)?) => {{
             let source_code = $source_code;
             let config = &Config {
@@ -605,7 +605,18 @@ mod parse_test {
                 source_code,
                 $desc
             )
-        }};
+        }},
+        ($desc:literal, $source_code:expr $(,)?) => {{
+            let source_code = $source_code;
+            let config = &Config {
+                max_choice_nest_level: 100,
+            };
+            pretty_assertions::assert_eq!(
+                parse(source_code, config).format(0, false).0 + "\n",
+                source_code,
+                $desc
+            )
+        }},
 
         ($desc:literal, $source_code:expr, $expected:expr $(,)?) => {{
             let config = &Config {
@@ -616,122 +627,224 @@ mod parse_test {
                 $expected,
                 $desc
             )
-        }};
+        }},
     }
 
-    #[test]
-    fn node_to_apposed_layout_expr() {
-        assert_parse!(
-            "remove empty lines",
-            indoc! {r#"
-                -
+    mod elements_node_to_apposed_layout_expr {
+        use crate::parse_test::assert_parse;
+        use indoc::indoc;
 
-                module
+        #[test]
+        fn remove_empty_lines() {
+            assert_parse!(
+                "remove empty lines",
+                indoc! {r#"
+                    -
 
-                (
+                    module
 
-                foo
+                    (
 
-                ).
-            "#},
-            indoc! {r#"
-                -module(foo).
-            "#},
-        );
+                    foo
 
-        assert_parse!(
-            "comments indentation",
-            indoc! {r#"
-                - % comment 1
-                  % comment 2
-                  module % comment 3
-                         % comment 4
-                         ( % comment 5
-                           % comment 6
-                           foo % comment 7
-                               % comment 8
-                               ).
-            "#},
-        );
+                    ).
+                "#},
+                indoc! {r#"
+                    -module(foo).
+                "#},
+            )
+        }
 
-        assert_parse!(
-            "line comments indentation",
-            indoc! {r#"
-                - %% line comment 1
-                  %% line comment 2
-                  module %% line comment 3
-                         %% line comment 4
-                         ( %% line comment 5
-                           %% line comment 6
-                           foo %% line comment 7
-                               %% line comment 8
-                               ).
-            "#},
-        );
+        #[test]
+        fn comments_indentation() {
+            assert_parse!(
+                "comments indentation",
+                indoc! {r#"
+                    - % comment 1
+                      % comment 2
+                      module % comment 3
+                             % comment 4
+                             ( % comment 5
+                               % comment 6
+                               foo % comment 7
+                                   % comment 8
+                                   ).
+                "#},
+            )
+        }
+
+        #[test]
+        fn line_comments_indentation() {
+            assert_parse!(
+                "line comments indentation",
+                indoc! {r#"
+                    - %% line comment 1
+                      %% line comment 2
+                      module %% line comment 3
+                             %% line comment 4
+                             ( %% line comment 5
+                               %% line comment 6
+                               foo %% line comment 7
+                                   %% line comment 8
+                                   ).
+                "#},
+            );
+        }
     }
 
-    #[test]
-    #[ignore]
-    fn node_to_stacked_layout_expr() {
-        todo!()
-    }
+    mod elements_node_to_layout_expr {
+        mod export {
+            use crate::parse_test::assert_parse;
+            use indoc::indoc;
 
-    #[test]
-    fn node_to_stacked_or_apposed_layout_expr() {
-        assert_parse!(
-            "keep empty lines",
-            indoc! {r#"
-                -export([
-                         foo/1,
+            #[test]
+            fn keep_empty_lines_expect_beginning_and_ending() {
+                assert_parse!(
+                    "keep empty lines",
+                    indoc! {r#"
+                        -export([
 
-                         bar/2,
+                                 foo/1,
 
-                         foobar/3,
+                                 bar/2,
 
-                         baz/4
-                        ])
-            "#},
-        );
+                                 foobar/3,
 
-        assert_parse!(
-            "comments indentation",
-            indoc! {r#"
-                -export([
-                         foo/1, % comment 1
-                                % comment 2
-                         bar/2, % comment 3
-                                % comment 4
-                         foobar/3, % comment 5
-                                   % comment 6
-                         baz/4 % comment 7
-                               % comment 8
-                        ])
-            "#},
-        );
+                                 baz/4
 
-        assert_parse!(
-            "there can be no line comment after an element",
-            indoc! {r#"
-                -export([
-                         foo/1, %% line comment 1
-                         bar/2, %% line comment 2
-                         foobar/3, %% line comment 3
-                         baz/4 %% line comment 4
-                        ])
-            "#},
-            indoc! {r#"
-                -export([
-                         foo/1,
-                         %% line comment 1
-                         bar/2,
-                         %% line comment 2
-                         foobar/3,
-                         %% line comment 3
-                         baz/4
-                         %% line comment 4
-                        ])
-            "#},
-        );
+                                ])
+                    "#},
+                    indoc! {r#"
+                        -export([
+                                 foo/1,
+
+                                 bar/2,
+
+                                 foobar/3,
+
+                                 baz/4
+                                ])
+                    "#},
+                );
+            }
+
+            #[test]
+            fn comments_indentation() {
+                assert_parse!(
+                    "comments indentation",
+                    indoc! {r#"
+                        -export([
+                                 foo/1, % comment 1
+                                        % comment 2
+                                 bar/2, % comment 3
+                                        % comment 4
+                                 foobar/3, % comment 5
+                                           % comment 6
+                                 baz/4 % comment 7
+                                       % comment 8
+                                ])
+                    "#},
+                )
+            }
+
+            #[test]
+            fn line_comments_indentation() {
+                assert_parse!(
+                    "line comments indentation",
+                    indoc! {r#"
+                        -export([
+                                 foo/1, %% line comment 1
+                                 bar/2, %% line comment 2
+                                 foobar/3, %% line comment 3
+                                 baz/4 %% line comment 4
+                                ])
+                    "#},
+                    indoc! {r#"
+                        -export([
+                                 foo/1,
+                                 %% line comment 1
+                                 bar/2,
+                                 %% line comment 2
+                                 foobar/3,
+                                 %% line comment 3
+                                 baz/4
+                                 %% line comment 4
+                                ])
+                    "#},
+                )
+            }
+
+            #[test]
+            fn trailing_comma() {
+                assert_parse!(
+                    "",
+                    indoc! {r#"
+                        -export([
+                                 foo/1,
+                                ])
+                    "#},
+                    indoc! {r#"
+                        -export([
+                                 foo/1
+                                ])
+                    "#},
+                )
+            }
+
+            #[test]
+            fn trailing_comma_with_comment() {
+                assert_parse!(
+                    "",
+                    indoc! {r#"
+                        -export([
+                                 foo/1, % comment
+                                ])
+                    "#},
+                    indoc! {r#"
+                        -export([
+                                 foo/1 % comment
+                                ])
+                    "#},
+                )
+            }
+
+            #[test]
+            fn trailing_comma_with_line_comment() {
+                assert_parse!(
+                    "",
+                    indoc! {r#"
+                        -export([
+                                 foo/1,
+                                 %% comment
+                                ])
+                    "#},
+                    indoc! {r#"
+                        -export([
+                                 foo/1
+                                 %% line comment
+                                ])
+                    "#},
+                )
+            }
+
+            #[test]
+            fn trailing_comma_with_multiple_newlines() {
+                assert_parse!(
+                    "",
+                    indoc! {r#"
+                        -export([
+                                 foo/1,
+
+                                ])
+                    "#},
+                    indoc! {r#"
+                        -export([
+                                 foo/1
+                                ])
+                    "#},
+                )
+            }
+        }
     }
 
     #[test]

@@ -1,7 +1,7 @@
 %%                                               |
 -module(hello).
 -export([
-         main/0, % comment 1
+         main/0,
         ]).
 
 
