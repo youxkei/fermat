@@ -166,16 +166,37 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "function_clauses_trailing_semicolon"
+          "name": "function_clauses"
         }
       ]
     },
-    "function_clauses_trailing_semicolon": {
+    "function_clauses": {
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "function_clauses"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "function_clause_block"
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ";"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "function_clause_block"
+                  }
+                ]
+              }
+            }
+          ]
         },
         {
           "type": "CHOICE",
@@ -188,31 +209,6 @@
               "type": "BLANK"
             }
           ]
-        }
-      ]
-    },
-    "function_clauses": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "function_clause_block"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "STRING",
-                "value": ";"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "function_clause_block"
-              }
-            ]
-          }
         }
       ]
     },

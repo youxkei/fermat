@@ -78,13 +78,10 @@ module.exports = grammar({
 
     export_attribute_mfa: ($) => seq($.atom, "/", $.integer),
 
-    _function_or_macro: ($) =>
-      choice($.function_clauses_trailing_semicolon /*, $.macro*/),
+    _function_or_macro: ($) => choice($.function_clauses /*, $.macro*/),
 
-    function_clauses_trailing_semicolon: ($) =>
-      seq($.function_clauses, optional(";")),
-
-    function_clauses: ($) => repeatSep1($.function_clause_block, ";"),
+    function_clauses: ($) =>
+      seq(repeatSep1($.function_clause_block, ";"), optional(";")),
 
     function_clause_block: ($) =>
       seq($.function_clause_open, repeatComma1($._expr), optional(",")),

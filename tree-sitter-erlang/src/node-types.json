@@ -145,7 +145,7 @@
           "named": true
         },
         {
-          "type": "function_clauses_trailing_semicolon",
+          "type": "function_clauses",
           "named": true
         },
         {
@@ -305,21 +305,6 @@
       "types": [
         {
           "type": "function_clause_block",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "function_clauses_trailing_semicolon",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "function_clauses",
           "named": true
         }
       ]
