@@ -136,26 +136,20 @@ pub macro stack {
         #[allow(unused_mut)]
         let mut result = $head;
 
-        match &*result {
-            LayoutExpr::Unit => {
-                stack!($($($tail),*)?)
-            }
-
-            _ => {
+        if result.is_unit() {
+            stack!($($($tail),*)?)
+        } else {
+            $(
                 $(
-                    $(
-                        let tail = $tail;
-                        match &*tail {
-                            LayoutExpr::Unit => {}
-                            _ => {
-                                result = Rc::new(LayoutExpr::Stack(result, tail));
-                            }
-                        }
-                     )*
-                 )?
+                    let tail = $tail;
 
-                result
-            }
+                    if !tail.is_unit() {
+                        result = Rc::new(LayoutExpr::Stack(result, tail));
+                    }
+                 )*
+             )?
+
+            result
         }
     }},
 }
@@ -184,26 +178,20 @@ pub macro apposition {
         #[allow(unused_mut)]
         let mut result = $head;
 
-        match &*result {
-            LayoutExpr::Unit => {
-                apposition!($($($tail),*)?)
-            }
-
-            _ => {
+        if result.is_unit() {
+            apposition!($($($tail),*)?)
+        } else {
+            $(
                 $(
-                    $(
-                        let tail = $tail;
-                        match &*tail {
-                            LayoutExpr::Unit => {}
-                            _ => {
-                                result = Rc::new(LayoutExpr::Apposition(result, tail));
-                            }
-                        }
-                     )*
-                 )?
+                    let tail = $tail;
 
-                result
-            }
+                    if !tail.is_unit() {
+                        result = Rc::new(LayoutExpr::Apposition(result, tail));
+                    }
+                 )*
+             )?
+
+            result
         }
     }},
 }
@@ -223,6 +211,67 @@ fn apposition_test() {
     );
 }
 
+pub macro apposition_sep {
+    ($separator:expr,) => {
+        unit!()
+    },
+
+    ($separator:expr, $head:expr $(, $($tail:expr),* $(,)?)?) => {{
+        let separator = $separator;
+        #[allow(unused_mut)]
+        let mut result = $head;
+
+        if result.is_unit() {
+            apposition_sep!(separator, $($($tail),*)?)
+        } else {
+            $(
+                $(
+                    let tail = $tail;
+
+                    if !tail.is_unit() {
+                        result = Rc::new(LayoutExpr::Apposition(result, separator.clone()));
+                        result = Rc::new(LayoutExpr::Apposition(result, tail));
+                    }
+                 )*
+             )?
+
+            result
+        }
+    }},
+}
+
+#[test]
+fn apposition_sep_test() {
+    let text = text!("text");
+    let sep = text!("sep");
+
+    assert_eq!(unit!(), apposition_sep!(sep.clone(), unit!()));
+    assert_eq!(unit!(), apposition_sep!(sep.clone(), unit!(), unit!()));
+    assert_eq!(text.clone(), apposition_sep!(sep.clone(), text.clone()));
+    assert_eq!(
+        text.clone(),
+        apposition_sep!(sep.clone(), unit!(), text.clone())
+    );
+    assert_eq!(
+        text.clone(),
+        apposition_sep!(sep.clone(), unit!(), text.clone(), unit!())
+    );
+    assert_eq!(
+        apposition!(text.clone(), sep.clone(), text.clone()),
+        apposition_sep!(sep.clone(), unit!(), text.clone(), unit!(), text.clone())
+    );
+    assert_eq!(
+        apposition!(
+            text.clone(),
+            sep.clone(),
+            text.clone(),
+            sep.clone(),
+            text.clone()
+        ),
+        apposition_sep!(sep.clone(), text.clone(), text.clone(), text.clone())
+    );
+}
+
 pub macro choice {
     () => {
         unit!()
@@ -232,28 +281,22 @@ pub macro choice {
         #[allow(unused_mut)]
         let mut result = $head;
 
-        match &*result {
-            LayoutExpr::Unit => {
-                choice!($($($tail),*)?)
-            }
-
-            _ => {
+        if result.is_unit() {
+            choice!($($($tail),*)?)
+        } else {
+            $(
                 $(
-                    $(
-                        let tail = $tail;
-                        match &*tail {
-                            LayoutExpr::Unit => {}
-                            _ => {
-                                result = Rc::new(LayoutExpr::Choice(result, tail));
-                            }
-                        }
-                     )*
-                 )?
+                    let tail = $tail;
 
-                result
-            }
-        }}
-    },
+                    if !tail.is_unit() {
+                        result = Rc::new(LayoutExpr::Choice(result, tail));
+                    }
+                 )*
+             )?
+
+            result
+        }
+    }},
 }
 
 #[test]
