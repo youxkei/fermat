@@ -33,7 +33,7 @@
           "named": true
         },
         {
-          "type": "function_call_block",
+          "type": "function_call",
           "named": true
         },
         {
@@ -92,22 +92,7 @@
       "required": true,
       "types": [
         {
-          "type": "export_attribute_block",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "export_attribute_block",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "export_attribute_mfa",
+          "type": "export_attribute_mfas",
           "named": true
         }
       ]
@@ -127,6 +112,21 @@
         },
         {
           "type": "integer",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "export_attribute_mfas",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "export_attribute_mfa",
           "named": true
         }
       ]
@@ -156,7 +156,7 @@
     }
   },
   {
-    "type": "function_call_block",
+    "type": "function_call",
     "named": true,
     "fields": {},
     "children": {
@@ -172,7 +172,7 @@
           "named": true
         },
         {
-          "type": "function_call_block",
+          "type": "function_call",
           "named": true
         },
         {
@@ -222,7 +222,7 @@
     }
   },
   {
-    "type": "function_clause_block",
+    "type": "function_clause",
     "named": true,
     "fields": {},
     "children": {
@@ -238,7 +238,7 @@
           "named": true
         },
         {
-          "type": "function_call_block",
+          "type": "function_call",
           "named": true
         },
         {
@@ -304,7 +304,7 @@
       "required": true,
       "types": [
         {
-          "type": "function_clause_block",
+          "type": "function_clause",
           "named": true
         }
       ]
@@ -327,7 +327,7 @@
           "named": true
         },
         {
-          "type": "function_call_block",
+          "type": "function_call",
           "named": true
         },
         {
@@ -464,7 +464,7 @@
           "named": true
         },
         {
-          "type": "function_call_block",
+          "type": "function_call",
           "named": true
         },
         {
