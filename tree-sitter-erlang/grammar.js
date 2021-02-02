@@ -47,8 +47,6 @@ module.exports = grammar({
     $._spaces,
   ],
 
-  conflicts: ($) => [[$.function_clauses]],
-
   rules: {
     source_file: ($) => repeat1($.form),
 
@@ -160,16 +158,16 @@ module.exports = grammar({
         '"'
       ),
 
-    _escape_sequence: ($) =>
+    _escape_sequence: (_) =>
       token.immediate(
         seq("\\", choice(/[^xuU]/, /\d{1,3}/, /x[0-9a-fA-F]{1,}/))
       ),
 
-    comment: (_) => token(/%[^%].*/),
-    line_comment: (_) => token(/%%.*/),
-    _newline: (_) => token(/\n/),
-    multiple_newlines: (_) => token(/\n\n+/),
-    _spaces: (_) => token(/[ \t\r]/),
+    comment: (_) => /%[^%].*/,
+    line_comment: (_) => /%%.*/,
+    _newline: (_) => "\n",
+    multiple_newlines: (_) => /\n\n+/,
+    _spaces: (_) => /[ \t\r]/,
   },
 });
 // vim: ts=2 sw=2 sts=2

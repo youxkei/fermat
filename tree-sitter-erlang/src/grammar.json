@@ -760,39 +760,24 @@
       }
     },
     "comment": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "%[^%].*"
-      }
+      "type": "PATTERN",
+      "value": "%[^%].*"
     },
     "line_comment": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "%%.*"
-      }
+      "type": "PATTERN",
+      "value": "%%.*"
     },
     "_newline": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "\\n"
-      }
+      "type": "STRING",
+      "value": "\n"
     },
     "multiple_newlines": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "\\n\\n+"
-      }
+      "type": "PATTERN",
+      "value": "\\n\\n+"
     },
     "_spaces": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "[ \\t\\r]"
-      }
+      "type": "PATTERN",
+      "value": "[ \\t\\r]"
     }
   },
   "extras": [
@@ -817,11 +802,7 @@
       "name": "_spaces"
     }
   ],
-  "conflicts": [
-    [
-      "function_clauses"
-    ]
-  ],
+  "conflicts": [],
   "externals": [],
   "inline": [],
   "supertypes": []
