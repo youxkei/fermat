@@ -8,8 +8,10 @@ pub enum LayoutExpr<'a> {
     Stack(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Apposition(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Choice(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
-    MultiLineCost(Rc<LayoutExpr<'a>>),
-    OneLineCost(Rc<LayoutExpr<'a>>),
+    #[allow(dead_code)]
+    MultiLineCost(Rc<LayoutExpr<'a>>), // TODO should be removed
+    #[allow(dead_code)]
+    OneLineCost(Rc<LayoutExpr<'a>>), // TODO should be removed
 }
 
 impl<'a> LayoutExpr<'a> {
@@ -217,6 +219,7 @@ pub macro apposition_sep {
     },
 
     ($separator:expr, $head:expr $(, $($tail:expr),* $(,)?)?) => {{
+        #[allow(unused)]
         let separator = $separator;
         #[allow(unused_mut)]
         let mut result = $head;

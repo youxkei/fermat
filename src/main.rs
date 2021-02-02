@@ -264,6 +264,9 @@ fn elements_node_to_layout_expr<'a>(
                     }
                 }
 
+                if last_extra.is_empty() {
+                    has_extra = true;
+                }
                 extras = stack!(extras, last_extra);
                 last_extra = node_to_layout_expr(
                     child,
@@ -271,8 +274,9 @@ fn elements_node_to_layout_expr<'a>(
                     config,
                     choice_nest_level + choice_nest,
                 );
-
-                has_extra = true;
+                if !last_extra.is_empty() {
+                    has_extra = true;
+                }
 
                 match kind_id {
                     KindId::MULTIPLE_NEWLINES => last_comment = !extras.is_unit(),
@@ -285,6 +289,10 @@ fn elements_node_to_layout_expr<'a>(
                 after_open = false;
 
                 if !comments.is_unit() || !extras.is_unit() || !last_extra.is_unit() {
+                    if last_extra.is_empty() {
+                        has_extra = true;
+                    }
+
                     elements.push(apposition_sep!(text!(" "), element, comments));
                     elements.push(stack!(extras, last_extra));
 
@@ -322,6 +330,10 @@ fn elements_node_to_layout_expr<'a>(
                     );
 
                     continue;
+                }
+
+                if last_extra.is_empty() {
+                    has_extra = true;
                 }
 
                 element = apposition!(element, separator);
@@ -379,7 +391,9 @@ fn elements_node_to_layout_expr<'a>(
     }
 
     match kind_id {
-        KindId::SOURCE_FILE | KindId::FUNCTION_CLAUSES | KindId::STRINGS => {
+        KindId::SOURCE_FILE => stacked_elements,
+
+        KindId::FUNCTION_CLAUSES | KindId::STRINGS => {
             if last_comment {
                 stack!(stacked_elements, text!(""))
             } else {
@@ -584,17 +598,9 @@ fn kind_id(node: Node<'_>) -> KindId {
     unsafe { std::mem::transmute(node.kind_id()) }
 }
 
-fn is_apposable(kind_id: KindId) -> bool {
-    match kind_id {
-        KindId::MULTIPLE_NEWLINES | KindId::COMMENT | KindId::LINE_COMMENT => false,
-        _ => true,
-    }
-}
-
 #[cfg(test)]
 mod parse_test {
     use crate::{parse, Config};
-    use indoc::indoc;
 
     macro assert_parse {
         ($source_code:expr $(,)?) => {{
@@ -712,42 +718,35 @@ mod parse_test {
         fn comments_indentation() {
             assert_parse!(indoc! {r#"
                     -export([
-                             foo/1, % comment 1
-                                    % comment 2
-                             bar/2, % comment 3
+                             % comment 1
+                             % comment 2
+                             foo/1, % comment 3
                                     % comment 4
-                             foobar/3, % comment 5
-                                       % comment 6
-                             baz/4 % comment 7
-                                   % comment 8
+                             bar/2, % comment 7
+                                    % comment 6
+                             foobar/3, % comment 7
+                                       % comment 8
+                             baz/4 % comment 9
+                                   % comment 10
                             ])
                 "#},)
         }
 
         #[test]
         fn line_comments_indentation() {
-            assert_parse!(
-                indoc! {r#"
+            assert_parse!(indoc! {r#"
                     -export([
-                             foo/1, %% line comment 1
-                             bar/2, %% line comment 2
-                             foobar/3, %% line comment 3
-                             baz/4 %% line comment 4
-                            ])
-                "#},
-                indoc! {r#"
-                    -export([
-                             foo/1,
                              %% line comment 1
-                             bar/2,
+                             foo/1,
                              %% line comment 2
-                             foobar/3,
+                             bar/2,
                              %% line comment 3
-                             baz/4
+                             foobar/3,
                              %% line comment 4
+                             baz/4
+                             %% line comment 5
                             ])
-                "#},
-            )
+                "#},)
         }
 
         #[test]
@@ -1003,406 +1002,527 @@ mod parse_test {
 
 #[cfg(test)]
 mod format_test {
-    use super::layout_fun::Config as LayoutFunConfig;
     use super::{format, Config};
-    use indoc::indoc;
 
-    macro_rules! assert_format {
-        ($desc:literal, $layout_fun_config:expr, $source_code:expr $(,)?) => {{
+    macro assert_format {
+        ($layout_fun_config:expr, $source_code:expr $(,)?) => {{
             let source_code = $source_code;
             let config = &Config{
                 max_choice_nest_level: 100
             };
             pretty_assertions::assert_eq!(
                 format(source_code, config, &$layout_fun_config) + "\n",
-                source_code,
-                $desc
+                source_code
             )
-        }};
+        }},
 
-        ($desc:literal, $layout_fun_config:expr, $source_code:expr, $expected:expr $(,)?) => {{
+        ($layout_fun_config:expr, $source_code:expr, $expected:expr $(,)?) => {{
             let config = &Config{
-                max_choice_nest_level: 100;
-            }
+                max_choice_nest_level: 100
+            };
             pretty_assertions::assert_eq!(
                 format($source_code, config, &$layout_fun_config) + "\n",
-                $expected,
-                $desc
+                $expected
             )
-        }};
+        }},
     }
 
-    #[test]
-    fn node_to_stacked_or_apposed_layout_expr() {
-        assert_format!(
-            "apposed",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([foo/1, bar/2, foobar/3, baz/4]).
-            "#},
-        );
+    mod elements_node_to_layout_expr {
+        mod function_clauses {
+            use crate::format_test::assert_format;
+            use crate::layout_fun::Config;
+            use indoc::indoc;
 
-        assert_format!(
-            "stacked due to right margin",
-            LayoutFunConfig {
-                right_margin: 10,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         foo/1,
-                         bar/2,
-                         foobar/3,
-                         baz/4
-                        ]).
-            "#},
-        );
+            #[test]
+            fn stacked() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        f() -> ok;
+                        f() -> error.
+                    "#},
+                )
+            }
 
-        assert_format!(
-            "stacked due to comments",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         foo/1, % comment 1
-                         bar/2, % comment 2
-                         foobar/3, % comment 3
-                         baz/4 % comment 4
-                        ]).
-            "#},
-        );
+            #[test]
+            fn stacked_with_comments() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        f() -> ok; % comment 1
+                        f() -> error % comment 2
+                                     .
+                    "#},
+                )
+            }
+        }
 
-        assert_format!(
-            "stacked due to line comments",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         %% line comment 1
-                         foo/1,
-                         %% line comment 2
-                         bar/2,
-                         %% line comment 3
-                         foobar/3,
-                         %% line comment 4
-                         baz/4
-                         %% line comment 5
-                        ]).
-            "#},
-        );
+        mod export_attribute {
+            use crate::format_test::assert_format;
+            use crate::layout_fun::Config;
+            use indoc::indoc;
 
-        assert_format!(
-            "stacked due to empty lines",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         foo/1,
+            #[test]
+            fn apposed() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        -export([foo/1, bar/2, foobar/3, baz/4]).
+                    "#},
+                )
+            }
 
-                         bar/2,
+            #[test]
+            fn apposed_with_beginning_and_ending_empty_lines() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        -export([
 
-                         foobar/3,
+                                 foo/1, bar/2, foobar/3, baz/4
 
-                         baz/4
-                        ]).
-            "#},
-        );
+                                ]).
+                    "#},
+                    indoc! {r#"
+                        -export([foo/1, bar/2, foobar/3, baz/4]).
+                    "#},
+                )
+            }
+
+            #[test]
+            fn apposed_with_multi_line_element() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        -export([foo/1, bar/2, foobar/ % comment
+                                                       3, baz/4]).
+                    "#},
+                );
+            }
+
+            #[test]
+            fn stacked_due_to_right_margin() {
+                assert_format!(
+                    Config {
+                        right_margin: 10,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        -export([
+                                 foo/1,
+                                 bar/2,
+                                 foobar/3,
+                                 baz/4
+                                ]).
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_due_to_comments() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        -export([
+                                 foo/1, % comment 1
+                                 bar/2, % comment 2
+                                 foobar/3, % comment 3
+                                 baz/4 % comment 4
+                                ]).
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_due_to_line_comments() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        -export([
+                                 %% line comment 1
+                                 foo/1,
+                                 %% line comment 2
+                                 bar/2,
+                                 %% line comment 3
+                                 foobar/3,
+                                 %% line comment 4
+                                 baz/4
+                                 %% line comment 5
+                                ]).
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_due_to_empty_line() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        -export([
+                                 foo/1,
+
+                                 bar/2,
+
+                                 foobar/3,
+
+                                 baz/4
+                                ]).
+                    "#},
+                )
+            }
+        }
+
+        mod function_clause {
+            use crate::format_test::assert_format;
+            use crate::layout_fun::Config;
+            use indoc::indoc;
+
+            #[test]
+            fn apposed() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        f() -> ok.
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_due_to_right_margin() {
+                assert_format!(
+                    Config {
+                        right_margin: 5,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        f() ->
+                            ok.
+                    "#}
+                )
+            }
+
+            #[test]
+            fn stacked_due_to_a_comment() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        f() ->
+                            % comment
+                            ok.
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_due_to_a_line_comment() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        f() ->
+                            %% comment
+                            ok.
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_due_to_a_multiple_elements() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        f() ->
+                            foo,
+                            bar.
+                    "#},
+                )
+            }
+        }
+
+        mod function_call {
+            use crate::format_test::assert_format;
+            use crate::layout_fun::Config;
+            use indoc::indoc;
+
+            #[test]
+            fn apposed() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function("foo", "bar").
+                    "#},
+                )
+            }
+
+            #[test]
+            fn apposed_with_a_multi_line_element() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function(42 + % comment
+                                              57).
+                    "#},
+                )
+            }
+
+            #[test]
+            fn apposed_with_a_comment() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function("foo" % comment
+                                         ).
+                    "#},
+                )
+            }
+
+            #[test]
+            fn apposed_with_stacked_elements_due_to_right_margin() {
+                assert_format!(
+                    Config {
+                        right_margin: 27,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function("foo",
+                                         "bar",
+                                         "baz",
+                                         "foobar").
+                    "#},
+                )
+            }
+
+            #[test]
+            fn apposed_with_stacked_elements_due_to_comments() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function(% comment 1
+                                         "foo", % comment 2
+                                         "bar", % comment 3
+                                         "baz" % comment 4
+                                         ).
+                    "#},
+                )
+            }
+
+            #[test]
+            fn apposed_with_stacked_elements_due_to_line_comments() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function(%% comment 1
+                                         "foo",
+                                         %% comment 2
+                                         "bar",
+                                         %% comment 3
+                                         "baz"
+                                         %% comment 4
+                                         ).
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_with_apposed_elements_due_to_right_margin() {
+                assert_format!(
+                    Config {
+                        right_margin: 27,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function(
+                              "foo", "bar", "baz").
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_with_stacked_elements_due_to_right_margin() {
+                assert_format!(
+                    Config {
+                        right_margin: 22,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function(
+                              "foo",
+                              "bar",
+                              "baz").
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_with_stacked_elements_due_to_comments() {
+                assert_format!(
+                    Config {
+                        right_margin: 27,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function(
+                              % comment 1
+                              "foo", % comment 2
+                              "bar", % comment 3
+                              "baz" % comment 4
+                              ).
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_with_stacked_elements_due_to_line_comments() {
+                assert_format!(
+                    Config {
+                        right_margin: 27,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            mod:function(
+                              %% line comment 1
+                              "foo",
+                              %% line comment 2
+                              "bar",
+                              %% line comment 3
+                              "baz"
+                              %% line comment 4
+                              ).
+                    "#},
+                )
+            }
+        }
     }
 
-    #[test]
-    #[ignore]
-    fn binary_expression_add() {
-        todo!()
-    }
+    mod binary_expression_node_to_layout_expr {
+        #[test]
+        #[ignore]
+        fn lhs_op() {
+            todo!()
+        }
 
-    #[test]
-    #[ignore]
-    fn binary_expression_equal() {
-        todo!()
-    }
-
-    #[test]
-    fn export_style_block_expression_node_to_layout_expr() {
-        assert_format!(
-            "apposed",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([foo/1]).
-            "#},
-        );
-
-        assert_format!(
-            "apposed with a multi line element",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([foo/ % comment
-                              1]).
-            "#},
-        );
-
-        assert_format!(
-            "stacked due to right margin",
-            LayoutFunConfig {
-                right_margin: 14,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         foo/1
-                        ]).
-            "#},
-        );
-
-        assert_format!(
-            "stacked due to a before body comment",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         % comment
-                         foo/1
-                        ]).
-            "#},
-        );
-
-        assert_format!(
-            "stacked due to an after body comment",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         foo/1 % comment
-                        ]).
-            "#},
-        );
-
-        assert_format!(
-            "stacked due to a before body line comment",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         %% line comment
-                         foo/1
-                        ]).
-            "#},
-        );
-
-        assert_format!(
-            "stacked due to an after body line comment",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                -export([
-                         foo/1
-                         %% line comment
-                        ]).
-            "#},
-        );
-    }
-
-    #[test]
-    fn function_style_block_expression_node_to_layout_expr() {
-        assert_format!(
-            "apposed",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                f() -> ok.
-            "#}
-        );
-
-        assert_format!(
-            "stacked due to right margin",
-            LayoutFunConfig {
-                right_margin: 5,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                f() ->
-                    ok.
-            "#}
-        );
-
-        assert_format!(
-            "stacked due to a before body comment",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                f() ->
-                    % comment
-                    ok.
-            "#}
-        );
-
-        assert_format!(
-            "stacked due to a before body line comment",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                f() ->
-                    %% comment
-                    ok.
-            "#}
-        );
-
-        assert_format!(
-            "stacked due to a multi line body",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                f() ->
-                    foo,
-                    bar.
-            "#}
-        );
-    }
-
-    #[test]
-    fn function_call_style_block_expression_node_to_layout_expr() {
-        assert_format!(
-            "apposed",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                main() ->
-                    %% line comment
-                    mod:function("foo").
-            "#},
-        );
-
-        assert_format!(
-            "apposed with multi line body",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                main() ->
-                    %% line comment
-                    mod:function(mod: % comment
-                                      function).
-            "#},
-        );
-
-        assert_format!(
-            "apposed with last comment",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                main() ->
-                    %% line comment
-                    mod:function("foo" % comment
-                                 ).
-            "#},
-        );
-
-        assert_format!(
-            "apposed with last line comment",
-            LayoutFunConfig {
-                right_margin: 80,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                main() ->
-                    %% line comment
-                    mod:function("foo"
-                                 %% line comment
-                                 ).
-            "#},
-        );
-
-        assert_format!(
-            "stacked due to right margin",
-            LayoutFunConfig {
-                right_margin: 23,
-                newline_cost: 1,
-                beyond_right_margin_cost: 10000,
-                height_cost: 100,
-            },
-            indoc! {r#"
-                main() ->
-                    %% line comment
-                    mod:function(
-                      "foo").
-            "#},
-        );
+        #[test]
+        #[ignore]
+        fn op_rhs() {
+            todo!()
+        }
     }
 }
