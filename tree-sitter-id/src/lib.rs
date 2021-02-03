@@ -111,6 +111,7 @@ fn identize(token: &str) -> &str {
         "=" => "EQUAL",
         "+" => "PLUS",
         "!" => "EXCLAM",
+        "*" => "ASTERISK",
         _ => token,
     }
 }

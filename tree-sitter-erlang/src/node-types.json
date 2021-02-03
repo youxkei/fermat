@@ -45,6 +45,10 @@
           "named": true
         },
         {
+          "type": "mult_op",
+          "named": true
+        },
+        {
           "type": "remote_expr",
           "named": true
         },
@@ -373,6 +377,11 @@
     }
   },
   {
+    "type": "mult_op",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "pat_argument_list",
     "named": true,
     "fields": {}
@@ -511,6 +520,10 @@
     "named": false
   },
   {
+    "type": "*",
+    "named": false
+  },
+  {
     "type": "+",
     "named": false
   },
@@ -555,8 +568,16 @@
     "named": false
   },
   {
+    "type": "and",
+    "named": false
+  },
+  {
     "type": "atom",
     "named": true
+  },
+  {
+    "type": "band",
+    "named": false
   },
   {
     "type": "bor",
@@ -583,6 +604,10 @@
     "named": true
   },
   {
+    "type": "div",
+    "named": false
+  },
+  {
     "type": "export",
     "named": false
   },
@@ -604,6 +629,10 @@
   },
   {
     "type": "or",
+    "named": false
+  },
+  {
+    "type": "rem",
     "named": false
   },
   {
