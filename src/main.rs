@@ -1513,16 +1513,86 @@ mod format_test {
     }
 
     mod binary_expression_node_to_layout_expr {
-        #[test]
-        #[ignore]
-        fn lhs_op() {
-            todo!()
+        mod lhs_op {
+            use crate::format_test::assert_format;
+            use crate::layout_fun::Config;
+            use indoc::indoc;
+
+            #[test]
+            fn apposed() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            Result = 3141592.
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_due_to_right_margin() {
+                assert_format!(
+                    Config {
+                        right_margin: 20,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            Result =
+                                3141592.
+                    "#},
+                )
+            }
         }
 
-        #[test]
-        #[ignore]
-        fn op_rhs() {
-            todo!()
+        mod op_rhs {
+            use crate::format_test::assert_format;
+            use crate::layout_fun::Config;
+            use indoc::indoc;
+
+            #[test]
+            fn apposed() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            271828 + 3141592.
+                    "#},
+                )
+            }
+
+            #[test]
+            fn stacked_due_to_right_margin() {
+                assert_format!(
+                    Config {
+                        right_margin: 20,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                    },
+                    indoc! {r#"
+                        main() ->
+                            %% line comment
+                            271828
+                            + 3141592.
+                    "#},
+                )
+            }
         }
     }
 }
