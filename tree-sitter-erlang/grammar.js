@@ -106,6 +106,7 @@ module.exports = grammar({
           PREC.equal_exclam,
           seq($._expr, choice($.equal_op, $.exclam_op), $._expr)
         ),
+        prec.right(PREC.list_op, seq($._expr, $.list_op, $._expr)),
         prec.right(PREC.add_op, seq($._expr, $.add_op, $._expr)),
         prec.right(PREC.mult_op, seq($._expr, $.mult_op, $._expr))
       ),
@@ -117,6 +118,8 @@ module.exports = grammar({
     add_op: (_) => choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor"),
 
     mult_op: (_) => choice("/", "*", "div", "rem", "band", "and"),
+
+    list_op: (_) => choice("++", "--"),
 
     unarry_expr: ($) => choice(prec(PREC.catch_, seq($.catch_op, $._expr))),
 

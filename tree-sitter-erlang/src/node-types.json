@@ -45,6 +45,10 @@
           "named": true
         },
         {
+          "type": "list_op",
+          "named": true
+        },
+        {
           "type": "mult_op",
           "named": true
         },
@@ -362,6 +366,11 @@
     }
   },
   {
+    "type": "list_op",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "module_attribute",
     "named": true,
     "fields": {},
@@ -528,11 +537,19 @@
     "named": false
   },
   {
+    "type": "++",
+    "named": false
+  },
+  {
     "type": ",",
     "named": false
   },
   {
     "type": "-",
+    "named": false
+  },
+  {
+    "type": "--",
     "named": false
   },
   {
