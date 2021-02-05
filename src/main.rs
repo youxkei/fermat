@@ -86,7 +86,8 @@ fn node_to_layout_expr<'a>(
         | KindId::COMP_OP
         | KindId::LIST_OP
         | KindId::ADD_OP
-        | KindId::MULT_OP => {
+        | KindId::MULT_OP
+        | KindId::PREFIX_OP => {
             elements_node_to_apposed_layout_expr(node, source_code, config, choice_nest_level)
         }
 
@@ -136,6 +137,8 @@ fn node_to_layout_expr<'a>(
         | KindId::AND
         | KindId::ORELSE
         | KindId::ANDALSO
+        | KindId::BNOT
+        | KindId::NOT
         | KindId::PLUS_PLUS
         | KindId::HYPHEN_HYPHEN
         | KindId::EQUAL_EQUAL

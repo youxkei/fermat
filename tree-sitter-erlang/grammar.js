@@ -130,7 +130,13 @@ module.exports = grammar({
 
     mult_op: (_) => choice("/", "*", "div", "rem", "band", "and"),
 
-    unary_expr: ($) => choice(prec(PREC.catch_, seq("catch", $._expr))),
+    unary_expr: ($) =>
+      choice(
+        prec(PREC.catch_, seq("catch", $._expr)),
+        prec(PREC.prefix_op, seq($.prefix_op, $._expr))
+      ),
+
+    prefix_op: (_) => choice("+", "-", "bnot", "not"),
 
     remote_expr: ($) => seq($._primary_expr, ":", $._primary_expr),
 

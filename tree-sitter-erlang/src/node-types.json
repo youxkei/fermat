@@ -418,6 +418,11 @@
     "fields": {}
   },
   {
+    "type": "prefix_op",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "remote_expr",
     "named": true,
     "fields": {},
@@ -488,7 +493,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
@@ -509,6 +514,10 @@
         },
         {
           "type": "list",
+          "named": true
+        },
+        {
+          "type": "prefix_op",
           "named": true
         },
         {
@@ -651,6 +660,10 @@
     "named": false
   },
   {
+    "type": "bnot",
+    "named": false
+  },
+  {
     "type": "bor",
     "named": false
   },
@@ -697,6 +710,10 @@
   {
     "type": "multiple_newlines",
     "named": true
+  },
+  {
+    "type": "not",
+    "named": false
   },
   {
     "type": "or",
