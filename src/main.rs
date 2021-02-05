@@ -92,12 +92,14 @@ fn node_to_layout_expr<'a>(
         }
 
         KindId::SOURCE_FILE
-        | KindId::STRINGS
         | KindId::EXPORT_ATTRIBUTE_MFAS
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE
         | KindId::FUNCTION_CALL
-        | KindId::LIST => {
+        | KindId::GUARD
+        | KindId::EXPRS
+        | KindId::LIST
+        | KindId::STRINGS => {
             elements_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
@@ -200,6 +202,17 @@ fn elements_node_to_apposed_layout_expr<'a>(
                 result = apposition!(
                     node_to_layout_expr(child, source_code, config, choice_nest_level),
                     text!(" "),
+                )
+            }
+
+            KindId::WHEN | KindId::GUARD => {
+                result = apposition!(
+                    result,
+                    text!(" "),
+                    stack!(
+                        comments,
+                        node_to_layout_expr(child, source_code, config, choice_nest_level)
+                    )
                 );
 
                 comments = unit!();
@@ -240,7 +253,7 @@ fn elements_node_to_layout_expr<'a>(
         KindId::EXPORT_ATTRIBUTE_MFAS => 1,
         KindId::FUNCTION_CLAUSE => 1,
         KindId::FUNCTION_CALL => 2,
-        KindId::LIST => 1,
+        KindId::GUARD | KindId::EXPRS | KindId::LIST => 1,
         _ => panic!("{:?} is not covered", kind_id),
     };
 
@@ -495,7 +508,7 @@ fn elements_node_to_layout_expr<'a>(
             }
         }
 
-        KindId::LIST => {
+        KindId::GUARD | KindId::EXPRS | KindId::LIST => {
             let body = if choice_nest_level > config.max_choice_nest_level {
                 stacked_elements
             } else {

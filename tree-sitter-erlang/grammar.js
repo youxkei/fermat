@@ -89,14 +89,20 @@ module.exports = grammar({
 
     pat_argument_list: ($) => seq("(", /*repeatComma($.pat_expr),*/ ")"),
 
-    clause_guard: ($) => seq("when" /*, $.guard*/),
+    clause_guard: ($) => seq("when", $.guard),
+
+    guard: ($) => seq(repeatSep1($.exprs, ";"), optional(";")),
+
+    exprs: ($) => seq(repeatComma1($._expr), optional(",")),
 
     _expr: ($) =>
       choice(
         $.binary_expr,
         $.unary_expr,
-        $.remote_expr,
+        // $.map_expr,
         $.function_call,
+        // $.record_expr,
+        $.remote_expr,
         $._primary_expr
       ),
 
