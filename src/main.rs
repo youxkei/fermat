@@ -79,6 +79,8 @@ fn node_to_layout_expr<'a>(
         | KindId::FUNCTION_CALL_OPEN
         | KindId::UNARRY_EXPR
         | KindId::REMOTE_EXPR
+        | KindId::ORELSE_OP
+        | KindId::ANDALSO_OP
         | KindId::CATCH_OP
         | KindId::EQUAL_OP
         | KindId::EXCLAM_OP
@@ -133,6 +135,8 @@ fn node_to_layout_expr<'a>(
         | KindId::REM
         | KindId::BAND
         | KindId::AND
+        | KindId::ORELSE
+        | KindId::ANDALSO
         | KindId::PLUS_PLUS
         | KindId::HYPHEN_HYPHEN
         | KindId::EQUAL_EQUAL
@@ -555,6 +559,8 @@ fn binary_expression_node_to_layout_expr<'a>(
 
     match op_kind_id {
         KindId::EXCLAM_OP
+        | KindId::ORELSE_OP
+        | KindId::ANDALSO_OP
         | KindId::COMP_OP
         | KindId::LIST_OP
         | KindId::ADD_OP

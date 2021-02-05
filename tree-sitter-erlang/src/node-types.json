@@ -5,6 +5,11 @@
     "fields": {}
   },
   {
+    "type": "andalso_op",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "binary_expr",
     "named": true,
     "fields": {},
@@ -14,6 +19,10 @@
       "types": [
         {
           "type": "add_op",
+          "named": true
+        },
+        {
+          "type": "andalso_op",
           "named": true
         },
         {
@@ -54,6 +63,10 @@
         },
         {
           "type": "mult_op",
+          "named": true
+        },
+        {
+          "type": "orelse_op",
           "named": true
         },
         {
@@ -400,6 +413,11 @@
     "fields": {}
   },
   {
+    "type": "orelse_op",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "pat_argument_list",
     "named": true,
     "fields": {}
@@ -630,6 +648,10 @@
     "named": false
   },
   {
+    "type": "andalso",
+    "named": false
+  },
+  {
     "type": "atom",
     "named": true
   },
@@ -687,6 +709,10 @@
   },
   {
     "type": "or",
+    "named": false
+  },
+  {
+    "type": "orelse",
     "named": false
   },
   {

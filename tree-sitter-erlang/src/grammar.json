@@ -369,6 +369,48 @@
         },
         {
           "type": "PREC_RIGHT",
+          "value": 150,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_expr"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "orelse_op"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_expr"
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_RIGHT",
+          "value": 160,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_expr"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "andalso_op"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_expr"
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_RIGHT",
           "value": 200,
           "content": {
             "type": "SEQ",
@@ -468,6 +510,24 @@
         {
           "type": "STRING",
           "value": "!"
+        }
+      ]
+    },
+    "orelse_op": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "orelse"
+        }
+      ]
+    },
+    "andalso_op": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "andalso"
         }
       ]
     },
