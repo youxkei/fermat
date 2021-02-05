@@ -87,7 +87,8 @@ module.exports = grammar({
     function_clause_open: ($) =>
       seq($.atom, $.pat_argument_list, optional($.clause_guard), "->"),
 
-    pat_argument_list: ($) => seq("(", /*repeatComma($.pat_expr),*/ ")"),
+    pat_argument_list: ($) =>
+      seq("(", repeatComma($._pat_expr), optional(","), ")"),
 
     clause_guard: ($) => seq("when", $.guard),
 
@@ -151,18 +152,34 @@ module.exports = grammar({
 
     function_call_open: ($) => seq($.remote_expr, "("),
 
-    //argument_list: ($) => seq("(", optional($.exprs), ")"),
+    _primary_expr: ($) => choice($.variable, $._atomic, $.list),
 
-    //pat_expr: ($) =>
-    //  choice(
-    //    $.binary_pat_expr,
-    //    $.unary_pat_expr,
-    //    $.map_pat_expr,
-    //    $.record_pat_expr,
-    //    $.pat_expr_max
-    //  ),
+    _pat_expr: ($) =>
+      choice(
+        $.pat_binary_expr,
+        $.pat_unary_expr,
+        // $.map_expr,
+        // $.record_expr,
+        $._pat_primary_expr
+      ),
 
-    _primary_expr: ($) => choice($.list, $.variable, $._atomic),
+    pat_binary_expr: ($) =>
+      choice(
+        prec.right(
+          PREC.equal_exclam,
+          seq($._pat_expr, $.equal_op, $._pat_expr)
+        ),
+        prec.right(PREC.orelse, seq($._pat_expr, $.orelse_op, $._pat_expr)),
+        prec.right(PREC.andalso, seq($._pat_expr, $.andalso_op, $._pat_expr)),
+        prec.nonassoc(PREC.comp_op, seq($._pat_expr, $.comp_op, $._pat_expr)),
+        prec.right(PREC.list_op, seq($._pat_expr, $.list_op, $._pat_expr)),
+        prec.right(PREC.add_op, seq($._pat_expr, $.add_op, $._pat_expr)),
+        prec.right(PREC.mult_op, seq($._pat_expr, $.mult_op, $._pat_expr))
+      ),
+
+    pat_unary_expr: ($) => seq($.prefix_op, $._pat_expr),
+
+    _pat_primary_expr: ($) => choice($.variable, $._atomic, $.list),
 
     list: ($) => seq("[", repeatSep1($._expr, ","), optional(","), "]"),
 

@@ -74,11 +74,11 @@ fn node_to_layout_expr<'a>(
         | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE_MFA
         | KindId::FUNCTION_CLAUSE_OPEN
-        | KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
         | KindId::FUNCTION_CALL_OPEN
         | KindId::UNARY_EXPR
         | KindId::REMOTE_EXPR
+        | KindId::PAT_UNARY_EXPR
         | KindId::ORELSE_OP
         | KindId::ANDALSO_OP
         | KindId::EQUAL_OP
@@ -95,6 +95,7 @@ fn node_to_layout_expr<'a>(
         | KindId::EXPORT_ATTRIBUTE_MFAS
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE
+        | KindId::PAT_ARGUMENT_LIST
         | KindId::FUNCTION_CALL
         | KindId::GUARD
         | KindId::EXPRS
@@ -103,7 +104,7 @@ fn node_to_layout_expr<'a>(
             elements_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
-        KindId::BINARY_EXPR => {
+        KindId::BINARY_EXPR | KindId::PAT_BINARY_EXPR => {
             binary_expression_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
@@ -253,7 +254,7 @@ fn elements_node_to_layout_expr<'a>(
         KindId::EXPORT_ATTRIBUTE_MFAS => 1,
         KindId::FUNCTION_CLAUSE => 1,
         KindId::FUNCTION_CALL => 2,
-        KindId::GUARD | KindId::EXPRS | KindId::LIST => 1,
+        KindId::PAT_ARGUMENT_LIST | KindId::GUARD | KindId::EXPRS | KindId::LIST => 1,
         _ => panic!("{:?} is not covered", kind_id),
     };
 
@@ -508,7 +509,7 @@ fn elements_node_to_layout_expr<'a>(
             }
         }
 
-        KindId::GUARD | KindId::EXPRS | KindId::LIST => {
+        KindId::PAT_ARGUMENT_LIST | KindId::GUARD | KindId::EXPRS | KindId::LIST => {
             let body = if choice_nest_level > config.max_choice_nest_level {
                 stacked_elements
             } else {
