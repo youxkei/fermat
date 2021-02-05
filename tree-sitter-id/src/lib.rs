@@ -96,7 +96,7 @@ pub fn define_kind_id(_item: TokenStream) -> TokenStream {
 
 fn identize(token: &str) -> &str {
     match token {
-        "->" => "HYPHEN_GT",
+        "->" => "HYPHEN_GREATER",
         "(" => "PAREN_OPEN",
         ")" => "PAREN_CLOSE",
         "[" => "BRACKET_OPEN",
@@ -107,13 +107,21 @@ fn identize(token: &str) -> &str {
         "/" => "SLASH",
         ";" => "SEMICOLON",
         ":" => "COLON",
-        "\"" => "DOUBLE_QUOTE",
+        "\"" => "QUOTEDBL",
         "=" => "EQUAL",
         "+" => "PLUS",
         "!" => "EXCLAM",
         "*" => "ASTERISK",
-        "++" => "PLUSPLUS",
-        "--" => "HYPHENHYPHEN",
+        "++" => "PLUS_PLUS",
+        "--" => "HYPHEN_HYPHEN",
+        "==" => "EQUAL_EQUAL",
+        "/=" => "SLASH_EQUAL",
+        "=<" => "EQUAL_LESS",
+        "<" => "LESS",
+        ">=" => "GREATER_EQUAL",
+        ">" => "GREATER",
+        "=:=" => "EQUAL_COLON_EQUAL",
+        "=/=" => "EQUAL_SLASH_EQUAL",
         _ => token,
     }
 }

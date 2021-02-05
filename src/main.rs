@@ -82,6 +82,7 @@ fn node_to_layout_expr<'a>(
         | KindId::CATCH_OP
         | KindId::EQUAL_OP
         | KindId::EXCLAM_OP
+        | KindId::COMP_OP
         | KindId::LIST_OP
         | KindId::ADD_OP
         | KindId::MULT_OP => {
@@ -102,7 +103,7 @@ fn node_to_layout_expr<'a>(
             binary_expression_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
-        KindId::HYPHEN_GT
+        KindId::HYPHEN_GREATER
         | KindId::PAREN_OPEN
         | KindId::PAREN_CLOSE
         | KindId::BRACKET_OPEN
@@ -113,7 +114,7 @@ fn node_to_layout_expr<'a>(
         | KindId::SLASH
         | KindId::SEMICOLON
         | KindId::COLON
-        | KindId::DOUBLE_QUOTE
+        | KindId::QUOTEDBL
         | KindId::EQUAL
         | KindId::PLUS
         | KindId::EXCLAM
@@ -132,8 +133,16 @@ fn node_to_layout_expr<'a>(
         | KindId::REM
         | KindId::BAND
         | KindId::AND
-        | KindId::PLUSPLUS
-        | KindId::HYPHENHYPHEN
+        | KindId::PLUS_PLUS
+        | KindId::HYPHEN_HYPHEN
+        | KindId::EQUAL_EQUAL
+        | KindId::SLASH_EQUAL
+        | KindId::EQUAL_LESS
+        | KindId::LESS
+        | KindId::GREATER_EQUAL
+        | KindId::GREATER
+        | KindId::EQUAL_COLON_EQUAL
+        | KindId::EQUAL_SLASH_EQUAL
         | KindId::VARIABLE
         | KindId::ATOM
         | KindId::INTEGER
@@ -168,7 +177,7 @@ fn elements_node_to_apposed_layout_expr<'a>(
                 )
             }
 
-            KindId::HYPHEN_GT => {
+            KindId::HYPHEN_GREATER => {
                 result = apposition!(
                     result,
                     text!(" "),
@@ -545,7 +554,11 @@ fn binary_expression_node_to_layout_expr<'a>(
     }
 
     match op_kind_id {
-        KindId::EXCLAM_OP | KindId::LIST_OP | KindId::ADD_OP | KindId::MULT_OP => {
+        KindId::EXCLAM_OP
+        | KindId::COMP_OP
+        | KindId::LIST_OP
+        | KindId::ADD_OP
+        | KindId::MULT_OP => {
             apposition!(
                 choice!(
                     stack!(

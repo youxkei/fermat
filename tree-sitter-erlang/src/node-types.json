@@ -25,6 +25,10 @@
           "named": true
         },
         {
+          "type": "comp_op",
+          "named": true
+        },
+        {
           "type": "equal_op",
           "named": true
         },
@@ -78,6 +82,11 @@
   },
   {
     "type": "clause_guard",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "comp_op",
     "named": true,
     "fields": {}
   },
@@ -565,6 +574,10 @@
     "named": false
   },
   {
+    "type": "/=",
+    "named": false
+  },
+  {
     "type": ":",
     "named": false
   },
@@ -573,7 +586,35 @@
     "named": false
   },
   {
+    "type": "<",
+    "named": false
+  },
+  {
     "type": "=",
+    "named": false
+  },
+  {
+    "type": "=/=",
+    "named": false
+  },
+  {
+    "type": "=:=",
+    "named": false
+  },
+  {
+    "type": "=<",
+    "named": false
+  },
+  {
+    "type": "==",
+    "named": false
+  },
+  {
+    "type": ">",
+    "named": false
+  },
+  {
+    "type": ">=",
     "named": false
   },
   {
