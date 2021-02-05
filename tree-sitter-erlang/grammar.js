@@ -94,7 +94,7 @@ module.exports = grammar({
     _expr: ($) =>
       choice(
         $.binary_expr,
-        $.unarry_expr,
+        $.unary_expr,
         $.remote_expr,
         $.function_call,
         $._primary_expr
@@ -130,9 +130,7 @@ module.exports = grammar({
 
     mult_op: (_) => choice("/", "*", "div", "rem", "band", "and"),
 
-    unarry_expr: ($) => choice(prec(PREC.catch_, seq($.catch_op, $._expr))),
-
-    catch_op: (_) => choice("catch"),
+    unary_expr: ($) => choice(prec(PREC.catch_, seq("catch", $._expr))),
 
     remote_expr: ($) => seq($._primary_expr, ":", $._primary_expr),
 

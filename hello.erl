@@ -22,6 +22,7 @@ main() ->
     Result6 =
         12345678901234567890 >= 12345678901234567890,
     Result7 = 12345678901234567890 andalso 12345678901234567890 orelse 12345678901234567890,
+    Result8 = catch 1234567890123456789012345678901234567890,
     io:format("Lorem ipsum dolor sit amet") % comment 1
     , % comment 2
     ; % comment 3

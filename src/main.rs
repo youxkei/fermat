@@ -77,11 +77,10 @@ fn node_to_layout_expr<'a>(
         | KindId::PAT_ARGUMENT_LIST
         | KindId::CLAUSE_GUARD
         | KindId::FUNCTION_CALL_OPEN
-        | KindId::UNARRY_EXPR
+        | KindId::UNARY_EXPR
         | KindId::REMOTE_EXPR
         | KindId::ORELSE_OP
         | KindId::ANDALSO_OP
-        | KindId::CATCH_OP
         | KindId::EQUAL_OP
         | KindId::EXCLAM_OP
         | KindId::COMP_OP
@@ -189,6 +188,15 @@ fn elements_node_to_apposed_layout_expr<'a>(
                         comments,
                         node_to_layout_expr(child, source_code, config, choice_nest_level)
                     )
+                );
+
+                comments = unit!();
+            }
+
+            KindId::CATCH => {
+                result = apposition!(
+                    node_to_layout_expr(child, source_code, config, choice_nest_level),
+                    text!(" "),
                 );
 
                 comments = unit!();

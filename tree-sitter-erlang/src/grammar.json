@@ -318,7 +318,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "unarry_expr"
+          "name": "unary_expr"
         },
         {
           "type": "SYMBOL",
@@ -647,7 +647,7 @@
         }
       ]
     },
-    "unarry_expr": {
+    "unary_expr": {
       "type": "CHOICE",
       "members": [
         {
@@ -657,8 +657,8 @@
             "type": "SEQ",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "catch_op"
+                "type": "STRING",
+                "value": "catch"
               },
               {
                 "type": "SYMBOL",
@@ -666,15 +666,6 @@
               }
             ]
           }
-        }
-      ]
-    },
-    "catch_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "catch"
         }
       ]
     },
