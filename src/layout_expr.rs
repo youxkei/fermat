@@ -8,10 +8,6 @@ pub enum LayoutExpr<'a> {
     Stack(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Apposition(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Choice(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
-    #[allow(dead_code)]
-    MultiLineCost(Rc<LayoutExpr<'a>>), // TODO should be removed
-    #[allow(dead_code)]
-    OneLineCost(Rc<LayoutExpr<'a>>), // TODO should be removed
 }
 
 impl<'a> LayoutExpr<'a> {
@@ -47,10 +43,6 @@ impl<'a> LayoutExpr<'a> {
             }
 
             LayoutExpr::Choice(lhs, _) => lhs.format(indent, indented),
-
-            LayoutExpr::MultiLineCost(expr) => expr.format(indent, indented),
-
-            LayoutExpr::OneLineCost(expr) => expr.format(indent, indented),
         }
     }
 
@@ -316,23 +308,3 @@ fn choice_test() {
         choice!(unit!(), text.clone(), unit!(), text.clone())
     );
 }
-
-pub macro multi_line_cost($expr:expr) {{
-    let expr = $expr;
-
-    match &*expr {
-        LayoutExpr::Unit => unit!(),
-
-        _ => Rc::new(LayoutExpr::MultiLineCost(expr)),
-    }
-}}
-
-pub macro one_line_cost($expr:expr) {{
-    let expr = $expr;
-
-    match &*expr {
-        LayoutExpr::Unit => unit!(),
-
-        _ => Rc::new(LayoutExpr::OneLineCost(expr)),
-    }
-}}

@@ -41,7 +41,7 @@ fn main() {
 
 fn format(source_code: &str, config: &Config, layout_fun_config: &LayoutFunConfig) -> String {
     let layout_expr = parse(source_code, config);
-    let layout_fun = LayoutFun::from_layout_expr(&*layout_expr, layout_fun_config);
+    let layout_fun = LayoutFun::from_layout_expr(&layout_expr, layout_fun_config);
 
     let calculated = layout_fun.at(0);
 
