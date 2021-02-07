@@ -42,6 +42,10 @@ main(Parameter1 = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 0 + 1 + 2 + 3,
     Result10 = <<X:4/little-signed-integer-unit:8, Y:4/little-signed-integer-unit:8,>>,
     Result11 = ({1234567890123456789012345678901234567890,
                  1234567890123456789012345678901234567890,}),
+    Result12 = begin
+                   1234567890123456789012345678901234567890,
+                   1234567890123456789012345678901234567890,
+               end,
     io:format("Lorem ipsum dolor sit amet") % comment 1
     , % comment 2
     ; % comment 3

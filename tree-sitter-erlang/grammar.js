@@ -137,7 +137,15 @@ module.exports = grammar({
     function_call_open: ($) => seq($.remote_expr, "("),
 
     _primary_expr: ($) =>
-      choice($.variable, $._atomic, $.list, $.binary, $.tuple, $.paren_expr),
+      choice(
+        $.variable,
+        $._atomic,
+        $.list,
+        $.binary,
+        $.tuple,
+        $.paren_expr,
+        $.begin_end_expr
+      ),
 
     list: ($) =>
       choice(seq("[", repeatSep($._expr, ","), optional(","), $.list_close)),
@@ -162,6 +170,13 @@ module.exports = grammar({
     tuple: ($) => seq("{", repeatComma($._expr), optional(","), "}"),
 
     paren_expr: ($) => seq("(", $._expr, ")"),
+
+    begin_end_expr: ($) =>
+      seq($.begin_open, repeatComma1($._expr), optional(","), $.end_close),
+
+    begin_open: ($) => choice("begin"),
+
+    end_close: ($) => choice("end"),
 
     _pat_expr: ($) =>
       choice(

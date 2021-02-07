@@ -10,6 +10,82 @@
     "fields": {}
   },
   {
+    "type": "begin_end_expr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
+          "type": "begin_open",
+          "named": true
+        },
+        {
+          "type": "binary",
+          "named": true
+        },
+        {
+          "type": "binary_expr",
+          "named": true
+        },
+        {
+          "type": "end_close",
+          "named": true
+        },
+        {
+          "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "paren_expr",
+          "named": true
+        },
+        {
+          "type": "remote_expr",
+          "named": true
+        },
+        {
+          "type": "strings",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "unary_expr",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "begin_open",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "binary",
     "named": true,
     "fields": {},
@@ -34,6 +110,10 @@
       "types": [
         {
           "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
           "named": true
         },
         {
@@ -89,6 +169,10 @@
         },
         {
           "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
           "named": true
         },
         {
@@ -183,6 +267,11 @@
     "fields": {}
   },
   {
+    "type": "end_close",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "equal_op",
     "named": true,
     "fields": {}
@@ -251,6 +340,10 @@
       "types": [
         {
           "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
           "named": true
         },
         {
@@ -336,6 +429,10 @@
           "named": true
         },
         {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
           "type": "binary",
           "named": true
         },
@@ -411,6 +508,10 @@
       "types": [
         {
           "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
           "named": true
         },
         {
@@ -530,6 +631,10 @@
           "named": true
         },
         {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
           "type": "binary",
           "named": true
         },
@@ -610,6 +715,10 @@
       "types": [
         {
           "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
           "named": true
         },
         {
@@ -694,6 +803,10 @@
       "types": [
         {
           "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
           "named": true
         },
         {
@@ -1231,6 +1344,10 @@
           "named": true
         },
         {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
           "type": "binary",
           "named": true
         },
@@ -1309,6 +1426,10 @@
           "named": true
         },
         {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
           "type": "binary",
           "named": true
         },
@@ -1365,6 +1486,10 @@
       "types": [
         {
           "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
           "named": true
         },
         {
@@ -1547,6 +1672,10 @@
     "named": false
   },
   {
+    "type": "begin",
+    "named": false
+  },
+  {
     "type": "bnot",
     "named": false
   },
@@ -1576,6 +1705,10 @@
   },
   {
     "type": "div",
+    "named": false
+  },
+  {
+    "type": "end",
     "named": false
   },
   {

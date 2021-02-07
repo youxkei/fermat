@@ -110,6 +110,7 @@ fn node_to_layout_expr<'a>(
         | KindId::LIST
         | KindId::BINARY
         | KindId::TUPLE
+        | KindId::BEGIN_END_EXPR
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
         | KindId::PAT_TUPLE
@@ -130,6 +131,8 @@ fn node_to_layout_expr<'a>(
         | KindId::BRACKET_CLOSE
         | KindId::LESS_LESS_OPEN
         | KindId::GREATER_GREATER_CLOSE
+        | KindId::BEGIN_OPEN
+        | KindId::END_CLOSE
         | KindId::COMMA
         | KindId::PERIOD
         | KindId::HYPHEN
@@ -159,6 +162,8 @@ fn node_to_layout_expr<'a>(
         | KindId::ANDALSO
         | KindId::BNOT
         | KindId::NOT
+        | KindId::BEGIN
+        | KindId::END
         | KindId::PLUS_PLUS
         | KindId::HYPHEN_HYPHEN
         | KindId::EQUAL_EQUAL
@@ -262,7 +267,7 @@ fn elements_node_to_layout_expr<'a>(
     let choice_nest = match kind_id {
         KindId::SOURCE_FILE | KindId::FUNCTION_CLAUSES | KindId::STRINGS => 0,
         KindId::EXPORT_ATTRIBUTE_MFAS => 1,
-        KindId::FUNCTION_CLAUSE => 1,
+        KindId::FUNCTION_CLAUSE | KindId::BEGIN_END_EXPR => 1,
         KindId::FUNCTION_CALL => 2,
         KindId::PAT_ARGUMENT_LIST
         | KindId::GUARD
@@ -524,6 +529,21 @@ fn elements_node_to_layout_expr<'a>(
                 stack!(open, apposition!(text!("    "), tail))
             } else {
                 apposition!(choice!(stack!(open.clone(), text!("  ")), open), tail)
+            }
+        }
+
+        KindId::BEGIN_END_EXPR => {
+            if num_elements > 1 || last_comment {
+                stack!(open, apposition!(text!("    "), stacked_elements,), close)
+            } else {
+                choice!(
+                    stack!(stack!(
+                        open.clone(),
+                        apposition!(text!("    "), stacked_elements,),
+                        close.clone()
+                    )),
+                    apposition!(open, text!(" "), apposed_elements, text!(" "), close)
+                )
             }
         }
 
