@@ -90,8 +90,10 @@ fn node_to_layout_expr<'a>(
         | KindId::PREFIX_OP
         | KindId::LIST_CLOSE
         | KindId::LIST_TAIL
+        | KindId::BINARY_ELEMENT
         | KindId::PAT_LIST_CLOSE
-        | KindId::PAT_LIST_TAIL => {
+        | KindId::PAT_LIST_TAIL
+        | KindId::PAT_BINARY_ELEMENT => {
             elements_node_to_apposed_layout_expr(node, source_code, config, choice_nest_level)
         }
 
@@ -104,7 +106,9 @@ fn node_to_layout_expr<'a>(
         | KindId::GUARD
         | KindId::EXPRS
         | KindId::LIST
+        | KindId::BINARY
         | KindId::PAT_LIST
+        | KindId::PAT_BINARY
         | KindId::STRINGS => {
             elements_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
@@ -118,6 +122,8 @@ fn node_to_layout_expr<'a>(
         | KindId::PAREN_CLOSE
         | KindId::BRACKET_OPEN
         | KindId::BRACKET_CLOSE
+        | KindId::LESS_LESS_OPEN
+        | KindId::GREATER_GREATER_CLOSE
         | KindId::COMMA
         | KindId::PERIOD
         | KindId::HYPHEN
@@ -256,7 +262,9 @@ fn elements_node_to_layout_expr<'a>(
         | KindId::GUARD
         | KindId::EXPRS
         | KindId::LIST
-        | KindId::PAT_LIST => 1,
+        | KindId::BINARY
+        | KindId::PAT_LIST
+        | KindId::PAT_BINARY => 1,
         _ => panic!("{:?} is not covered", kind_id),
     };
 
@@ -515,7 +523,9 @@ fn elements_node_to_layout_expr<'a>(
         | KindId::GUARD
         | KindId::EXPRS
         | KindId::LIST
-        | KindId::PAT_LIST => {
+        | KindId::BINARY
+        | KindId::PAT_LIST
+        | KindId::PAT_BINARY => {
             let body = if choice_nest_level > config.max_choice_nest_level {
                 stacked_elements
             } else {

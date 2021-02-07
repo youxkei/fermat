@@ -17,6 +17,7 @@ main(Parameter1 = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 0 + 1 + 2 + 3,
      Parameter5 =
          12345678901234567890 >= 12345678901234567890,
      Parameter6 = [1, 2 | 3] ++ [],
+     Parameter7 = <<X:4/little-signed-integer-unit:8, Y:4/little-signed-integer-unit:8,>>,
     ) when 1234567890123456789012345678901234567890,
            1234567890123456789012345678901234567890,;
            1234567890123456789012345678901234567890,
@@ -36,6 +37,7 @@ main(Parameter1 = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 0 + 1 + 2 + 3,
     Result7 = 12345678901234567890 andalso 12345678901234567890 orelse 12345678901234567890,
     Result8 = catch 1234567890123456789012345678901234567890,
     Result9 = [1, 2 | 3] ++ [],
+    Result10 = <<X:4/little-signed-integer-unit:8, Y:4/little-signed-integer-unit:8,>>,
     io:format("Lorem ipsum dolor sit amet") % comment 1
     , % comment 2
     ; % comment 3

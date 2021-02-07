@@ -123,6 +123,8 @@ fn identize(token: &str) -> &str {
         "=:=" => "EQUAL_COLON_EQUAL",
         "=/=" => "EQUAL_SLASH_EQUAL",
         "|" => "BAR",
+        "<<" => "LESS_LESS_OPEN",
+        ">>" => "GREATER_GREATER_CLOSE",
         _ => token,
     }
 }
