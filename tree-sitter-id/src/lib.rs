@@ -122,6 +122,7 @@ fn identize(token: &str) -> &str {
         ">" => "GREATER",
         "=:=" => "EQUAL_COLON_EQUAL",
         "=/=" => "EQUAL_SLASH_EQUAL",
+        "|" => "BAR",
         _ => token,
     }
 }

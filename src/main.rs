@@ -87,7 +87,9 @@ fn node_to_layout_expr<'a>(
         | KindId::LIST_OP
         | KindId::ADD_OP
         | KindId::MULT_OP
-        | KindId::PREFIX_OP => {
+        | KindId::PREFIX_OP
+        | KindId::LIST_CLOSE
+        | KindId::LIST_TAIL => {
             elements_node_to_apposed_layout_expr(node, source_code, config, choice_nest_level)
         }
 
@@ -152,6 +154,7 @@ fn node_to_layout_expr<'a>(
         | KindId::GREATER
         | KindId::EQUAL_COLON_EQUAL
         | KindId::EQUAL_SLASH_EQUAL
+        | KindId::BAR
         | KindId::VARIABLE
         | KindId::ATOM
         | KindId::INTEGER
@@ -186,7 +189,11 @@ fn elements_node_to_apposed_layout_expr<'a>(
                 )
             }
 
-            KindId::HYPHEN_GREATER => {
+            KindId::HYPHEN_GREATER
+            | KindId::WHEN
+            | KindId::GUARD
+            | KindId::BAR
+            | KindId::LIST_TAIL => {
                 result = apposition!(
                     result,
                     text!(" "),
@@ -204,19 +211,6 @@ fn elements_node_to_apposed_layout_expr<'a>(
                     node_to_layout_expr(child, source_code, config, choice_nest_level),
                     text!(" "),
                 )
-            }
-
-            KindId::WHEN | KindId::GUARD => {
-                result = apposition!(
-                    result,
-                    text!(" "),
-                    stack!(
-                        comments,
-                        node_to_layout_expr(child, source_code, config, choice_nest_level)
-                    )
-                );
-
-                comments = unit!();
             }
 
             _ => {

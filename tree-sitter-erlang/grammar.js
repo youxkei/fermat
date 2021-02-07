@@ -121,22 +121,6 @@ module.exports = grammar({
         prec.right(PREC.mult_op, seq($._expr, $.mult_op, $._expr))
       ),
 
-    equal_op: (_) => choice("="),
-
-    exclam_op: (_) => choice("!"),
-
-    orelse_op: (_) => choice("orelse"),
-
-    andalso_op: (_) => choice("andalso"),
-
-    comp_op: (_) => choice("==", "/=", "=<", "<", ">=", ">", "=:=", "=/="),
-
-    list_op: (_) => choice("++", "--"),
-
-    add_op: (_) => choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor"),
-
-    mult_op: (_) => choice("/", "*", "div", "rem", "band", "and"),
-
     unary_expr: ($) =>
       choice(
         prec(PREC.catch_, seq("catch", $._expr)),
@@ -153,6 +137,16 @@ module.exports = grammar({
     function_call_open: ($) => seq($.remote_expr, "("),
 
     _primary_expr: ($) => choice($.variable, $._atomic, $.list),
+
+    list: ($) =>
+      choice(
+        seq("[", "]"),
+        seq("[", repeatSep1($._expr, ","), optional(","), $.list_close)
+      ),
+
+    list_close: ($) => seq(optional(seq("|", $.list_tail)), "]"),
+
+    list_tail: ($) => choice($._expr),
 
     _pat_expr: ($) =>
       choice(
@@ -181,11 +175,25 @@ module.exports = grammar({
 
     _pat_primary_expr: ($) => choice($.variable, $._atomic, $.list),
 
-    list: ($) => seq("[", repeatSep1($._expr, ","), optional(","), "]"),
+    _atomic: ($) => choice($.atom, $.integer, $.strings),
+
+    equal_op: (_) => choice("="),
+
+    exclam_op: (_) => choice("!"),
+
+    orelse_op: (_) => choice("orelse"),
+
+    andalso_op: (_) => choice("andalso"),
+
+    comp_op: (_) => choice("==", "/=", "=<", "<", ">=", ">", "=:=", "=/="),
+
+    list_op: (_) => choice("++", "--"),
+
+    add_op: (_) => choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor"),
+
+    mult_op: (_) => choice("/", "*", "div", "rem", "band", "and"),
 
     variable: (_) => token(/[A-Z][a-zA-Z0-9_]*/),
-
-    _atomic: ($) => choice($.atom, $.integer, $.strings),
 
     atom: (_) => token(choice(/'(\\.|[^'])*'/, /[a-z][a-zA-Z0-9_@]*/)),
 
