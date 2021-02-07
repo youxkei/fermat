@@ -91,9 +91,11 @@ fn node_to_layout_expr<'a>(
         | KindId::LIST_CLOSE
         | KindId::LIST_TAIL
         | KindId::BINARY_ELEMENT
+        | KindId::PAREN_EXPR
         | KindId::PAT_LIST_CLOSE
         | KindId::PAT_LIST_TAIL
-        | KindId::PAT_BINARY_ELEMENT => {
+        | KindId::PAT_BINARY_ELEMENT
+        | KindId::PAT_PAREN_EXPR => {
             elements_node_to_apposed_layout_expr(node, source_code, config, choice_nest_level)
         }
 
