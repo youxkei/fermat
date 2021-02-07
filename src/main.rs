@@ -79,15 +79,6 @@ fn node_to_layout_expr<'a>(
         | KindId::UNARY_EXPR
         | KindId::REMOTE_EXPR
         | KindId::PAT_UNARY_EXPR
-        | KindId::ORELSE_OP
-        | KindId::ANDALSO_OP
-        | KindId::EQUAL_OP
-        | KindId::EXCLAM_OP
-        | KindId::COMP_OP
-        | KindId::LIST_OP
-        | KindId::ADD_OP
-        | KindId::MULT_OP
-        | KindId::PREFIX_OP
         | KindId::LIST_CLOSE
         | KindId::LIST_TAIL
         | KindId::BINARY_ELEMENT
@@ -133,6 +124,10 @@ fn node_to_layout_expr<'a>(
         | KindId::GREATER_GREATER_CLOSE
         | KindId::BEGIN_OPEN
         | KindId::END_CLOSE
+        | KindId::MODULE
+        | KindId::EXPORT
+        | KindId::WHEN
+        | KindId::CATCH
         | KindId::COMMA
         | KindId::PERIOD
         | KindId::HYPHEN
@@ -140,41 +135,16 @@ fn node_to_layout_expr<'a>(
         | KindId::SEMICOLON
         | KindId::COLON
         | KindId::QUOTEDBL
-        | KindId::EQUAL
-        | KindId::PLUS
-        | KindId::EXCLAM
-        | KindId::ASTERISK
-        | KindId::MODULE
-        | KindId::EXPORT
-        | KindId::WHEN
-        | KindId::CATCH
-        | KindId::BOR
-        | KindId::BXOR
-        | KindId::BSL
-        | KindId::BSR
-        | KindId::OR
-        | KindId::XOR
-        | KindId::DIV
-        | KindId::REM
-        | KindId::BAND
-        | KindId::AND
-        | KindId::ORELSE
-        | KindId::ANDALSO
-        | KindId::BNOT
-        | KindId::NOT
-        | KindId::BEGIN
-        | KindId::END
-        | KindId::PLUS_PLUS
-        | KindId::HYPHEN_HYPHEN
-        | KindId::EQUAL_EQUAL
-        | KindId::SLASH_EQUAL
-        | KindId::EQUAL_LESS
-        | KindId::LESS
-        | KindId::GREATER_EQUAL
-        | KindId::GREATER
-        | KindId::EQUAL_COLON_EQUAL
-        | KindId::EQUAL_SLASH_EQUAL
         | KindId::BAR
+        | KindId::ORELSE_OP
+        | KindId::ANDALSO_OP
+        | KindId::EQUAL_OP
+        | KindId::EXCLAM_OP
+        | KindId::COMP_OP
+        | KindId::LIST_OP
+        | KindId::ADD_OP
+        | KindId::MULT_OP
+        | KindId::PREFIX_OP
         | KindId::VARIABLE
         | KindId::ATOM
         | KindId::INTEGER

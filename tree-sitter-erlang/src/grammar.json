@@ -668,25 +668,28 @@
       ]
     },
     "prefix_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "+"
-        },
-        {
-          "type": "STRING",
-          "value": "-"
-        },
-        {
-          "type": "STRING",
-          "value": "bnot"
-        },
-        {
-          "type": "STRING",
-          "value": "not"
-        }
-      ]
+      "type": "TOKEN",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "+"
+          },
+          {
+            "type": "STRING",
+            "value": "-"
+          },
+          {
+            "type": "STRING",
+            "value": "bnot"
+          },
+          {
+            "type": "STRING",
+            "value": "not"
+          }
+        ]
+      }
     },
     "remote_expr": {
       "type": "SEQ",
@@ -1231,22 +1234,12 @@
       ]
     },
     "begin_open": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "begin"
-        }
-      ]
+      "type": "STRING",
+      "value": "begin"
     },
     "end_close": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "end"
-        }
-      ]
+      "type": "STRING",
+      "value": "end"
     },
     "_pat_expr": {
       "type": "CHOICE",
@@ -1853,163 +1846,152 @@
       ]
     },
     "equal_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "="
-        }
-      ]
+      "type": "STRING",
+      "value": "="
     },
     "exclam_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "!"
-        }
-      ]
+      "type": "STRING",
+      "value": "!"
     },
     "orelse_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "orelse"
-        }
-      ]
+      "type": "STRING",
+      "value": "orelse"
     },
     "andalso_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "andalso"
-        }
-      ]
+      "type": "STRING",
+      "value": "andalso"
     },
     "comp_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "=="
-        },
-        {
-          "type": "STRING",
-          "value": "/="
-        },
-        {
-          "type": "STRING",
-          "value": "=<"
-        },
-        {
-          "type": "STRING",
-          "value": "<"
-        },
-        {
-          "type": "STRING",
-          "value": ">="
-        },
-        {
-          "type": "STRING",
-          "value": ">"
-        },
-        {
-          "type": "STRING",
-          "value": "=:="
-        },
-        {
-          "type": "STRING",
-          "value": "=/="
-        }
-      ]
-    },
-    "list_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "++"
-        },
-        {
-          "type": "STRING",
-          "value": "--"
-        }
-      ]
-    },
-    "add_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "+"
-        },
-        {
-          "type": "STRING",
-          "value": "-"
-        },
-        {
-          "type": "STRING",
-          "value": "bor"
-        },
-        {
-          "type": "STRING",
-          "value": "bxor"
-        },
-        {
-          "type": "STRING",
-          "value": "bsl"
-        },
-        {
-          "type": "STRING",
-          "value": "bsr"
-        },
-        {
-          "type": "STRING",
-          "value": "or"
-        },
-        {
-          "type": "STRING",
-          "value": "xor"
-        }
-      ]
-    },
-    "mult_op": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "/"
-        },
-        {
-          "type": "STRING",
-          "value": "*"
-        },
-        {
-          "type": "STRING",
-          "value": "div"
-        },
-        {
-          "type": "STRING",
-          "value": "rem"
-        },
-        {
-          "type": "STRING",
-          "value": "band"
-        },
-        {
-          "type": "STRING",
-          "value": "and"
-        }
-      ]
-    },
-    "variable": {
       "type": "TOKEN",
       "content": {
-        "type": "PATTERN",
-        "value": "[A-Z][a-zA-Z0-9_]*"
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "=="
+          },
+          {
+            "type": "STRING",
+            "value": "/="
+          },
+          {
+            "type": "STRING",
+            "value": "=<"
+          },
+          {
+            "type": "STRING",
+            "value": "<"
+          },
+          {
+            "type": "STRING",
+            "value": ">="
+          },
+          {
+            "type": "STRING",
+            "value": ">"
+          },
+          {
+            "type": "STRING",
+            "value": "=:="
+          },
+          {
+            "type": "STRING",
+            "value": "=/="
+          }
+        ]
       }
+    },
+    "list_op": {
+      "type": "TOKEN",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "++"
+          },
+          {
+            "type": "STRING",
+            "value": "--"
+          }
+        ]
+      }
+    },
+    "add_op": {
+      "type": "TOKEN",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "+"
+          },
+          {
+            "type": "STRING",
+            "value": "-"
+          },
+          {
+            "type": "STRING",
+            "value": "bor"
+          },
+          {
+            "type": "STRING",
+            "value": "bxor"
+          },
+          {
+            "type": "STRING",
+            "value": "bsl"
+          },
+          {
+            "type": "STRING",
+            "value": "bsr"
+          },
+          {
+            "type": "STRING",
+            "value": "or"
+          },
+          {
+            "type": "STRING",
+            "value": "xor"
+          }
+        ]
+      }
+    },
+    "mult_op": {
+      "type": "TOKEN",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "/"
+          },
+          {
+            "type": "STRING",
+            "value": "*"
+          },
+          {
+            "type": "STRING",
+            "value": "div"
+          },
+          {
+            "type": "STRING",
+            "value": "rem"
+          },
+          {
+            "type": "STRING",
+            "value": "band"
+          },
+          {
+            "type": "STRING",
+            "value": "and"
+          }
+        ]
+      }
+    },
+    "variable": {
+      "type": "PATTERN",
+      "value": "[A-Z][a-zA-Z0-9_]*"
     },
     "atom": {
       "type": "TOKEN",

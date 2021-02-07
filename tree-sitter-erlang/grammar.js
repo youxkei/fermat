@@ -127,8 +127,6 @@ module.exports = grammar({
         prec(PREC.prefix_op, seq($.prefix_op, $._expr))
       ),
 
-    prefix_op: (_) => choice("+", "-", "bnot", "not"),
-
     remote_expr: ($) => seq($._primary_expr, ":", $._primary_expr),
 
     function_call: ($) =>
@@ -174,9 +172,9 @@ module.exports = grammar({
     begin_end_expr: ($) =>
       seq($.begin_open, repeatComma1($._expr), optional(","), $.end_close),
 
-    begin_open: ($) => choice("begin"),
+    begin_open: ($) => "begin",
 
-    end_close: ($) => choice("end"),
+    end_close: ($) => "end",
 
     _pat_expr: ($) =>
       choice(
@@ -242,23 +240,27 @@ module.exports = grammar({
 
     _atomic: ($) => choice($.atom, $.integer, $.strings),
 
-    equal_op: (_) => choice("="),
+    prefix_op: (_) => token(choice("+", "-", "bnot", "not")),
 
-    exclam_op: (_) => choice("!"),
+    equal_op: (_) => "=",
 
-    orelse_op: (_) => choice("orelse"),
+    exclam_op: (_) => "!",
 
-    andalso_op: (_) => choice("andalso"),
+    orelse_op: (_) => "orelse",
 
-    comp_op: (_) => choice("==", "/=", "=<", "<", ">=", ">", "=:=", "=/="),
+    andalso_op: (_) => "andalso",
 
-    list_op: (_) => choice("++", "--"),
+    comp_op: (_) =>
+      token(choice("==", "/=", "=<", "<", ">=", ">", "=:=", "=/=")),
 
-    add_op: (_) => choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor"),
+    list_op: (_) => token(choice("++", "--")),
 
-    mult_op: (_) => choice("/", "*", "div", "rem", "band", "and"),
+    add_op: (_) =>
+      token(choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor")),
 
-    variable: (_) => token(/[A-Z][a-zA-Z0-9_]*/),
+    mult_op: (_) => token(choice("/", "*", "div", "rem", "band", "and")),
+
+    variable: (_) => /[A-Z][a-zA-Z0-9_]*/,
 
     atom: (_) => token(choice(/'(\\.|[^'])*'/, /[a-z][a-zA-Z0-9_@]*/)),
 
