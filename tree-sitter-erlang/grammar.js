@@ -135,8 +135,6 @@ module.exports = grammar({
 
     map_expr_field: ($) => seq($._expr, $.map_op, $._expr),
 
-    map_op: (_) => token(choice("=>", ":=")),
-
     function_call: ($) =>
       seq($.function_call_open, repeatComma($._expr), optional(","), ")"),
 
@@ -190,7 +188,7 @@ module.exports = grammar({
       choice(
         $.pat_binary_expr,
         $.pat_unary_expr,
-        // $.map_expr,
+        $.pat_map_expr,
         // $.record_expr,
         $._pat_primary_expr
       ),
@@ -210,6 +208,19 @@ module.exports = grammar({
       ),
 
     pat_unary_expr: ($) => seq($.prefix_op, $._pat_expr),
+
+    pat_map_expr: ($) =>
+      seq(
+        $.pat_map_expr_open,
+        repeatComma($.pat_map_expr_field),
+        optional(","),
+        "}"
+      ),
+
+    pat_map_expr_open: ($) =>
+      seq(optional(choice($._pat_primary_expr, $.pat_map_expr)), "#", "{"),
+
+    pat_map_expr_field: ($) => seq($._pat_expr, $.map_op, $._pat_expr),
 
     _pat_primary_expr: ($) =>
       choice(
@@ -269,6 +280,8 @@ module.exports = grammar({
       token(choice("+", "-", "bor", "bxor", "bsl", "bsr", "or", "xor")),
 
     mult_op: (_) => token(choice("/", "*", "div", "rem", "band", "and")),
+
+    map_op: (_) => token(choice("=>", ":=")),
 
     variable: (_) => /[A-Z][a-zA-Z0-9_]*/,
 
