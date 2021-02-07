@@ -99,8 +99,12 @@ fn identize(token: &str) -> &str {
         "->" => "HYPHEN_GREATER",
         "(" => "PAREN_OPEN",
         ")" => "PAREN_CLOSE",
+        "{" => "BRACE_OPEN",
+        "}" => "BRACE_CLOSE",
         "[" => "BRACKET_OPEN",
         "]" => "BRACKET_CLOSE",
+        "<<" => "LESS_LESS_OPEN",
+        ">>" => "GREATER_GREATER_CLOSE",
         "," => "COMMA",
         "." => "PERIOD",
         "-" => "HYPHEN",
@@ -123,8 +127,6 @@ fn identize(token: &str) -> &str {
         "=:=" => "EQUAL_COLON_EQUAL",
         "=/=" => "EQUAL_SLASH_EQUAL",
         "|" => "BAR",
-        "<<" => "LESS_LESS_OPEN",
-        ">>" => "GREATER_GREATER_CLOSE",
         _ => token,
     }
 }

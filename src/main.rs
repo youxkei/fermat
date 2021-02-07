@@ -107,8 +107,10 @@ fn node_to_layout_expr<'a>(
         | KindId::EXPRS
         | KindId::LIST
         | KindId::BINARY
+        | KindId::TUPLE
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
+        | KindId::PAT_TUPLE
         | KindId::STRINGS => {
             elements_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
@@ -120,6 +122,8 @@ fn node_to_layout_expr<'a>(
         KindId::HYPHEN_GREATER
         | KindId::PAREN_OPEN
         | KindId::PAREN_CLOSE
+        | KindId::BRACE_OPEN
+        | KindId::BRACE_CLOSE
         | KindId::BRACKET_OPEN
         | KindId::BRACKET_CLOSE
         | KindId::LESS_LESS_OPEN
@@ -263,8 +267,10 @@ fn elements_node_to_layout_expr<'a>(
         | KindId::EXPRS
         | KindId::LIST
         | KindId::BINARY
+        | KindId::TUPLE
         | KindId::PAT_LIST
-        | KindId::PAT_BINARY => 1,
+        | KindId::PAT_BINARY
+        | KindId::PAT_TUPLE => 1,
         _ => panic!("{:?} is not covered", kind_id),
     };
 
@@ -524,8 +530,10 @@ fn elements_node_to_layout_expr<'a>(
         | KindId::EXPRS
         | KindId::LIST
         | KindId::BINARY
+        | KindId::TUPLE
         | KindId::PAT_LIST
-        | KindId::PAT_BINARY => {
+        | KindId::PAT_BINARY
+        | KindId::PAT_TUPLE => {
             let body = if choice_nest_level > config.max_choice_nest_level {
                 stacked_elements
             } else {
