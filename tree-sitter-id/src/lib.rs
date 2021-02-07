@@ -113,6 +113,7 @@ fn identize(token: &str) -> &str {
         ":" => "COLON",
         "\"" => "QUOTEDBL",
         "|" => "BAR",
+        "#" => "NUMBERSIGN",
         _ => token,
     }
 }

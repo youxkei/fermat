@@ -100,7 +100,7 @@ module.exports = grammar({
       choice(
         $.binary_expr,
         $.unary_expr,
-        // $.map_expr,
+        $.map_expr,
         $.function_call,
         // $.record_expr,
         $.remote_expr,
@@ -127,12 +127,22 @@ module.exports = grammar({
         prec(PREC.prefix_op, seq($.prefix_op, $._expr))
       ),
 
-    remote_expr: ($) => seq($._primary_expr, ":", $._primary_expr),
+    map_expr: ($) =>
+      seq($.map_expr_open, repeatComma($.map_expr_field), optional(","), "}"),
+
+    map_expr_open: ($) =>
+      seq(optional(choice($._primary_expr, $.map_expr)), "#", "{"),
+
+    map_expr_field: ($) => seq($._expr, $.map_op, $._expr),
+
+    map_op: (_) => token(choice("=>", ":=")),
 
     function_call: ($) =>
       seq($.function_call_open, repeatComma($._expr), optional(","), ")"),
 
     function_call_open: ($) => seq($.remote_expr, "("),
+
+    remote_expr: ($) => seq($._primary_expr, ":", $._primary_expr),
 
     _primary_expr: ($) =>
       choice(

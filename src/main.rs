@@ -75,6 +75,7 @@ fn node_to_layout_expr<'a>(
         | KindId::EXPORT_ATTRIBUTE_MFA
         | KindId::FUNCTION_CLAUSE_OPEN
         | KindId::CLAUSE_GUARD
+        | KindId::MAP_EXPR_OPEN
         | KindId::FUNCTION_CALL_OPEN
         | KindId::UNARY_EXPR
         | KindId::REMOTE_EXPR
@@ -95,6 +96,7 @@ fn node_to_layout_expr<'a>(
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE
         | KindId::PAT_ARGUMENT_LIST
+        | KindId::MAP_EXPR
         | KindId::FUNCTION_CALL
         | KindId::GUARD
         | KindId::EXPRS
@@ -109,7 +111,7 @@ fn node_to_layout_expr<'a>(
             elements_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
-        KindId::BINARY_EXPR | KindId::PAT_BINARY_EXPR => {
+        KindId::BINARY_EXPR | KindId::PAT_BINARY_EXPR | KindId::MAP_EXPR_FIELD => {
             binary_expression_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
@@ -136,6 +138,7 @@ fn node_to_layout_expr<'a>(
         | KindId::COLON
         | KindId::QUOTEDBL
         | KindId::BAR
+        | KindId::NUMBERSIGN
         | KindId::ORELSE_OP
         | KindId::ANDALSO_OP
         | KindId::EQUAL_OP
@@ -145,6 +148,7 @@ fn node_to_layout_expr<'a>(
         | KindId::ADD_OP
         | KindId::MULT_OP
         | KindId::PREFIX_OP
+        | KindId::MAP_OP
         | KindId::VARIABLE
         | KindId::ATOM
         | KindId::INTEGER
@@ -238,7 +242,7 @@ fn elements_node_to_layout_expr<'a>(
         KindId::SOURCE_FILE | KindId::FUNCTION_CLAUSES | KindId::STRINGS => 0,
         KindId::EXPORT_ATTRIBUTE_MFAS => 1,
         KindId::FUNCTION_CLAUSE | KindId::BEGIN_END_EXPR => 1,
-        KindId::FUNCTION_CALL => 2,
+        KindId::MAP_EXPR | KindId::FUNCTION_CALL => 2,
         KindId::PAT_ARGUMENT_LIST
         | KindId::GUARD
         | KindId::EXPRS
@@ -482,7 +486,7 @@ fn elements_node_to_layout_expr<'a>(
             }
         }
 
-        KindId::FUNCTION_CALL => {
+        KindId::MAP_EXPR | KindId::FUNCTION_CALL => {
             let body = if has_extra || choice_nest_level > config.max_choice_nest_level {
                 stacked_elements
             } else {
@@ -633,7 +637,7 @@ fn binary_expression_node_to_layout_expr<'a>(
             )
         }
 
-        KindId::EQUAL_OP => {
+        KindId::EQUAL_OP | KindId::MAP_OP => {
             apposition!(
                 choice!(
                     stack!(
