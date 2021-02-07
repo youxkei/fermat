@@ -567,11 +567,11 @@
           "named": true
         },
         {
-          "type": "list",
+          "type": "pat_binary_expr",
           "named": true
         },
         {
-          "type": "pat_binary_expr",
+          "type": "pat_list",
           "named": true
         },
         {
@@ -622,10 +622,6 @@
           "named": true
         },
         {
-          "type": "list",
-          "named": true
-        },
-        {
           "type": "list_op",
           "named": true
         },
@@ -639,6 +635,107 @@
         },
         {
           "type": "pat_binary_expr",
+          "named": true
+        },
+        {
+          "type": "pat_list",
+          "named": true
+        },
+        {
+          "type": "pat_unary_expr",
+          "named": true
+        },
+        {
+          "type": "strings",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pat_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "pat_binary_expr",
+          "named": true
+        },
+        {
+          "type": "pat_list",
+          "named": true
+        },
+        {
+          "type": "pat_list_close",
+          "named": true
+        },
+        {
+          "type": "pat_unary_expr",
+          "named": true
+        },
+        {
+          "type": "strings",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pat_list_close",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "pat_list_tail",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pat_list_tail",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "pat_binary_expr",
+          "named": true
+        },
+        {
+          "type": "pat_list",
           "named": true
         },
         {
@@ -673,11 +770,11 @@
           "named": true
         },
         {
-          "type": "list",
+          "type": "pat_binary_expr",
           "named": true
         },
         {
-          "type": "pat_binary_expr",
+          "type": "pat_list",
           "named": true
         },
         {

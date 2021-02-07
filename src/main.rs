@@ -89,7 +89,9 @@ fn node_to_layout_expr<'a>(
         | KindId::MULT_OP
         | KindId::PREFIX_OP
         | KindId::LIST_CLOSE
-        | KindId::LIST_TAIL => {
+        | KindId::LIST_TAIL
+        | KindId::PAT_LIST_CLOSE
+        | KindId::PAT_LIST_TAIL => {
             elements_node_to_apposed_layout_expr(node, source_code, config, choice_nest_level)
         }
 
@@ -102,6 +104,7 @@ fn node_to_layout_expr<'a>(
         | KindId::GUARD
         | KindId::EXPRS
         | KindId::LIST
+        | KindId::PAT_LIST
         | KindId::STRINGS => {
             elements_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
@@ -193,7 +196,8 @@ fn elements_node_to_apposed_layout_expr<'a>(
             | KindId::WHEN
             | KindId::GUARD
             | KindId::BAR
-            | KindId::LIST_TAIL => {
+            | KindId::LIST_TAIL
+            | KindId::PAT_LIST_TAIL => {
                 result = apposition!(
                     result,
                     text!(" "),
@@ -248,7 +252,11 @@ fn elements_node_to_layout_expr<'a>(
         KindId::EXPORT_ATTRIBUTE_MFAS => 1,
         KindId::FUNCTION_CLAUSE => 1,
         KindId::FUNCTION_CALL => 2,
-        KindId::PAT_ARGUMENT_LIST | KindId::GUARD | KindId::EXPRS | KindId::LIST => 1,
+        KindId::PAT_ARGUMENT_LIST
+        | KindId::GUARD
+        | KindId::EXPRS
+        | KindId::LIST
+        | KindId::PAT_LIST => 1,
         _ => panic!("{:?} is not covered", kind_id),
     };
 
@@ -503,7 +511,11 @@ fn elements_node_to_layout_expr<'a>(
             }
         }
 
-        KindId::PAT_ARGUMENT_LIST | KindId::GUARD | KindId::EXPRS | KindId::LIST => {
+        KindId::PAT_ARGUMENT_LIST
+        | KindId::GUARD
+        | KindId::EXPRS
+        | KindId::LIST
+        | KindId::PAT_LIST => {
             let body = if choice_nest_level > config.max_choice_nest_level {
                 stacked_elements
             } else {

@@ -173,7 +173,17 @@ module.exports = grammar({
 
     pat_unary_expr: ($) => seq($.prefix_op, $._pat_expr),
 
-    _pat_primary_expr: ($) => choice($.variable, $._atomic, $.list),
+    _pat_primary_expr: ($) => choice($.variable, $._atomic, $.pat_list),
+
+    pat_list: ($) =>
+      choice(
+        seq("[", "]"),
+        seq("[", repeatSep1($._pat_expr, ","), optional(","), $.pat_list_close)
+      ),
+
+    pat_list_close: ($) => seq(optional(seq("|", $.pat_list_tail)), "]"),
+
+    pat_list_tail: ($) => choice($._pat_expr),
 
     _atomic: ($) => choice($.atom, $.integer, $.strings),
 
