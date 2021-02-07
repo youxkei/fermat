@@ -52,6 +52,14 @@
           "named": true
         },
         {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
           "type": "remote_expr",
           "named": true
         },
@@ -217,6 +225,14 @@
           "named": true
         },
         {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
           "type": "remote_expr",
           "named": true
         },
@@ -348,6 +364,14 @@
           "named": true
         },
         {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
           "type": "remote_expr",
           "named": true
         },
@@ -442,6 +466,14 @@
           "named": true
         },
         {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
           "type": "remote_expr",
           "named": true
         },
@@ -525,6 +557,14 @@
         },
         {
           "type": "paren_expr",
+          "named": true
+        },
+        {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
           "named": true
         },
         {
@@ -652,6 +692,14 @@
           "named": true
         },
         {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
           "type": "remote_expr",
           "named": true
         },
@@ -731,6 +779,14 @@
         },
         {
           "type": "paren_expr",
+          "named": true
+        },
+        {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
           "named": true
         },
         {
@@ -821,6 +877,14 @@
         },
         {
           "type": "paren_expr",
+          "named": true
+        },
+        {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
           "named": true
         },
         {
@@ -957,6 +1021,14 @@
           "named": true
         },
         {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
           "type": "remote_expr",
           "named": true
         },
@@ -1013,6 +1085,14 @@
         },
         {
           "type": "pat_paren_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_index_expr",
           "named": true
         },
         {
@@ -1161,6 +1241,14 @@
           "named": true
         },
         {
+          "type": "pat_record_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_index_expr",
+          "named": true
+        },
+        {
           "type": "pat_tuple",
           "named": true
         },
@@ -1217,6 +1305,14 @@
         },
         {
           "type": "pat_paren_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_index_expr",
           "named": true
         },
         {
@@ -1287,6 +1383,14 @@
         },
         {
           "type": "pat_paren_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_index_expr",
           "named": true
         },
         {
@@ -1365,6 +1469,14 @@
         },
         {
           "type": "pat_paren_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_index_expr",
           "named": true
         },
         {
@@ -1470,6 +1582,14 @@
           "named": true
         },
         {
+          "type": "pat_record_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_index_expr",
+          "named": true
+        },
+        {
           "type": "pat_tuple",
           "named": true
         },
@@ -1483,6 +1603,122 @@
         },
         {
           "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pat_record_expr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "pat_record_expr_field",
+          "named": true
+        },
+        {
+          "type": "pat_record_expr_open",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pat_record_expr_field",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "equal_op",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "pat_binary",
+          "named": true
+        },
+        {
+          "type": "pat_binary_expr",
+          "named": true
+        },
+        {
+          "type": "pat_list",
+          "named": true
+        },
+        {
+          "type": "pat_map_expr",
+          "named": true
+        },
+        {
+          "type": "pat_paren_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_index_expr",
+          "named": true
+        },
+        {
+          "type": "pat_tuple",
+          "named": true
+        },
+        {
+          "type": "pat_unary_expr",
+          "named": true
+        },
+        {
+          "type": "strings",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pat_record_expr_open",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "pat_record_index_expr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
           "named": true
         }
       ]
@@ -1522,6 +1758,14 @@
         },
         {
           "type": "pat_paren_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_index_expr",
           "named": true
         },
         {
@@ -1580,6 +1824,14 @@
           "named": true
         },
         {
+          "type": "pat_record_expr",
+          "named": true
+        },
+        {
+          "type": "pat_record_index_expr",
+          "named": true
+        },
+        {
           "type": "pat_tuple",
           "named": true
         },
@@ -1593,6 +1845,206 @@
         },
         {
           "type": "strings",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_expr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "record_expr_field",
+          "named": true
+        },
+        {
+          "type": "record_expr_open",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_expr_field",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
+          "type": "binary",
+          "named": true
+        },
+        {
+          "type": "binary_expr",
+          "named": true
+        },
+        {
+          "type": "equal_op",
+          "named": true
+        },
+        {
+          "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "map_expr",
+          "named": true
+        },
+        {
+          "type": "paren_expr",
+          "named": true
+        },
+        {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
+          "type": "remote_expr",
+          "named": true
+        },
+        {
+          "type": "strings",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "unary_expr",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_expr_open",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
+          "type": "binary",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "paren_expr",
+          "named": true
+        },
+        {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "strings",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_index_expr",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
+          "type": "binary",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "paren_expr",
+          "named": true
+        },
+        {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "strings",
+          "named": true
+        },
+        {
+          "type": "tuple",
           "named": true
         },
         {
@@ -1729,6 +2181,14 @@
           "named": true
         },
         {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
           "type": "remote_expr",
           "named": true
         },
@@ -1797,6 +2257,14 @@
         },
         {
           "type": "prefix_op",
+          "named": true
+        },
+        {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
           "named": true
         },
         {

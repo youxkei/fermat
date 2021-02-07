@@ -75,16 +75,20 @@ fn node_to_layout_expr<'a>(
         | KindId::EXPORT_ATTRIBUTE_MFA
         | KindId::FUNCTION_CLAUSE_OPEN
         | KindId::CLAUSE_GUARD
-        | KindId::MAP_EXPR_OPEN
-        | KindId::PAT_MAP_EXPR_OPEN
-        | KindId::FUNCTION_CALL_OPEN
         | KindId::UNARY_EXPR
+        | KindId::MAP_EXPR_OPEN
+        | KindId::FUNCTION_CALL_OPEN
+        | KindId::RECORD_INDEX_EXPR
+        | KindId::RECORD_EXPR_OPEN
         | KindId::REMOTE_EXPR
-        | KindId::PAT_UNARY_EXPR
         | KindId::LIST_CLOSE
         | KindId::LIST_TAIL
         | KindId::BINARY_ELEMENT
         | KindId::PAREN_EXPR
+        | KindId::PAT_UNARY_EXPR
+        | KindId::PAT_MAP_EXPR_OPEN
+        | KindId::PAT_RECORD_INDEX_EXPR
+        | KindId::PAT_RECORD_EXPR_OPEN
         | KindId::PAT_LIST_CLOSE
         | KindId::PAT_LIST_TAIL
         | KindId::PAT_BINARY_ELEMENT
@@ -98,14 +102,16 @@ fn node_to_layout_expr<'a>(
         | KindId::FUNCTION_CLAUSE
         | KindId::PAT_ARGUMENT_LIST
         | KindId::MAP_EXPR
-        | KindId::PAT_MAP_EXPR
         | KindId::FUNCTION_CALL
+        | KindId::RECORD_EXPR
         | KindId::GUARD
         | KindId::EXPRS
         | KindId::LIST
         | KindId::BINARY
         | KindId::TUPLE
         | KindId::BEGIN_END_EXPR
+        | KindId::PAT_MAP_EXPR
+        | KindId::PAT_RECORD_EXPR
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
         | KindId::PAT_TUPLE
@@ -114,9 +120,11 @@ fn node_to_layout_expr<'a>(
         }
 
         KindId::BINARY_EXPR
-        | KindId::PAT_BINARY_EXPR
         | KindId::MAP_EXPR_FIELD
-        | KindId::PAT_MAP_EXPR_FIELD => {
+        | KindId::RECORD_EXPR_FIELD
+        | KindId::PAT_BINARY_EXPR
+        | KindId::PAT_MAP_EXPR_FIELD
+        | KindId::PAT_RECORD_EXPR_FIELD => {
             binary_expression_node_to_layout_expr(node, source_code, config, choice_nest_level)
         }
 
@@ -245,9 +253,17 @@ fn elements_node_to_layout_expr<'a>(
 
     let choice_nest = match kind_id {
         KindId::SOURCE_FILE | KindId::FUNCTION_CLAUSES | KindId::STRINGS => 0,
+
         KindId::EXPORT_ATTRIBUTE_MFAS => 1,
+
         KindId::FUNCTION_CLAUSE | KindId::BEGIN_END_EXPR => 1,
-        KindId::MAP_EXPR | KindId::PAT_MAP_EXPR | KindId::FUNCTION_CALL => 2,
+
+        KindId::MAP_EXPR
+        | KindId::RECORD_EXPR
+        | KindId::PAT_MAP_EXPR
+        | KindId::PAT_RECORD_EXPR
+        | KindId::FUNCTION_CALL => 2,
+
         KindId::PAT_ARGUMENT_LIST
         | KindId::GUARD
         | KindId::EXPRS
@@ -257,6 +273,7 @@ fn elements_node_to_layout_expr<'a>(
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
         | KindId::PAT_TUPLE => 1,
+
         _ => panic!("{:?} is not covered", kind_id),
     };
 
@@ -491,7 +508,11 @@ fn elements_node_to_layout_expr<'a>(
             }
         }
 
-        KindId::MAP_EXPR | KindId::PAT_MAP_EXPR | KindId::FUNCTION_CALL => {
+        KindId::MAP_EXPR
+        | KindId::RECORD_EXPR
+        | KindId::PAT_MAP_EXPR
+        | KindId::PAT_RECORD_EXPR
+        | KindId::FUNCTION_CALL => {
             let body = if has_extra || choice_nest_level > config.max_choice_nest_level {
                 stacked_elements
             } else {
