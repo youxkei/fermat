@@ -61,6 +61,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::MODULE_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE_MFA
+        | KindId::OTHER_ATTRIBUTE_OPEN
         | KindId::FUNCTION_CLAUSE_OPEN
         | KindId::CLAUSE_GUARD
         | KindId::UNARY_EXPR
@@ -84,6 +85,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
         KindId::SOURCE_FILE
         | KindId::EXPORT_ATTRIBUTE_MFAS
+        | KindId::OTHER_ATTRIBUTE
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE
         | KindId::PAT_ARGUMENT_LIST
@@ -446,7 +448,8 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::PAT_ARGUMENT_LIST
+        KindId::OTHER_ATTRIBUTE
+        | KindId::PAT_ARGUMENT_LIST
         | KindId::GUARD
         | KindId::EXPRS
         | KindId::LIST
@@ -455,7 +458,11 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
         | KindId::PAT_TUPLE => {
-            apposition!(open, choice!(stacked_elements, apposed_elements), close)
+            if num_elements > 1 {
+                apposition!(open, choice!(stacked_elements, apposed_elements), close)
+            } else {
+                apposition!(open, stacked_elements, close)
+            }
         }
 
         _ => panic!("{:?} is not covered", kind_id),

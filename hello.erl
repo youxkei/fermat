@@ -4,6 +4,7 @@
          main/0,
 
         ]).
+-include_lib("somelib",).
 
 
 
