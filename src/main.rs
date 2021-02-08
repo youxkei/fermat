@@ -11,7 +11,9 @@ use std::rc::Rc;
 
 use tree_sitter::{Language, Node, Parser};
 
-use layout_expr::{apposition, apposition_sep, choice, stack, text, unit, LayoutExpr};
+use layout_expr::{
+    apposition, apposition_sep, choice, multi_line_cost, stack, text, unit, LayoutExpr,
+};
 use layout_fun::{Config as LayoutFunConfig, LayoutFun};
 
 extern "C" {
@@ -25,7 +27,7 @@ fn main() {
     let source_code = fs::read_to_string(&args[1]).unwrap();
 
     let layout_fun_config = &LayoutFunConfig {
-        right_margin: 120,
+        right_margin: 50,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
@@ -237,6 +239,10 @@ fn elements_node_to_apposed_layout_expr<'a>(
 fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
     let kind_id = kind_id(node);
 
+    let introduce_multi_line_cost = match kind_id {
+        _ => true,
+    };
+
     let mut elements = vec![];
 
     let mut open = unit!();
@@ -374,7 +380,13 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         num_elements += 1;
 
         stacked_elements = stack!(stacked_elements, element.clone());
-        apposed_elements = apposition_sep!(text!(" "), apposed_elements, element);
+
+        if introduce_multi_line_cost {
+            apposed_elements =
+                apposition_sep!(text!(" "), apposed_elements, multi_line_cost!(element));
+        } else {
+            apposed_elements = apposition_sep!(text!(" "), apposed_elements, element);
+        }
     }
 
     match kind_id {
@@ -1124,23 +1136,6 @@ mod format_test {
             }
 
             #[test]
-            fn apposed_with_multi_line_element() {
-                assert_format!(
-                    Config {
-                        right_margin: 80,
-                        newline_cost: 1,
-                        beyond_right_margin_cost: 10000,
-                        height_cost: 100,
-                        max_choice_nest_level: 100,
-                    },
-                    indoc! {r#"
-                        -export([foo/1, bar/2, foobar/ % comment
-                                                       3, baz/4]).
-                    "#},
-                );
-            }
-
-            #[test]
             fn stacked_due_to_right_margin() {
                 assert_format!(
                     Config {
@@ -1231,6 +1226,28 @@ mod format_test {
                     "#},
                 )
             }
+
+            #[test]
+            fn stacked_due_to_multi_line_element() {
+                assert_format!(
+                    Config {
+                        right_margin: 80,
+                        newline_cost: 1,
+                        beyond_right_margin_cost: 10000,
+                        height_cost: 100,
+                        max_choice_nest_level: 100,
+                    },
+                    indoc! {r#"
+                        -export([
+                                 foo/1,
+                                 bar/2,
+                                 foobar/ % comment
+                                         3,
+                                 baz/4
+                                ]).
+                    "#},
+                );
+            }
         }
 
         mod function_clause {
@@ -1308,7 +1325,7 @@ mod format_test {
             }
 
             #[test]
-            fn stacked_due_to_a_multiple_elements() {
+            fn stacked_due_to_multiple_elements() {
                 assert_format!(
                     Config {
                         right_margin: 80,

@@ -56,6 +56,8 @@ main(Parameter1 = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 0 + 1 + 2 + 3,
     Result16 = fun Hoge(1) -> ok,; Hoge(2) -> error,; end,
     Result17 = fun(1) -> ok,; (2) -> error,; end,
     Result18 = {fun foo/0, fun Var1:Var2/Var3,},
+    Result19 = [1, 2, [3 / % comment
+                       4]],
     io:format("Lorem ipsum dolor sit amet") % comment 1
     , % comment 2
     ; % comment 3

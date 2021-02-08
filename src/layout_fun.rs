@@ -120,6 +120,15 @@ impl<'a> LayoutFun<'a> {
                     )
                 }
             }
+            LayoutExpr::MultiLineCost(expr) => Self::multi_line_cost(
+                Self::from_layout_expr_with_trailing(
+                    expr,
+                    trailing_layout_fun,
+                    config,
+                    choice_nest_level,
+                ),
+                config,
+            ),
         }
     }
 
@@ -331,6 +340,60 @@ impl<'a> LayoutFun<'a> {
         }
     }
 
+    fn multi_line_cost(expr: Self, config: &Config) -> Self {
+        match &expr {
+            LayoutFun::Unit => LayoutFun::Unit,
+            LayoutFun::Fun(tree) => LayoutFun::Fun(Rc::new(
+                tree.iter()
+                    .map(move |(knot, layout)| {
+                        (
+                            knot,
+                            Layout {
+                                layout_expr: layout.layout_expr.clone(),
+                                span: layout.span,
+                                height: layout.height,
+                                cost: layout.cost
+                                    + if layout.height > 1 {
+                                        config.height_cost
+                                    } else {
+                                        0
+                                    },
+                                cost_gradient: layout.cost_gradient,
+                            },
+                        )
+                    })
+                    .collect(),
+            )),
+        }
+    }
+
+    fn one_line_cost(expr: Self, config: &Config) -> Self {
+        match &expr {
+            LayoutFun::Unit => LayoutFun::Unit,
+            LayoutFun::Fun(tree) => LayoutFun::Fun(Rc::new(
+                tree.iter()
+                    .map(move |(knot, layout)| {
+                        (
+                            knot,
+                            Layout {
+                                layout_expr: layout.layout_expr.clone(),
+                                span: layout.span,
+                                height: layout.height,
+                                cost: layout.cost
+                                    + if layout.height == 1 {
+                                        config.height_cost
+                                    } else {
+                                        0
+                                    },
+                                cost_gradient: layout.cost_gradient,
+                            },
+                        )
+                    })
+                    .collect(),
+            )),
+        }
+    }
+
     #[cfg(test)]
     fn to_vec(&self) -> Vec<(Position, &Layout<'a>)> {
         match self {
@@ -488,6 +551,66 @@ mod layout_fun_tests {
     }
 
     #[test]
+    fn multi_line_cost_oneline() {
+        /*
+         *  01234
+         * |foo･･|
+         * |-----|
+         * |･･foo|
+         *
+         * 0 -> {"foo", 3, 1, 0, 0}
+         * 2 -> {"foo", 3, 1, 0, 100}
+         *
+         * snapshots/fermat__layout_fun__layout_fun_tests__multi_line_cost_oneline.snap
+         */
+        let config = &Config {
+            right_margin: 5,
+            newline_cost: 1,
+            beyond_right_margin_cost: 100,
+            height_cost: 10000,
+            max_choice_nest_level: 100,
+        };
+
+        assert_debug_snapshot!(
+            LayoutFun::multi_line_cost(LayoutFun::text("foo", config), config,).to_vec()
+        );
+    }
+
+    #[test]
+    fn multi_line_cost_two_lines() {
+        /*
+         *  01234
+         * |foo･･|
+         * |bar･･|
+         * |-----|
+         * |･･foo|
+         * |･･bar|
+         *
+         * 0 -> {"foo\nbar", 3, 2, 10001, 0}
+         * 2 -> {"foo\nbar", 3, 2, 10001, 200}
+         *
+         * snapshots/fermat__layout_fun__layout_fun_tests__multi_line_cost_two_lines.snap
+         */
+        let config = &Config {
+            right_margin: 4,
+            newline_cost: 1,
+            beyond_right_margin_cost: 100,
+            height_cost: 10000,
+            max_choice_nest_level: 100,
+        };
+
+        assert_debug_snapshot!(LayoutFun::multi_line_cost(
+            LayoutFun::stack(
+                LayoutFun::text("foo", config),
+                LayoutFun::text("bar", config),
+                config
+            ),
+            config
+        )
+        .to_vec());
+    }
+
+    #[test]
     fn from_layout_expr_record() {
         /*  0123456789ABCDEFGHIJKLMNOPQRSTUV
          * |Foobarbaz = #record{field = 1}･･|･････････
@@ -588,7 +711,7 @@ mod layout_fun_tests {
             apposition("Result = ", add_expr),
         ));
 
-        assert_debug_snapshot!(LayoutFun::from_layout_expr(&equal_expr, config).to_vec())
+        assert_debug_snapshot!(LayoutFun::from_layout_expr(&*equal_expr, config).to_vec())
     }
 
     #[test]
