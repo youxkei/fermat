@@ -47,6 +47,8 @@ module.exports = grammar({
     $._spaces,
   ],
 
+  conflicts: ($) => [[$.fun_ref_expr, $.fun_open]],
+
   rules: {
     source_file: ($) => repeat1($.form),
 
@@ -66,7 +68,7 @@ module.exports = grammar({
         $.other_attribute
       ),
 
-    module_attribute: ($) => seq("-", "module", "(", $.atom, ")"),
+    module_attribute: ($) => seq("-", "module", "(", $._atom_or_macro, ")"),
 
     export_attribute: ($) =>
       seq("-", "export", "(", $.export_attribute_mfas, ")"),
@@ -74,12 +76,13 @@ module.exports = grammar({
     export_attribute_mfas: ($) =>
       seq("[", repeatComma1($.export_attribute_mfa), optional(","), "]"),
 
-    export_attribute_mfa: ($) => seq($.atom, "/", $.integer),
+    export_attribute_mfa: ($) =>
+      seq($._atom_or_macro, "/", choice($.integer, $.macro)),
 
     other_attribute: ($) =>
       seq($.other_attribute_open, repeatComma1($._expr), optional(","), ")"),
 
-    other_attribute_open: ($) => seq("-", $.atom, "("),
+    other_attribute_open: ($) => seq("-", $._atom_or_macro, "("),
 
     _function_or_macro: ($) => choice($.function_clauses /*, $.macro*/),
 
@@ -90,7 +93,12 @@ module.exports = grammar({
       seq($.function_clause_open, repeatComma1($._expr), optional(",")),
 
     function_clause_open: ($) =>
-      seq($.atom, $.pat_argument_list, optional($.clause_guard), "->"),
+      seq(
+        $._atom_or_macro,
+        $.pat_argument_list,
+        optional($.clause_guard),
+        "->"
+      ),
 
     pat_argument_list: ($) =>
       seq("(", repeatComma($._pat_expr), optional(","), ")"),
@@ -144,15 +152,15 @@ module.exports = grammar({
     function_call: ($) =>
       seq($.function_call_open, repeatComma($._expr), optional(","), ")"),
 
-    function_call_open: ($) => seq($.remote_expr, "("),
+    function_call_open: ($) => seq(choice($.remote_expr, $.macro), "("),
 
     record_index_expr: ($) =>
       seq(
         optional(choice($._primary_expr, $.record_expr)),
         "#",
-        $.atom,
+        $._atom_or_macro,
         ".",
-        $.atom
+        $._atom_or_macro
       ),
 
     record_expr: ($) =>
@@ -164,10 +172,15 @@ module.exports = grammar({
       ),
 
     record_expr_open: ($) =>
-      seq(optional(choice($._primary_expr, $.record_expr)), "#", $.atom, "{"),
+      seq(
+        optional(choice($._primary_expr, $.record_expr)),
+        "#",
+        $._atom_or_macro,
+        "{"
+      ),
 
     record_expr_field: ($) =>
-      seq(choice($.variable, $.atom), $.equal_op, $._expr),
+      seq(choice($.variable, $._atom_or_macro), $.equal_op, $._expr),
 
     remote_expr: ($) => seq($._primary_expr, ":", $._primary_expr),
 
@@ -179,7 +192,14 @@ module.exports = grammar({
         $.binary,
         $.tuple,
         $.paren_expr,
-        $.begin_end_expr
+        $.begin_end_expr,
+        //$.if_expr
+        //$.case_expr
+        //$.receive_expr
+        $.fun_ref_expr,
+        $.fun_expr,
+        $.fun_expr_with_head
+        //$.try_expr
       ),
 
     list: ($) =>
@@ -198,7 +218,16 @@ module.exports = grammar({
         $._primary_expr,
         optional(seq(":", $._primary_expr)),
         optional(
-          seq("/", repeatSep1(seq($.atom, optional(seq(":", $.integer))), "-"))
+          seq(
+            "/",
+            repeatSep1(
+              seq(
+                $._atom_or_macro,
+                optional(seq(":", choice($.integer, $.macro)))
+              ),
+              "-"
+            )
+          )
         )
       ),
 
@@ -209,9 +238,46 @@ module.exports = grammar({
     begin_end_expr: ($) =>
       seq($.begin_open, repeatComma1($._expr), optional(","), $.end_close),
 
-    begin_open: ($) => "begin",
+    fun_ref_expr: ($) => seq("fun", $.fun_ref_expr_tail),
 
-    end_close: ($) => "end",
+    fun_ref_expr_tail: ($) =>
+      choice(
+        seq($._atom_or_macro, "/", choice($.integer, $.macro)),
+        seq(
+          choice($.atom, $.variable, $.macro),
+          ":",
+          choice($.atom, $.variable, $.macro),
+          "/",
+          choice($.integer, $.variable, $.macro)
+        )
+      ),
+
+    fun_expr: ($) =>
+      seq(
+        $.fun_open,
+        repeatSep1($.fun_clause, ";"),
+        optional(";"),
+        $.end_close
+      ),
+
+    fun_clause: ($) =>
+      seq($.fun_clause_open, repeatComma1($._expr), optional(",")),
+
+    fun_clause_open: ($) => seq($.pat_argument_list, "->"),
+
+    fun_expr_with_head: ($) =>
+      seq(
+        $.fun_open,
+        repeatSep1($.fun_clause_with_head, ";"),
+        optional(";"),
+        $.end_close
+      ),
+
+    fun_clause_with_head: ($) =>
+      seq($.fun_clause_with_head_open, repeatComma1($._expr), optional(",")),
+
+    fun_clause_with_head_open: ($) =>
+      seq($.variable, $.pat_argument_list, "->"),
 
     _pat_expr: ($) =>
       choice(
@@ -252,7 +318,8 @@ module.exports = grammar({
 
     pat_map_expr_field: ($) => seq($._pat_expr, $.map_op, $._pat_expr),
 
-    pat_record_index_expr: ($) => seq("#", $.atom, ".", $.atom),
+    pat_record_index_expr: ($) =>
+      seq("#", $._atom_or_macro, ".", $._atom_or_macro),
 
     pat_record_expr: ($) =>
       seq(
@@ -262,10 +329,10 @@ module.exports = grammar({
         "}"
       ),
 
-    pat_record_expr_open: ($) => seq("#", $.atom, "{"),
+    pat_record_expr_open: ($) => seq("#", $._atom_or_macro, "{"),
 
     pat_record_expr_field: ($) =>
-      seq(choice($.variable, $.atom), $.equal_op, $._pat_expr),
+      seq(choice($.variable, $._atom_or_macro), $.equal_op, $._pat_expr),
 
     _pat_primary_expr: ($) =>
       choice(
@@ -296,7 +363,16 @@ module.exports = grammar({
         $._pat_primary_expr,
         optional(seq(":", $._pat_primary_expr)),
         optional(
-          seq("/", repeatSep1(seq($.atom, optional(seq(":", $.integer))), "-"))
+          seq(
+            "/",
+            repeatSep1(
+              seq(
+                $._atom_or_macro,
+                optional(seq(":", choice($.integer, $.macro)))
+              ),
+              "-"
+            )
+          )
         )
       ),
 
@@ -304,7 +380,7 @@ module.exports = grammar({
 
     pat_paren_expr: ($) => seq("(", $._pat_expr, ")"),
 
-    _atomic: ($) => choice($.atom, $.integer, $.strings),
+    _atomic: ($) => choice($._atom_or_macro, $.integer, $.strings),
 
     prefix_op: (_) => token(choice("+", "-", "bnot", "not")),
 
@@ -328,9 +404,19 @@ module.exports = grammar({
 
     map_op: (_) => token(choice("=>", ":=")),
 
+    begin_open: ($) => "begin",
+
+    end_close: ($) => "end",
+
+    fun_open: ($) => "fun",
+
     variable: (_) => /[A-Z][a-zA-Z0-9_]*/,
 
+    _atom_or_macro: ($) => choice($.atom, $.macro),
+
     atom: (_) => token(choice(/'(\\.|[^'])*'/, /[a-z][a-zA-Z0-9_@]*/)),
+
+    macro: (_) => token(/\?[a-zA-Z_][a-zA-Z0-9_@]*/),
 
     integer: (_) => token(choice(/-?\d[\d_]*/, /-?\d+#[a-fA-F\d][a-fA-F\d_]*/)),
 

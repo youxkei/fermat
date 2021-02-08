@@ -53,6 +53,9 @@ main(Parameter1 = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 0 + 1 + 2 + 3,
     Result13 = Map#{foo := 1234567890123456789012345678901234567890, 42 := 1234567890123456789012345678901234567890,}#{42 := 42,},
     Result14 = Record#record.foo,
     Result15 = Record#record{foo = 1234567890123456789012345678901234567890, Var = 1234567890123456789012345678901234567890,}#record{foo = 42,},
+    Result16 = fun Hoge(1) -> ok,; Hoge(2) -> error,; end,
+    Result17 = fun(1) -> ok,; (2) -> error,; end,
+    Result18 = {fun foo/0, fun Var1:Var2/Var3,},
     io:format("Lorem ipsum dolor sit amet") % comment 1
     , % comment 2
     ; % comment 3

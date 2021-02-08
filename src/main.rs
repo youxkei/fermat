@@ -4,7 +4,9 @@ mod avltree;
 mod layout_expr;
 mod layout_fun;
 
+use std::env::args;
 use std::fs;
+use std::iter::repeat;
 use std::rc::Rc;
 
 use tree_sitter::{Language, Node, Parser};
@@ -19,17 +21,24 @@ extern "C" {
 tree_sitter_id::define_kind_id! {}
 
 fn main() {
-    let source_code = fs::read_to_string("hello.erl").unwrap();
+    let args: Vec<String> = args().collect();
+    let source_code = fs::read_to_string(&args[1]).unwrap();
 
     let layout_fun_config = &LayoutFunConfig {
-        right_margin: 50,
+        right_margin: 120,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
-        max_choice_nest_level: 6,
+        max_choice_nest_level: 8,
     };
 
-    println!("{}", format(&source_code, layout_fun_config));
+    println!(
+        "{}|\n{}",
+        repeat(' ')
+            .take((layout_fun_config.right_margin - 1) as usize)
+            .collect::<String>(),
+        format(&source_code, layout_fun_config)
+    );
 }
 
 fn format(source_code: &str, layout_fun_config: &LayoutFunConfig) -> String {
@@ -74,6 +83,10 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::LIST_TAIL
         | KindId::BINARY_ELEMENT
         | KindId::PAREN_EXPR
+        | KindId::FUN_REF_EXPR
+        | KindId::FUN_REF_EXPR_TAIL
+        | KindId::FUN_CLAUSE_OPEN
+        | KindId::FUN_CLAUSE_WITH_HEAD_OPEN
         | KindId::PAT_UNARY_EXPR
         | KindId::PAT_MAP_EXPR_OPEN
         | KindId::PAT_RECORD_INDEX_EXPR
@@ -98,6 +111,10 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::BINARY
         | KindId::TUPLE
         | KindId::BEGIN_END_EXPR
+        | KindId::FUN_EXPR
+        | KindId::FUN_CLAUSE
+        | KindId::FUN_EXPR_WITH_HEAD
+        | KindId::FUN_CLAUSE_WITH_HEAD
         | KindId::PAT_MAP_EXPR
         | KindId::PAT_RECORD_EXPR
         | KindId::PAT_LIST
@@ -123,10 +140,12 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::GREATER_GREATER_CLOSE
         | KindId::BEGIN_OPEN
         | KindId::END_CLOSE
+        | KindId::FUN_OPEN
         | KindId::MODULE
         | KindId::EXPORT
         | KindId::WHEN
         | KindId::CATCH
+        | KindId::FUN
         | KindId::COMMA
         | KindId::PERIOD
         | KindId::HYPHEN
@@ -148,6 +167,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::MAP_OP
         | KindId::VARIABLE
         | KindId::ATOM
+        | KindId::MACRO
         | KindId::INTEGER
         | KindId::STRING
         | KindId::COMMENT
@@ -180,7 +200,8 @@ fn elements_node_to_apposed_layout_expr<'a>(
             | KindId::GUARD
             | KindId::BAR
             | KindId::LIST_TAIL
-            | KindId::PAT_LIST_TAIL => {
+            | KindId::PAT_LIST_TAIL
+            | KindId::FUN_REF_EXPR_TAIL => {
                 result = apposition!(
                     result,
                     text!(" "),
@@ -353,12 +374,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         num_elements += 1;
 
         stacked_elements = stack!(stacked_elements, element.clone());
-
-        if apposed_elements == unit!() {
-            apposed_elements = element;
-        } else {
-            apposed_elements = apposition!(apposed_elements, text!(" "), element);
-        }
+        apposed_elements = apposition_sep!(text!(" "), apposed_elements, element);
     }
 
     match kind_id {
@@ -387,7 +403,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::FUNCTION_CLAUSE => {
+        KindId::FUNCTION_CLAUSE | KindId::FUN_CLAUSE | KindId::FUN_CLAUSE_WITH_HEAD => {
             if num_elements > 1 {
                 stack!(
                     open,
@@ -438,14 +454,22 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
                 stack!(open, apposition!(text!("    "), stacked_elements,), close)
             } else {
                 choice!(
-                    stack!(stack!(
+                    stack!(
                         open.clone(),
                         apposition!(text!("    "), stacked_elements,),
                         close.clone()
-                    )),
+                    ),
                     apposition!(open, text!(" "), apposed_elements, text!(" "), close)
                 )
             }
+        }
+
+        KindId::FUN_EXPR => {
+            stack!(apposition!(open, stacked_elements,), close)
+        }
+
+        KindId::FUN_EXPR_WITH_HEAD => {
+            stack!(apposition!(open, text!(" "), stacked_elements,), close)
         }
 
         KindId::OTHER_ATTRIBUTE
