@@ -1,0 +1,40 @@
+---
+source: src/layout_fun.rs
+expression: "LayoutFun::from_layout_expr(&expr, config).to_vec()"
+---
+[
+    (
+        0,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "foo",
+                ),
+                Text(
+                    "bar",
+                ),
+            ),
+            span: 3,
+            height: 2,
+            cost: 1,
+            cost_gradient: 0,
+        },
+    ),
+    (
+        7,
+        Layout {
+            layout_expr: Stack(
+                Text(
+                    "foo",
+                ),
+                Text(
+                    "bar",
+                ),
+            ),
+            span: 3,
+            height: 2,
+            cost: 1,
+            cost_gradient: 20000,
+        },
+    ),
+]

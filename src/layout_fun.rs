@@ -13,6 +13,7 @@ pub struct Config {
     pub newline_cost: i32,
     pub beyond_right_margin_cost: i32,
     pub height_cost: i32,
+    pub max_choice_nest_level: i32,
 }
 
 type Position = i32;
@@ -59,13 +60,14 @@ impl<'a> LayoutFun<'a> {
     }
 
     pub fn from_layout_expr(layout_expr: &LayoutExpr<'a>, config: &Config) -> Self {
-        LayoutFun::from_layout_expr_with_trailing(layout_expr, LayoutFun::Unit, config)
+        LayoutFun::from_layout_expr_with_trailing(layout_expr, LayoutFun::Unit, config, 0)
     }
 
     fn from_layout_expr_with_trailing(
         layout_expr: &LayoutExpr<'a>,
         trailing_layout_fun: Self,
         config: &Config,
+        choice_nest_level: i32,
     ) -> Self {
         match layout_expr {
             LayoutExpr::Unit => Self::Unit,
@@ -73,19 +75,51 @@ impl<'a> LayoutFun<'a> {
                 Self::apposition(Self::text(text, config), trailing_layout_fun, config)
             }
             LayoutExpr::Stack(lhs, rhs) => Self::stack(
-                Self::from_layout_expr_with_trailing(lhs, Self::Unit, config),
-                Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, config),
+                Self::from_layout_expr_with_trailing(lhs, Self::Unit, config, choice_nest_level),
+                Self::from_layout_expr_with_trailing(
+                    rhs,
+                    trailing_layout_fun,
+                    config,
+                    choice_nest_level,
+                ),
                 config,
             ),
             LayoutExpr::Apposition(lhs, rhs) => Self::from_layout_expr_with_trailing(
                 lhs,
-                Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, config),
+                Self::from_layout_expr_with_trailing(
+                    rhs,
+                    trailing_layout_fun,
+                    config,
+                    choice_nest_level,
+                ),
                 config,
+                choice_nest_level,
             ),
-            LayoutExpr::Choice(lhs, rhs) => Self::choice(
-                Self::from_layout_expr_with_trailing(lhs, trailing_layout_fun.clone(), config),
-                Self::from_layout_expr_with_trailing(rhs, trailing_layout_fun, config),
-            ),
+            LayoutExpr::Choice(lhs, rhs) => {
+                if choice_nest_level >= config.max_choice_nest_level {
+                    Self::from_layout_expr_with_trailing(
+                        lhs,
+                        trailing_layout_fun.clone(),
+                        config,
+                        choice_nest_level,
+                    )
+                } else {
+                    Self::choice(
+                        Self::from_layout_expr_with_trailing(
+                            lhs,
+                            trailing_layout_fun.clone(),
+                            config,
+                            choice_nest_level + 1,
+                        ),
+                        Self::from_layout_expr_with_trailing(
+                            rhs,
+                            trailing_layout_fun,
+                            config,
+                            choice_nest_level + 1,
+                        ),
+                    )
+                }
+            }
         }
     }
 
@@ -333,6 +367,7 @@ mod layout_fun_tests {
                 newline_cost: 1,
                 beyond_right_margin_cost: 100,
                 height_cost: 10000,
+                max_choice_nest_level: 100,
             }
         )
         .to_vec())
@@ -363,6 +398,7 @@ mod layout_fun_tests {
             newline_cost: 1,
             beyond_right_margin_cost: 100,
             height_cost: 10000,
+            max_choice_nest_level: 100,
         };
 
         assert_debug_snapshot!(LayoutFun::stack(
@@ -395,6 +431,7 @@ mod layout_fun_tests {
             newline_cost: 1,
             beyond_right_margin_cost: 100,
             height_cost: 10000,
+            max_choice_nest_level: 100,
         };
 
         assert_debug_snapshot!(LayoutFun::apposition(
@@ -436,6 +473,7 @@ mod layout_fun_tests {
             newline_cost: 1,
             beyond_right_margin_cost: 100,
             height_cost: 10000,
+            max_choice_nest_level: 100,
         };
 
         assert_debug_snapshot!(LayoutFun::choice(
@@ -506,6 +544,7 @@ mod layout_fun_tests {
             newline_cost: 1,
             beyond_right_margin_cost: 100,
             height_cost: 10000,
+            max_choice_nest_level: 100,
         };
 
         assert_debug_snapshot!(LayoutFun::from_layout_expr(
@@ -527,11 +566,16 @@ mod layout_fun_tests {
 
     #[test]
     fn from_layout_expr_nested_choice() {
+        /*
+         * snapshots/fermat__layout_fun__layout_fun_tests__from_layout_expr_nested_choice.snap
+         */
+
         let config = &Config {
             right_margin: 50,
             newline_cost: 1,
             beyond_right_margin_cost: 10000,
             height_cost: 100,
+            max_choice_nest_level: 100,
         };
 
         let add_expr = layout_expr!(choice(
@@ -545,6 +589,25 @@ mod layout_fun_tests {
         ));
 
         assert_debug_snapshot!(LayoutFun::from_layout_expr(&equal_expr, config).to_vec())
+    }
+
+    #[test]
+    fn from_layout_expr_max_choice_nest_level() {
+        /*
+         * snapshots/fermat__layout_fun__layout_fun_tests__from_layout_expr_max_choice_nest_level.snap
+         */
+
+        let config = &Config {
+            right_margin: 10,
+            newline_cost: 1,
+            beyond_right_margin_cost: 10000,
+            height_cost: 100,
+            max_choice_nest_level: 0,
+        };
+
+        let expr = layout_expr!(choice(stack("foo", "bar"), apposition("foo", "bar")));
+
+        assert_debug_snapshot!(LayoutFun::from_layout_expr(&expr, config).to_vec())
     }
 }
 

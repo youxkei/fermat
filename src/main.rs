@@ -18,10 +18,6 @@ extern "C" {
 
 tree_sitter_id::define_kind_id! {}
 
-struct Config {
-    max_choice_nest_level: u8,
-}
-
 fn main() {
     let source_code = fs::read_to_string("hello.erl").unwrap();
 
@@ -30,17 +26,14 @@ fn main() {
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
-    };
-
-    let config = &Config {
         max_choice_nest_level: 6,
     };
 
-    println!("{}", format(&source_code, config, layout_fun_config));
+    println!("{}", format(&source_code, layout_fun_config));
 }
 
-fn format(source_code: &str, config: &Config, layout_fun_config: &LayoutFunConfig) -> String {
-    let layout_expr = parse(source_code, config);
+fn format(source_code: &str, layout_fun_config: &LayoutFunConfig) -> String {
+    let layout_expr = parse(source_code);
     let layout_fun = LayoutFun::from_layout_expr(&layout_expr, layout_fun_config);
 
     let calculated = layout_fun.at(0);
@@ -48,7 +41,7 @@ fn format(source_code: &str, config: &Config, layout_fun_config: &LayoutFunConfi
     calculated.layout_expr.format(0, false).0
 }
 
-fn parse<'a>(source_code: &'a str, config: &Config) -> Rc<LayoutExpr<'a>> {
+fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
     let mut parser = Parser::new();
 
     let language = unsafe { tree_sitter_erlang() };
@@ -57,15 +50,10 @@ fn parse<'a>(source_code: &'a str, config: &Config) -> Rc<LayoutExpr<'a>> {
     let tree = parser.parse(source_code, None).unwrap();
     let root_node = tree.root_node();
 
-    node_to_layout_expr(root_node, source_code, config, 0)
+    node_to_layout_expr(root_node, source_code)
 }
 
-fn node_to_layout_expr<'a>(
-    node: Node<'_>,
-    source_code: &'a str,
-    config: &Config,
-    choice_nest_level: u8,
-) -> Rc<LayoutExpr<'a>> {
+fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
     let kind_id = kind_id(node);
 
     match kind_id {
@@ -92,9 +80,7 @@ fn node_to_layout_expr<'a>(
         | KindId::PAT_LIST_CLOSE
         | KindId::PAT_LIST_TAIL
         | KindId::PAT_BINARY_ELEMENT
-        | KindId::PAT_PAREN_EXPR => {
-            elements_node_to_apposed_layout_expr(node, source_code, config, choice_nest_level)
-        }
+        | KindId::PAT_PAREN_EXPR => elements_node_to_apposed_layout_expr(node, source_code),
 
         KindId::SOURCE_FILE
         | KindId::EXPORT_ATTRIBUTE_MFAS
@@ -115,18 +101,14 @@ fn node_to_layout_expr<'a>(
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
         | KindId::PAT_TUPLE
-        | KindId::STRINGS => {
-            elements_node_to_layout_expr(node, source_code, config, choice_nest_level)
-        }
+        | KindId::STRINGS => elements_node_to_layout_expr(node, source_code),
 
         KindId::BINARY_EXPR
         | KindId::MAP_EXPR_FIELD
         | KindId::RECORD_EXPR_FIELD
         | KindId::PAT_BINARY_EXPR
         | KindId::PAT_MAP_EXPR_FIELD
-        | KindId::PAT_RECORD_EXPR_FIELD => {
-            binary_expression_node_to_layout_expr(node, source_code, config, choice_nest_level)
-        }
+        | KindId::PAT_RECORD_EXPR_FIELD => binary_expression_node_to_layout_expr(node, source_code),
 
         KindId::HYPHEN_GREATER
         | KindId::PAREN_OPEN
@@ -178,8 +160,6 @@ fn node_to_layout_expr<'a>(
 fn elements_node_to_apposed_layout_expr<'a>(
     node: Node<'_>,
     source_code: &'a str,
-    config: &Config,
-    choice_nest_level: u8,
 ) -> Rc<LayoutExpr<'a>> {
     let mut result = unit!();
     let mut comments = unit!();
@@ -190,10 +170,7 @@ fn elements_node_to_apposed_layout_expr<'a>(
             KindId::MULTIPLE_NEWLINES => {}
 
             KindId::COMMENT | KindId::LINE_COMMENT => {
-                comments = stack!(
-                    comments,
-                    node_to_layout_expr(child, source_code, config, choice_nest_level)
-                )
+                comments = stack!(comments, node_to_layout_expr(child, source_code))
             }
 
             KindId::HYPHEN_GREATER
@@ -205,20 +182,14 @@ fn elements_node_to_apposed_layout_expr<'a>(
                 result = apposition!(
                     result,
                     text!(" "),
-                    stack!(
-                        comments,
-                        node_to_layout_expr(child, source_code, config, choice_nest_level)
-                    )
+                    stack!(comments, node_to_layout_expr(child, source_code))
                 );
 
                 comments = unit!();
             }
 
             KindId::CATCH => {
-                result = apposition!(
-                    node_to_layout_expr(child, source_code, config, choice_nest_level),
-                    text!(" "),
-                )
+                result = apposition!(node_to_layout_expr(child, source_code), text!(" "),)
             }
 
             _ => {
@@ -229,10 +200,7 @@ fn elements_node_to_apposed_layout_expr<'a>(
                     } else {
                         text!(" ")
                     },
-                    stack!(
-                        comments,
-                        node_to_layout_expr(child, source_code, config, choice_nest_level)
-                    )
+                    stack!(comments, node_to_layout_expr(child, source_code))
                 );
 
                 comments = unit!();
@@ -243,39 +211,8 @@ fn elements_node_to_apposed_layout_expr<'a>(
     result
 }
 
-fn elements_node_to_layout_expr<'a>(
-    node: Node<'_>,
-    source_code: &'a str,
-    config: &Config,
-    choice_nest_level: u8,
-) -> Rc<LayoutExpr<'a>> {
+fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
     let kind_id = kind_id(node);
-
-    let choice_nest = match kind_id {
-        KindId::SOURCE_FILE | KindId::FUNCTION_CLAUSES | KindId::STRINGS => 0,
-
-        KindId::EXPORT_ATTRIBUTE_MFAS => 1,
-
-        KindId::FUNCTION_CLAUSE | KindId::BEGIN_END_EXPR => 1,
-
-        KindId::MAP_EXPR
-        | KindId::RECORD_EXPR
-        | KindId::PAT_MAP_EXPR
-        | KindId::PAT_RECORD_EXPR
-        | KindId::FUNCTION_CALL => 2,
-
-        KindId::PAT_ARGUMENT_LIST
-        | KindId::GUARD
-        | KindId::EXPRS
-        | KindId::LIST
-        | KindId::BINARY
-        | KindId::TUPLE
-        | KindId::PAT_LIST
-        | KindId::PAT_BINARY
-        | KindId::PAT_TUPLE => 1,
-
-        _ => panic!("{:?} is not covered", kind_id),
-    };
 
     let mut elements = vec![];
 
@@ -298,23 +235,10 @@ fn elements_node_to_layout_expr<'a>(
                 after_open = false;
 
                 if extras.is_unit() && last_extra.is_unit() {
-                    comments = stack!(
-                        comments,
-                        node_to_layout_expr(
-                            child,
-                            source_code,
-                            config,
-                            choice_nest_level + choice_nest
-                        )
-                    )
+                    comments = stack!(comments, node_to_layout_expr(child, source_code,))
                 } else {
                     extras = stack!(extras, last_extra);
-                    last_extra = node_to_layout_expr(
-                        child,
-                        source_code,
-                        config,
-                        choice_nest_level + choice_nest,
-                    )
+                    last_extra = node_to_layout_expr(child, source_code)
                 }
 
                 has_extra = true;
@@ -334,12 +258,7 @@ fn elements_node_to_layout_expr<'a>(
                     has_extra = true;
                 }
                 extras = stack!(extras, last_extra);
-                last_extra = node_to_layout_expr(
-                    child,
-                    source_code,
-                    config,
-                    choice_nest_level + choice_nest,
-                );
+                last_extra = node_to_layout_expr(child, source_code);
                 if !last_extra.is_empty() {
                     has_extra = true;
                 }
@@ -368,32 +287,21 @@ fn elements_node_to_layout_expr<'a>(
                     last_extra = unit!();
                 }
 
-                separator =
-                    node_to_layout_expr(child, source_code, config, choice_nest_level + choice_nest)
+                separator = node_to_layout_expr(child, source_code)
             }
 
             kind_id => {
                 after_open = false;
 
                 if kind_id.is_open() {
-                    open = node_to_layout_expr(
-                        child,
-                        source_code,
-                        config,
-                        choice_nest_level + choice_nest,
-                    );
+                    open = node_to_layout_expr(child, source_code);
                     after_open = true;
 
                     continue;
                 }
 
                 if kind_id.is_close() {
-                    close = node_to_layout_expr(
-                        child,
-                        source_code,
-                        config,
-                        choice_nest_level + choice_nest,
-                    );
+                    close = node_to_layout_expr(child, source_code);
 
                     continue;
                 }
@@ -407,12 +315,7 @@ fn elements_node_to_layout_expr<'a>(
                 elements.push(apposition_sep!(text!(" "), element, comments));
                 elements.push(stack!(extras, last_extra));
 
-                element = node_to_layout_expr(
-                    child,
-                    source_code,
-                    config,
-                    choice_nest_level + choice_nest,
-                );
+                element = node_to_layout_expr(child, source_code);
 
                 separator = unit!();
                 comments = unit!();
@@ -513,7 +416,7 @@ fn elements_node_to_layout_expr<'a>(
         | KindId::PAT_MAP_EXPR
         | KindId::PAT_RECORD_EXPR
         | KindId::FUNCTION_CALL => {
-            let body = if has_extra || choice_nest_level > config.max_choice_nest_level {
+            let body = if has_extra {
                 stacked_elements
             } else {
                 choice!(stacked_elements, apposed_elements)
@@ -525,11 +428,7 @@ fn elements_node_to_layout_expr<'a>(
                 apposition!(body, close)
             };
 
-            if choice_nest_level > config.max_choice_nest_level {
-                stack!(open, apposition!(text!("    "), tail))
-            } else {
-                apposition!(choice!(stack!(open.clone(), text!("  ")), open), tail)
-            }
+            apposition!(choice!(stack!(open.clone(), text!("  ")), open), tail)
         }
 
         KindId::BEGIN_END_EXPR => {
@@ -556,13 +455,7 @@ fn elements_node_to_layout_expr<'a>(
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
         | KindId::PAT_TUPLE => {
-            let body = if choice_nest_level > config.max_choice_nest_level {
-                stacked_elements
-            } else {
-                choice!(stacked_elements, apposed_elements)
-            };
-
-            apposition!(open, body, close)
+            apposition!(open, choice!(stacked_elements, apposed_elements), close)
         }
 
         _ => panic!("{:?} is not covered", kind_id),
@@ -572,8 +465,6 @@ fn elements_node_to_layout_expr<'a>(
 fn binary_expression_node_to_layout_expr<'a>(
     node: Node<'_>,
     source_code: &'a str,
-    config: &Config,
-    choice_nest_level: u8,
 ) -> Rc<LayoutExpr<'a>> {
     let mut lhs = unit!();
     let mut comments_between_lhs_and_op = unit!();
@@ -597,18 +488,17 @@ fn binary_expression_node_to_layout_expr<'a>(
                 KindId::COMMENT | KindId::LINE_COMMENT => {
                     comments_between_lhs_and_op = stack!(
                         comments_between_lhs_and_op,
-                        node_to_layout_expr(child, source_code, config, choice_nest_level + 1)
+                        node_to_layout_expr(child, source_code)
                     )
                 }
 
                 kind_id => {
                     if kind_id.is_op() {
-                        op = node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
+                        op = node_to_layout_expr(child, source_code);
                         op_kind_id = kind_id;
                         phase = Phase::Rhs;
                     } else {
-                        lhs =
-                            node_to_layout_expr(child, source_code, config, choice_nest_level + 1);
+                        lhs = node_to_layout_expr(child, source_code);
                     }
                 }
             },
@@ -619,11 +509,11 @@ fn binary_expression_node_to_layout_expr<'a>(
                 KindId::COMMENT | KindId::LINE_COMMENT => {
                     comments_between_op_and_rhs = stack!(
                         comments_between_op_and_rhs,
-                        node_to_layout_expr(child, source_code, config, choice_nest_level)
+                        node_to_layout_expr(child, source_code)
                     )
                 }
 
-                _ => rhs = node_to_layout_expr(child, source_code, config, choice_nest_level),
+                _ => rhs = node_to_layout_expr(child, source_code),
             },
         }
     }
@@ -699,29 +589,24 @@ fn kind_id(node: Node<'_>) -> KindId {
 
 #[cfg(test)]
 mod parse_test {
-    use crate::{parse, Config};
+    use crate::parse;
 
     macro assert_parse {
         ($source_code:expr $(,)?) => {{
             let source_code = $source_code;
-            let config = &Config {
-                max_choice_nest_level: 100,
-            };
+
             pretty_assertions::assert_eq!(
-                parse(source_code, config).format(0, false).0 + "\n",
+                parse(source_code).format(0, false).0 + "\n",
                 source_code
             )
         }},
 
-        ($source_code:expr, $expected:expr $(,)?) => {{
-            let config = &Config {
-                max_choice_nest_level: 100,
-            };
+        ($source_code:expr, $expected:expr $(,)?) => {
             pretty_assertions::assert_eq!(
-                parse($source_code, config).format(0, false).0 + "\n",
+                parse($source_code).format(0, false).0 + "\n",
                 $expected
             )
-        }},
+        },
     }
 
     mod elements_node_to_apposed_layout_expr {
@@ -1101,29 +986,24 @@ mod parse_test {
 
 #[cfg(test)]
 mod format_test {
-    use super::{format, Config};
+    use super::format;
 
     macro assert_format {
         ($layout_fun_config:expr, $source_code:expr $(,)?) => {{
             let source_code = $source_code;
-            let config = &Config{
-                max_choice_nest_level: 100
-            };
+
             pretty_assertions::assert_eq!(
-                format(source_code, config, &$layout_fun_config) + "\n",
+                format(source_code, &$layout_fun_config) + "\n",
                 source_code
             )
         }},
 
-        ($layout_fun_config:expr, $source_code:expr, $expected:expr $(,)?) => {{
-            let config = &Config{
-                max_choice_nest_level: 100
-            };
+        ($layout_fun_config:expr, $source_code:expr, $expected:expr $(,)?) => {
             pretty_assertions::assert_eq!(
-                format($source_code, config, &$layout_fun_config) + "\n",
+                format($source_code, &$layout_fun_config) + "\n",
                 $expected
             )
-        }},
+        },
     }
 
     mod elements_node_to_layout_expr {
@@ -1140,6 +1020,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         f() -> ok;
@@ -1156,6 +1037,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         f() -> ok; % comment 1
@@ -1179,6 +1061,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         -export([foo/1, bar/2, foobar/3, baz/4]).
@@ -1194,6 +1077,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         -export([
@@ -1216,6 +1100,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         -export([foo/1, bar/2, foobar/ % comment
@@ -1232,6 +1117,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         -export([
@@ -1252,6 +1138,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         -export([
@@ -1272,6 +1159,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         -export([
@@ -1297,6 +1185,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         -export([
@@ -1326,6 +1215,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         f() -> ok.
@@ -1341,6 +1231,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         f() ->
@@ -1357,6 +1248,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         f() ->
@@ -1374,6 +1266,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         f() ->
@@ -1391,6 +1284,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         f() ->
@@ -1414,6 +1308,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1431,6 +1326,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1449,6 +1345,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1467,6 +1364,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1487,6 +1385,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1508,6 +1407,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1532,6 +1432,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1550,6 +1451,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1570,6 +1472,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1592,6 +1495,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1625,6 +1529,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1642,6 +1547,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1666,6 +1572,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
@@ -1683,6 +1590,7 @@ mod format_test {
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
+                        max_choice_nest_level: 100,
                     },
                     indoc! {r#"
                         main() ->
