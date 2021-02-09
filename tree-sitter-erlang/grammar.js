@@ -2,7 +2,7 @@
 prec.nonassoc = prec.right;
 
 function repeatSep1(rule, separator) {
-  return seq(rule, repeat(seq(separator, rule)));
+  return seq(rule, repeat(seq(separator, rule)), optional(separator));
 }
 
 function repeatSep(rule, separator) {
@@ -15,6 +15,14 @@ function repeatComma1(rule) {
 
 function repeatComma(rule) {
   return repeatSep(rule, ",");
+}
+
+function repeatSemicolon1(rule) {
+  return repeatSep1(rule, ";");
+}
+
+function repeatSemicolon(rule) {
+  return repeatSep(rule, ";");
 }
 
 const PREC = {
@@ -74,23 +82,21 @@ module.exports = grammar({
       seq("-", "export", "(", $.export_attribute_mfas, ")"),
 
     export_attribute_mfas: ($) =>
-      seq("[", repeatComma1($.export_attribute_mfa), optional(","), "]"),
+      seq("[", repeatComma1($.export_attribute_mfa), "]"),
 
     export_attribute_mfa: ($) =>
       seq($._atom_or_macro, "/", choice($.integer, $.macro)),
 
     other_attribute: ($) =>
-      seq($.other_attribute_open, repeatComma1($._expr), optional(","), ")"),
+      seq($.other_attribute_open, repeatComma1($._expr), ")"),
 
     other_attribute_open: ($) => seq("-", $._atom_or_macro, "("),
 
     _function_or_macro: ($) => choice($.function_clauses /*, $.macro*/),
 
-    function_clauses: ($) =>
-      seq(repeatSep1($.function_clause, ";"), optional(";")),
+    function_clauses: ($) => repeatSemicolon1($.function_clause),
 
-    function_clause: ($) =>
-      seq($.function_clause_open, repeatComma1($._expr), optional(",")),
+    function_clause: ($) => seq($.function_clause_open, repeatComma1($._expr)),
 
     function_clause_open: ($) =>
       seq(
@@ -100,14 +106,13 @@ module.exports = grammar({
         "->"
       ),
 
-    pat_argument_list: ($) =>
-      seq("(", repeatComma($._pat_expr), optional(","), ")"),
+    pat_argument_list: ($) => seq("(", repeatComma($._pat_expr), ")"),
 
     clause_guard: ($) => seq("when", $.guard),
 
-    guard: ($) => seq(repeatSep1($.exprs, ";"), optional(";")),
+    guard: ($) => repeatSemicolon1($.exprs),
 
-    exprs: ($) => seq(repeatComma1($._expr), optional(",")),
+    exprs: ($) => repeatComma1($._expr),
 
     _expr: ($) =>
       choice(
@@ -141,16 +146,14 @@ module.exports = grammar({
         prec(PREC.prefix_op, seq($.prefix_op, $._expr))
       ),
 
-    map_expr: ($) =>
-      seq($.map_expr_open, repeatComma($.map_expr_field), optional(","), "}"),
+    map_expr: ($) => seq($.map_expr_open, repeatComma($.map_expr_field), "}"),
 
     map_expr_open: ($) =>
       seq(optional(choice($._primary_expr, $.map_expr)), "#", "{"),
 
     map_expr_field: ($) => seq($._expr, $.map_op, $._expr),
 
-    function_call: ($) =>
-      seq($.function_call_open, repeatComma($._expr), optional(","), ")"),
+    function_call: ($) => seq($.function_call_open, repeatComma($._expr), ")"),
 
     function_call_open: ($) => seq(choice($.remote_expr, $.macro), "("),
 
@@ -164,12 +167,7 @@ module.exports = grammar({
       ),
 
     record_expr: ($) =>
-      seq(
-        $.record_expr_open,
-        repeatComma($.record_expr_field),
-        optional(","),
-        "}"
-      ),
+      seq($.record_expr_open, repeatComma($.record_expr_field), "}"),
 
     record_expr_open: ($) =>
       seq(
@@ -202,15 +200,13 @@ module.exports = grammar({
         //$.try_expr
       ),
 
-    list: ($) =>
-      choice(seq("[", repeatSep($._expr, ","), optional(","), $.list_close)),
+    list: ($) => choice(seq("[", repeatComma($._expr), $.list_close)),
 
     list_close: ($) => seq(optional(seq("|", $.list_tail)), "]"),
 
     list_tail: ($) => choice($._expr),
 
-    binary: ($) =>
-      seq("<<", repeatComma($.binary_element), optional(","), ">>"),
+    binary: ($) => seq("<<", repeatComma($.binary_element), ">>"),
 
     binary_element: ($) =>
       seq(
@@ -231,40 +227,29 @@ module.exports = grammar({
         )
       ),
 
-    tuple: ($) => seq("{", repeatComma($._expr), optional(","), "}"),
+    tuple: ($) => seq("{", repeatComma($._expr), "}"),
 
     paren_expr: ($) => seq("(", $._expr, ")"),
 
     begin_end_expr: ($) =>
-      seq($.begin_open, repeatComma1($._expr), optional(","), $.end_close),
+      seq($.begin_open, repeatComma1($._expr), $.end_close),
 
     if_expr: ($) =>
-      seq(
-        $.if_open,
-        repeatSep1($.if_expr_clause, ";"),
-        optional(";"),
-        $.end_close
-      ),
+      seq($.if_open, repeatSemicolon1($.if_expr_clause), $.end_close),
 
-    if_expr_clause: ($) =>
-      seq($.if_expr_clause_open, repeatComma1($._expr), optional(",")),
+    if_expr_clause: ($) => seq($.if_expr_clause_open, repeatComma1($._expr)),
 
     if_expr_clause_open: ($) => seq($.guard, "->"),
 
     case_expr: ($) =>
-      seq(
-        $.case_expr_open,
-        repeatSep1($.case_expr_clause, ";"),
-        optional(";"),
-        $.end_close
-      ),
+      seq($.case_expr_open, repeatSemicolon1($.case_expr_clause), $.end_close),
 
     case_expr_open: ($) => seq("case", $.case_expr_open_tail),
 
     case_expr_open_tail: ($) => seq($._expr, "of"),
 
     case_expr_clause: ($) =>
-      seq($.case_expr_clause_open, repeatComma1($._expr), optional(",")),
+      seq($.case_expr_clause_open, repeatComma1($._expr)),
 
     case_expr_clause_open: ($) =>
       seq($._pat_expr, optional($.clause_guard), "->"),
@@ -284,28 +269,17 @@ module.exports = grammar({
       ),
 
     fun_expr: ($) =>
-      seq(
-        $.fun_open,
-        repeatSep1($.fun_clause, ";"),
-        optional(";"),
-        $.end_close
-      ),
+      seq($.fun_open, repeatSemicolon1($.fun_clause), $.end_close),
 
-    fun_clause: ($) =>
-      seq($.fun_clause_open, repeatComma1($._expr), optional(",")),
+    fun_clause: ($) => seq($.fun_clause_open, repeatComma1($._expr)),
 
     fun_clause_open: ($) => seq($.pat_argument_list, "->"),
 
     fun_expr_with_head: ($) =>
-      seq(
-        $.fun_open,
-        repeatSep1($.fun_clause_with_head, ";"),
-        optional(";"),
-        $.end_close
-      ),
+      seq($.fun_open, repeatSemicolon1($.fun_clause_with_head), $.end_close),
 
     fun_clause_with_head: ($) =>
-      seq($.fun_clause_with_head_open, repeatComma1($._expr), optional(",")),
+      seq($.fun_clause_with_head_open, repeatComma1($._expr)),
 
     fun_clause_with_head_open: ($) =>
       seq($.variable, $.pat_argument_list, "->"),
@@ -337,12 +311,7 @@ module.exports = grammar({
     pat_unary_expr: ($) => seq($.prefix_op, $._pat_expr),
 
     pat_map_expr: ($) =>
-      seq(
-        $.pat_map_expr_open,
-        repeatComma($.pat_map_expr_field),
-        optional(","),
-        "}"
-      ),
+      seq($.pat_map_expr_open, repeatComma($.pat_map_expr_field), "}"),
 
     pat_map_expr_open: ($) =>
       seq(optional(choice($._pat_primary_expr, $.pat_map_expr)), "#", "{"),
@@ -353,12 +322,7 @@ module.exports = grammar({
       seq("#", $._atom_or_macro, ".", $._atom_or_macro),
 
     pat_record_expr: ($) =>
-      seq(
-        $.pat_record_expr_open,
-        repeatComma($.pat_record_expr_field),
-        optional(","),
-        "}"
-      ),
+      seq($.pat_record_expr_open, repeatComma($.pat_record_expr_field), "}"),
 
     pat_record_expr_open: ($) => seq("#", $._atom_or_macro, "{"),
 
@@ -378,15 +342,14 @@ module.exports = grammar({
     pat_list: ($) =>
       choice(
         seq("[", "]"),
-        seq("[", repeatSep1($._pat_expr, ","), optional(","), $.pat_list_close)
+        seq("[", repeatComma1($._pat_expr), $.pat_list_close)
       ),
 
     pat_list_close: ($) => seq(optional(seq("|", $.pat_list_tail)), "]"),
 
     pat_list_tail: ($) => choice($._pat_expr),
 
-    pat_binary: ($) =>
-      seq("<<", repeatComma($.pat_binary_element), optional(","), ">>"),
+    pat_binary: ($) => seq("<<", repeatComma($.pat_binary_element), ">>"),
 
     pat_binary_element: ($) =>
       seq(
@@ -407,7 +370,7 @@ module.exports = grammar({
         )
       ),
 
-    pat_tuple: ($) => seq("{", repeatComma($._pat_expr), optional(","), "}"),
+    pat_tuple: ($) => seq("{", repeatComma($._pat_expr), "}"),
 
     pat_paren_expr: ($) => seq("(", $._pat_expr, ")"),
 

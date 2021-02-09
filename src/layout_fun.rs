@@ -367,33 +367,6 @@ impl<'a> LayoutFun<'a> {
         }
     }
 
-    fn one_line_cost(expr: Self, config: &Config) -> Self {
-        match &expr {
-            LayoutFun::Unit => LayoutFun::Unit,
-            LayoutFun::Fun(tree) => LayoutFun::Fun(Rc::new(
-                tree.iter()
-                    .map(move |(knot, layout)| {
-                        (
-                            knot,
-                            Layout {
-                                layout_expr: layout.layout_expr.clone(),
-                                span: layout.span,
-                                height: layout.height,
-                                cost: layout.cost
-                                    + if layout.height == 1 {
-                                        config.height_cost
-                                    } else {
-                                        0
-                                    },
-                                cost_gradient: layout.cost_gradient,
-                            },
-                        )
-                    })
-                    .collect(),
-            )),
-        }
-    }
-
     #[cfg(test)]
     fn to_vec(&self) -> Vec<(Position, &Layout<'a>)> {
         match self {
