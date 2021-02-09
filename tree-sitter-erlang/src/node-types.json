@@ -76,10 +76,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -187,10 +183,6 @@
         },
         {
           "type": "prefix_op",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -310,10 +302,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -458,10 +446,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -566,10 +550,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -694,6 +674,11 @@
     }
   },
   {
+    "type": "end_close",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "export_attribute",
     "named": true,
     "fields": {},
@@ -812,10 +797,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -953,10 +934,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -1076,10 +1053,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -1302,10 +1275,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -1429,10 +1398,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -1623,10 +1588,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -1749,10 +1710,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -1868,10 +1825,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -2001,10 +1954,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -2097,10 +2046,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -2211,10 +2156,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -2337,10 +2278,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -3234,7 +3171,7 @@
     }
   },
   {
-    "type": "receive_after_expr",
+    "type": "receive_expr",
     "named": true,
     "fields": {},
     "children": {
@@ -3242,22 +3179,37 @@
       "required": true,
       "types": [
         {
-          "type": "end_close",
+          "type": "receive_expr_after",
           "named": true
         },
         {
-          "type": "receive_after_expr_clause",
+          "type": "receive_expr_after_clause",
           "named": true
         },
         {
-          "type": "receive_after_expr_open",
+          "type": "receive_expr_clauses",
           "named": true
         }
       ]
     }
   },
   {
-    "type": "receive_after_expr_clause",
+    "type": "receive_expr_after",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "receive_expr_after_clause",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "receive_expr_after_clause",
     "named": true,
     "fields": {},
     "children": {
@@ -3325,15 +3277,11 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr_clause_open",
-          "named": true
-        },
-        {
           "type": "receive_expr",
+          "named": true
+        },
+        {
+          "type": "receive_expr_after_clause_open",
           "named": true
         },
         {
@@ -3368,7 +3316,7 @@
     }
   },
   {
-    "type": "receive_after_expr_clause_open",
+    "type": "receive_expr_after_clause_open",
     "named": true,
     "fields": {},
     "children": {
@@ -3436,10 +3384,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -3475,30 +3419,7 @@
     }
   },
   {
-    "type": "receive_after_expr_open",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "after_close",
-          "named": true
-        },
-        {
-          "type": "case_receive_expr_clause",
-          "named": true
-        },
-        {
-          "type": "receive_open",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "receive_expr",
+    "type": "receive_expr_clauses",
     "named": true,
     "fields": {},
     "children": {
@@ -3507,14 +3428,6 @@
       "types": [
         {
           "type": "case_receive_expr_clause",
-          "named": true
-        },
-        {
-          "type": "end_close",
-          "named": true
-        },
-        {
-          "type": "receive_open",
           "named": true
         }
       ]
@@ -3612,10 +3525,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -3707,10 +3616,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -3790,10 +3695,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -3870,10 +3771,6 @@
         },
         {
           "type": "paren_expr",
-          "named": true
-        },
-        {
-          "type": "receive_after_expr",
           "named": true
         },
         {
@@ -3999,10 +3896,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -4110,10 +4003,6 @@
           "named": true
         },
         {
-          "type": "receive_after_expr",
-          "named": true
-        },
-        {
           "type": "receive_expr",
           "named": true
         },
@@ -4213,8 +4102,8 @@
     "named": true
   },
   {
-    "type": "after_close",
-    "named": true
+    "type": "after",
+    "named": false
   },
   {
     "type": "andalso_op",
@@ -4245,8 +4134,8 @@
     "named": true
   },
   {
-    "type": "end_close",
-    "named": true
+    "type": "end",
+    "named": false
   },
   {
     "type": "equal_op",
@@ -4313,8 +4202,8 @@
     "named": true
   },
   {
-    "type": "receive_open",
-    "named": true
+    "type": "receive",
+    "named": false
   },
   {
     "type": "variable",
