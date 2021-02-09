@@ -193,7 +193,7 @@ module.exports = grammar({
         $.begin_end_expr,
         $.if_expr,
         $.case_expr,
-        //$.receive_expr,
+        $.receive_expr,
         $.fun_ref_expr,
         $.fun_expr,
         $.fun_expr_with_head
@@ -242,16 +242,37 @@ module.exports = grammar({
     if_expr_clause_open: ($) => seq($.guard, "->"),
 
     case_expr: ($) =>
-      seq($.case_expr_open, repeatSemicolon1($.case_expr_clause), $.end_close),
+      seq(
+        $.case_expr_open,
+        repeatSemicolon1($.case_receive_expr_clause),
+        $.end_close
+      ),
 
     case_expr_open: ($) => seq("case", $.case_expr_open_tail),
 
     case_expr_open_tail: ($) => seq($._expr, "of"),
 
-    case_expr_clause: ($) =>
-      seq($.case_expr_clause_open, repeatComma1($._expr)),
+    receive_expr: ($) =>
+      seq(
+        $.receive_open,
+        repeatSemicolon1($.case_receive_expr_clause),
+        $.end_close
+      ),
 
-    case_expr_clause_open: ($) =>
+    /*
+    receive_expr_after_clause: ($) =>
+      seq($.receive_expr_after_clause_open, repeatComma1($._expr)),
+
+    receive_expr_after_clause_open: ($) =>
+      seq("after", $.receive_expr_after_clause_open_tail),
+
+    receive_expr_after_clause_open_tail: ($) => seq($._expr, "->"),
+      */
+
+    case_receive_expr_clause: ($) =>
+      seq($.case_receive_expr_clause_open, repeatComma1($._expr)),
+
+    case_receive_expr_clause_open: ($) =>
       seq($._pat_expr, optional($.clause_guard), "->"),
 
     fun_ref_expr: ($) => seq("fun", $.fun_ref_expr_tail),
@@ -403,6 +424,8 @@ module.exports = grammar({
     end_close: (_) => "end",
 
     if_open: (_) => "if",
+
+    receive_open: (_) => "receive",
 
     fun_open: (_) => "fun",
 

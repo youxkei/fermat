@@ -88,7 +88,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::IF_EXPR_CLAUSE_OPEN
         | KindId::CASE_EXPR_OPEN
         | KindId::CASE_EXPR_OPEN_TAIL
-        | KindId::CASE_EXPR_CLAUSE_OPEN
+        | KindId::CASE_RECEIVE_EXPR_CLAUSE_OPEN
         | KindId::FUN_REF_EXPR
         | KindId::FUN_REF_EXPR_TAIL
         | KindId::FUN_CLAUSE_OPEN
@@ -120,7 +120,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::IF_EXPR
         | KindId::IF_EXPR_CLAUSE
         | KindId::CASE_EXPR
-        | KindId::CASE_EXPR_CLAUSE
+        | KindId::CASE_RECEIVE_EXPR_CLAUSE
+        | KindId::RECEIVE_EXPR
         | KindId::FUN_EXPR
         | KindId::FUN_CLAUSE
         | KindId::FUN_EXPR_WITH_HEAD
@@ -151,6 +152,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::BEGIN_OPEN
         | KindId::END_CLOSE
         | KindId::IF_OPEN
+        | KindId::RECEIVE_OPEN
         | KindId::FUN_OPEN
         | KindId::MODULE
         | KindId::EXPORT
@@ -430,7 +432,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
 
         KindId::FUNCTION_CLAUSE
         | KindId::IF_EXPR_CLAUSE
-        | KindId::CASE_EXPR_CLAUSE
+        | KindId::CASE_RECEIVE_EXPR_CLAUSE
         | KindId::FUN_CLAUSE
         | KindId::FUN_CLAUSE_WITH_HEAD => {
             if num_elements > 1 {
@@ -493,7 +495,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::IF_EXPR | KindId::CASE_EXPR => {
+        KindId::IF_EXPR | KindId::CASE_EXPR | KindId::RECEIVE_EXPR => {
             stack!(open, apposition!(text!("    "), stacked_elements,), close)
         }
 

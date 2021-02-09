@@ -1155,6 +1155,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "receive_expr"
+        },
+        {
+          "type": "SYMBOL",
           "name": "fun_ref_expr"
         },
         {
@@ -1739,7 +1743,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "case_expr_clause"
+              "name": "case_receive_expr_clause"
             },
             {
               "type": "REPEAT",
@@ -1752,7 +1756,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "case_expr_clause"
+                    "name": "case_receive_expr_clause"
                   }
                 ]
               }
@@ -1803,12 +1807,62 @@
         }
       ]
     },
-    "case_expr_clause": {
+    "receive_expr": {
       "type": "SEQ",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "case_expr_clause_open"
+          "name": "receive_open"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "case_receive_expr_clause"
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ";"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "case_receive_expr_clause"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": ";"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "end_close"
+        }
+      ]
+    },
+    "case_receive_expr_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "case_receive_expr_clause_open"
         },
         {
           "type": "SEQ",
@@ -1849,7 +1903,7 @@
         }
       ]
     },
-    "case_expr_clause_open": {
+    "case_receive_expr_clause_open": {
       "type": "SEQ",
       "members": [
         {
@@ -3276,6 +3330,10 @@
     "if_open": {
       "type": "STRING",
       "value": "if"
+    },
+    "receive_open": {
+      "type": "STRING",
+      "value": "receive"
     },
     "fun_open": {
       "type": "STRING",
