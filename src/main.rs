@@ -85,6 +85,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::LIST_TAIL
         | KindId::BINARY_ELEMENT
         | KindId::PAREN_EXPR
+        | KindId::IF_EXPR_CLAUSE_OPEN
         | KindId::FUN_REF_EXPR
         | KindId::FUN_REF_EXPR_TAIL
         | KindId::FUN_CLAUSE_OPEN
@@ -113,6 +114,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::BINARY
         | KindId::TUPLE
         | KindId::BEGIN_END_EXPR
+        | KindId::IF_EXPR
+        | KindId::IF_EXPR_CLAUSE
         | KindId::FUN_EXPR
         | KindId::FUN_CLAUSE
         | KindId::FUN_EXPR_WITH_HEAD
@@ -142,6 +145,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::GREATER_GREATER_CLOSE
         | KindId::BEGIN_OPEN
         | KindId::END_CLOSE
+        | KindId::IF_OPEN
         | KindId::FUN_OPEN
         | KindId::MODULE
         | KindId::EXPORT
@@ -415,7 +419,10 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::FUNCTION_CLAUSE | KindId::FUN_CLAUSE | KindId::FUN_CLAUSE_WITH_HEAD => {
+        KindId::FUNCTION_CLAUSE
+        | KindId::IF_EXPR_CLAUSE
+        | KindId::FUN_CLAUSE
+        | KindId::FUN_CLAUSE_WITH_HEAD => {
             if num_elements > 1 {
                 stack!(
                     open,
@@ -476,8 +483,12 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
+        KindId::IF_EXPR => {
+            stack!(open, apposition!(text!("    "), stacked_elements,), close)
+        }
+
         KindId::FUN_EXPR => {
-            stack!(apposition!(open, stacked_elements,), close)
+            stack!(apposition!(open, stacked_elements), close)
         }
 
         KindId::FUN_EXPR_WITH_HEAD => {

@@ -193,9 +193,9 @@ module.exports = grammar({
         $.tuple,
         $.paren_expr,
         $.begin_end_expr,
-        //$.if_expr
-        //$.case_expr
-        //$.receive_expr
+        $.if_expr,
+        //$.case_expr,
+        //$.receive_expr,
         $.fun_ref_expr,
         $.fun_expr,
         $.fun_expr_with_head
@@ -237,6 +237,19 @@ module.exports = grammar({
 
     begin_end_expr: ($) =>
       seq($.begin_open, repeatComma1($._expr), optional(","), $.end_close),
+
+    if_expr: ($) =>
+      seq(
+        $.if_open,
+        repeatSep1($.if_expr_clause, ";"),
+        optional(";"),
+        $.end_close
+      ),
+
+    if_expr_clause: ($) =>
+      seq($.if_expr_clause_open, repeatComma1($._expr), optional(",")),
+
+    if_expr_clause_open: ($) => seq($.guard, "->"),
 
     fun_ref_expr: ($) => seq("fun", $.fun_ref_expr_tail),
 
@@ -404,11 +417,13 @@ module.exports = grammar({
 
     map_op: (_) => token(choice("=>", ":=")),
 
-    begin_open: ($) => "begin",
+    begin_open: (_) => "begin",
 
-    end_close: ($) => "end",
+    end_close: (_) => "end",
 
-    fun_open: ($) => "fun",
+    if_open: (_) => "if",
+
+    fun_open: (_) => "fun",
 
     variable: (_) => /[A-Z][a-zA-Z0-9_]*/,
 

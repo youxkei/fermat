@@ -58,6 +58,14 @@ main(Parameter1 = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 0 + 1 + 2 + 3,
     Result18 = {fun foo/0, fun Var1:Var2/Var3,},
     Result19 = [1, 2, [3 / % comment
                        4]],
+    Result20 = if
+                   1234567890123456789012345678901234567890,
+                   1234567890123456789012345678901234567890,;
+                   1234567890123456789012345678901234567890,
+                   1234567890123456789012345678901234567890,; -> true;
+
+                   true -> true;
+                end,
     io:format("Lorem ipsum dolor sit amet") % comment 1
     , % comment 2
     ; % comment 3
