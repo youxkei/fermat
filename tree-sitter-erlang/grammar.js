@@ -194,7 +194,7 @@ module.exports = grammar({
         $.paren_expr,
         $.begin_end_expr,
         $.if_expr,
-        //$.case_expr,
+        $.case_expr,
         //$.receive_expr,
         $.fun_ref_expr,
         $.fun_expr,
@@ -250,6 +250,24 @@ module.exports = grammar({
       seq($.if_expr_clause_open, repeatComma1($._expr), optional(",")),
 
     if_expr_clause_open: ($) => seq($.guard, "->"),
+
+    case_expr: ($) =>
+      seq(
+        $.case_expr_open,
+        repeatSep1($.case_expr_clause, ";"),
+        optional(";"),
+        $.end_close
+      ),
+
+    case_expr_open: ($) => seq("case", $.case_expr_open_tail),
+
+    case_expr_open_tail: ($) => seq($._expr, "of"),
+
+    case_expr_clause: ($) =>
+      seq($.case_expr_clause_open, repeatComma1($._expr), optional(",")),
+
+    case_expr_clause_open: ($) =>
+      seq($._pat_expr, optional($.clause_guard), "->"),
 
     fun_ref_expr: ($) => seq("fun", $.fun_ref_expr_tail),
 

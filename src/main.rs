@@ -86,6 +86,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::BINARY_ELEMENT
         | KindId::PAREN_EXPR
         | KindId::IF_EXPR_CLAUSE_OPEN
+        | KindId::CASE_EXPR_OPEN
+        | KindId::CASE_EXPR_OPEN_TAIL
+        | KindId::CASE_EXPR_CLAUSE_OPEN
         | KindId::FUN_REF_EXPR
         | KindId::FUN_REF_EXPR_TAIL
         | KindId::FUN_CLAUSE_OPEN
@@ -116,6 +119,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::BEGIN_END_EXPR
         | KindId::IF_EXPR
         | KindId::IF_EXPR_CLAUSE
+        | KindId::CASE_EXPR
+        | KindId::CASE_EXPR_CLAUSE
         | KindId::FUN_EXPR
         | KindId::FUN_CLAUSE
         | KindId::FUN_EXPR_WITH_HEAD
@@ -152,6 +157,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::WHEN
         | KindId::CATCH
         | KindId::FUN
+        | KindId::CASE
+        | KindId::OF
         | KindId::COMMA
         | KindId::PERIOD
         | KindId::HYPHEN
@@ -205,8 +212,10 @@ fn elements_node_to_apposed_layout_expr<'a>(
             | KindId::WHEN
             | KindId::GUARD
             | KindId::BAR
+            | KindId::OF
             | KindId::LIST_TAIL
             | KindId::PAT_LIST_TAIL
+            | KindId::CASE_EXPR_OPEN_TAIL
             | KindId::FUN_REF_EXPR_TAIL => {
                 result = apposition!(
                     result,
@@ -421,6 +430,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
 
         KindId::FUNCTION_CLAUSE
         | KindId::IF_EXPR_CLAUSE
+        | KindId::CASE_EXPR_CLAUSE
         | KindId::FUN_CLAUSE
         | KindId::FUN_CLAUSE_WITH_HEAD => {
             if num_elements > 1 {
@@ -483,7 +493,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::IF_EXPR => {
+        KindId::IF_EXPR | KindId::CASE_EXPR => {
             stack!(open, apposition!(text!("    "), stacked_elements,), close)
         }
 
