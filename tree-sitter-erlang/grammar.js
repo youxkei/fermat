@@ -236,8 +236,9 @@ module.exports = grammar({
     begin_end_expr: ($) =>
       seq($.begin_open, repeatComma1($._expr), $.end_close),
 
-    if_expr: ($) =>
-      seq($.if_open, repeatSemicolon1($.if_expr_clause), $.end_close),
+    if_expr: ($) => seq("if", $.if_expr_clauses, "end"),
+
+    if_expr_clauses: ($) => repeatSemicolon1($.if_expr_clause),
 
     if_expr_clause: ($) => seq($.if_expr_clause_open, repeatComma1($._expr)),
 

@@ -1497,19 +1497,11 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
         {
-          "type": "end_close",
-          "named": true
-        },
-        {
-          "type": "if_expr_clause",
-          "named": true
-        },
-        {
-          "type": "if_open",
+          "type": "if_expr_clauses",
           "named": true
         }
       ]
@@ -1632,6 +1624,21 @@
       "types": [
         {
           "type": "guard",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "if_expr_clauses",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "if_expr_clause",
           "named": true
         }
       ]
@@ -4154,8 +4161,8 @@
     "named": false
   },
   {
-    "type": "if_open",
-    "named": true
+    "type": "if",
+    "named": false
   },
   {
     "type": "integer",

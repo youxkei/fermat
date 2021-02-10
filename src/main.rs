@@ -119,6 +119,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::TUPLE
         | KindId::BEGIN_END_EXPR
         | KindId::IF_EXPR
+        | KindId::IF_EXPR_CLAUSES
         | KindId::IF_EXPR_CLAUSE
         | KindId::CASE_EXPR
         | KindId::RECEIVE_EXPR
@@ -155,17 +156,17 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::GREATER_GREATER_CLOSE
         | KindId::BEGIN_OPEN
         | KindId::END_CLOSE
-        | KindId::IF_OPEN
         | KindId::FUN_OPEN
         | KindId::MODULE
         | KindId::EXPORT
         | KindId::WHEN
         | KindId::CATCH
-        | KindId::FUN
+        | KindId::IF
         | KindId::CASE
         | KindId::OF
         | KindId::RECEIVE
         | KindId::AFTER
+        | KindId::FUN
         | KindId::END
         | KindId::COMMA
         | KindId::PERIOD
@@ -413,7 +414,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
     match kind_id {
         KindId::SOURCE_FILE => stacked_elements,
 
-        KindId::FUNCTION_CLAUSES | KindId::RECEIVE_EXPR | KindId::STRINGS => {
+        KindId::FUNCTION_CLAUSES | KindId::IF_EXPR | KindId::RECEIVE_EXPR | KindId::STRINGS => {
             if last_comment {
                 stack!(stacked_elements, text!(""))
             } else {
@@ -421,7 +422,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::RECEIVE_EXPR_CLAUSES | KindId::RECEIVE_EXPR_AFTER => {
+        KindId::IF_EXPR_CLAUSES | KindId::RECEIVE_EXPR_CLAUSES | KindId::RECEIVE_EXPR_AFTER => {
             apposition!(text!("    "), stacked_elements)
         }
 
@@ -506,7 +507,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::IF_EXPR | KindId::CASE_EXPR => {
+        KindId::CASE_EXPR => {
             stack!(open, apposition!(text!("    "), stacked_elements,), close)
         }
 
