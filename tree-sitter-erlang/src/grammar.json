@@ -1740,52 +1740,19 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "case_expr_open"
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "case_receive_expr_clause"
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": ";"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "case_receive_expr_clause"
-                  }
-                ]
-              }
-            },
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "STRING",
-                  "value": ";"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          ]
+          "name": "case_expr_begin"
         },
         {
           "type": "SYMBOL",
-          "name": "end_close"
+          "name": "case_expr_clauses"
+        },
+        {
+          "type": "STRING",
+          "value": "end"
         }
       ]
     },
-    "case_expr_open": {
+    "case_expr_begin": {
       "type": "SEQ",
       "members": [
         {
@@ -1794,11 +1761,48 @@
         },
         {
           "type": "SYMBOL",
-          "name": "case_expr_open_tail"
+          "name": "case_expr_begin_tail"
         }
       ]
     },
-    "case_expr_open_tail": {
+    "case_expr_clauses": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "case_receive_expr_clause"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ";"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "case_receive_expr_clause"
+              }
+            ]
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": ";"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "case_expr_begin_tail": {
       "type": "SEQ",
       "members": [
         {

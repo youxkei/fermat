@@ -86,8 +86,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::BINARY_ELEMENT
         | KindId::PAREN_EXPR
         | KindId::IF_EXPR_CLAUSE_OPEN
-        | KindId::CASE_EXPR_OPEN
-        | KindId::CASE_EXPR_OPEN_TAIL
+        | KindId::CASE_EXPR_BEGIN
+        | KindId::CASE_EXPR_BEGIN_TAIL
         | KindId::RECEIVE_EXPR_AFTER_CLAUSE_OPEN
         | KindId::CASE_RECEIVE_EXPR_CLAUSE_OPEN
         | KindId::FUN_REF_EXPR
@@ -122,6 +122,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::IF_EXPR_CLAUSES
         | KindId::IF_EXPR_CLAUSE
         | KindId::CASE_EXPR
+        | KindId::CASE_EXPR_CLAUSES
         | KindId::RECEIVE_EXPR
         | KindId::RECEIVE_EXPR_CLAUSES
         | KindId::RECEIVE_EXPR_AFTER
@@ -224,7 +225,7 @@ fn elements_node_to_apposed_layout_expr<'a>(
             | KindId::OF
             | KindId::LIST_TAIL
             | KindId::PAT_LIST_TAIL
-            | KindId::CASE_EXPR_OPEN_TAIL
+            | KindId::CASE_EXPR_BEGIN_TAIL
             | KindId::FUN_REF_EXPR_TAIL => {
                 result = apposition!(
                     result,
@@ -414,7 +415,11 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
     match kind_id {
         KindId::SOURCE_FILE => stacked_elements,
 
-        KindId::FUNCTION_CLAUSES | KindId::IF_EXPR | KindId::RECEIVE_EXPR | KindId::STRINGS => {
+        KindId::FUNCTION_CLAUSES
+        | KindId::IF_EXPR
+        | KindId::CASE_EXPR
+        | KindId::RECEIVE_EXPR
+        | KindId::STRINGS => {
             if last_comment {
                 stack!(stacked_elements, text!(""))
             } else {
@@ -422,7 +427,10 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::IF_EXPR_CLAUSES | KindId::RECEIVE_EXPR_CLAUSES | KindId::RECEIVE_EXPR_AFTER => {
+        KindId::IF_EXPR_CLAUSES
+        | KindId::CASE_EXPR_CLAUSES
+        | KindId::RECEIVE_EXPR_CLAUSES
+        | KindId::RECEIVE_EXPR_AFTER => {
             apposition!(text!("    "), stacked_elements)
         }
 
@@ -505,10 +513,6 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
                     apposition!(open, text!(" "), apposed_elements, text!(" "), close)
                 )
             }
-        }
-
-        KindId::CASE_EXPR => {
-            stack!(open, apposition!(text!("    "), stacked_elements,), close)
         }
 
         KindId::FUN_EXPR => {

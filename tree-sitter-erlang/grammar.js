@@ -244,16 +244,13 @@ module.exports = grammar({
 
     if_expr_clause_open: ($) => seq($.guard, "->"),
 
-    case_expr: ($) =>
-      seq(
-        $.case_expr_open,
-        repeatSemicolon1($.case_receive_expr_clause),
-        $.end_close
-      ),
+    case_expr: ($) => seq($.case_expr_begin, $.case_expr_clauses, "end"),
 
-    case_expr_open: ($) => seq("case", $.case_expr_open_tail),
+    case_expr_begin: ($) => seq("case", $.case_expr_begin_tail),
 
-    case_expr_open_tail: ($) => seq($._expr, "of"),
+    case_expr_clauses: ($) => repeatSemicolon1($.case_receive_expr_clause),
+
+    case_expr_begin_tail: ($) => seq($._expr, "of"),
 
     receive_expr: ($) =>
       seq(
