@@ -89,11 +89,12 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::CASE_EXPR_BEGIN
         | KindId::CASE_EXPR_BEGIN_TAIL
         | KindId::RECEIVE_EXPR_AFTER_CLAUSE_OPEN
-        | KindId::CASE_RECEIVE_EXPR_CLAUSE_OPEN
+        | KindId::MATCH_CLAUSE_OPEN
         | KindId::FUN_REF_EXPR
         | KindId::FUN_REF_EXPR_TAIL
         | KindId::FUN_CLAUSE_OPEN
         | KindId::FUN_CLAUSE_WITH_HEAD_OPEN
+        | KindId::TRY_EXPR_CATCH_CLAUSE_OPEN
         | KindId::PAT_UNARY_EXPR
         | KindId::PAT_MAP_EXPR_OPEN
         | KindId::PAT_RECORD_INDEX_EXPR
@@ -127,11 +128,17 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::RECEIVE_EXPR_CLAUSES
         | KindId::RECEIVE_EXPR_AFTER
         | KindId::RECEIVE_EXPR_AFTER_CLAUSE
-        | KindId::CASE_RECEIVE_EXPR_CLAUSE
+        | KindId::MATCH_CLAUSE
         | KindId::FUN_EXPR
         | KindId::FUN_CLAUSE
         | KindId::FUN_EXPR_WITH_HEAD
         | KindId::FUN_CLAUSE_WITH_HEAD
+        | KindId::TRY_EXPR
+        | KindId::TRY_EXPR_TRY
+        | KindId::TRY_EXPR_OF
+        | KindId::TRY_EXPR_CATCH
+        | KindId::TRY_EXPR_CATCH_CLAUSE
+        | KindId::TRY_EXPR_AFTER
         | KindId::PAT_MAP_EXPR
         | KindId::PAT_RECORD_EXPR
         | KindId::PAT_LIST
@@ -168,6 +175,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::RECEIVE
         | KindId::AFTER
         | KindId::FUN
+        | KindId::TRY
         | KindId::END
         | KindId::COMMA
         | KindId::PERIOD
@@ -419,6 +427,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         | KindId::IF_EXPR
         | KindId::CASE_EXPR
         | KindId::RECEIVE_EXPR
+        | KindId::TRY_EXPR
         | KindId::STRINGS => {
             if last_comment {
                 stack!(stacked_elements, text!(""))
@@ -430,7 +439,11 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         KindId::IF_EXPR_CLAUSES
         | KindId::CASE_EXPR_CLAUSES
         | KindId::RECEIVE_EXPR_CLAUSES
-        | KindId::RECEIVE_EXPR_AFTER => {
+        | KindId::RECEIVE_EXPR_AFTER
+        | KindId::TRY_EXPR_TRY
+        | KindId::TRY_EXPR_OF
+        | KindId::TRY_EXPR_CATCH
+        | KindId::TRY_EXPR_AFTER => {
             apposition!(text!("    "), stacked_elements)
         }
 
@@ -452,9 +465,10 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         KindId::FUNCTION_CLAUSE
         | KindId::IF_EXPR_CLAUSE
         | KindId::RECEIVE_EXPR_AFTER_CLAUSE
-        | KindId::CASE_RECEIVE_EXPR_CLAUSE
+        | KindId::MATCH_CLAUSE
         | KindId::FUN_CLAUSE
-        | KindId::FUN_CLAUSE_WITH_HEAD => {
+        | KindId::FUN_CLAUSE_WITH_HEAD
+        | KindId::TRY_EXPR_CATCH_CLAUSE => {
             if num_elements > 1 {
                 stack!(
                     open,

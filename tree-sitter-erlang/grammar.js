@@ -55,7 +55,27 @@ module.exports = grammar({
     $._spaces,
   ],
 
-  conflicts: ($) => [[$.fun_ref_expr, $.fun_open]],
+  conflicts: ($) => [
+    /* "fun • Var":
+       - "fun Var() -> ok end": fun_expr
+       - "fun Var:Fun/2": fun_ref_expr
+     */
+    [$.fun_ref_expr, $.fun_open],
+
+    /*
+     * "try ok, • catch"
+     * - "try ok, catch {throw, T} -> T end": "catch" from try_expr
+     * - "try ok, catch 42 after 42 end": "catch" from catch expression
+     */
+    [$.try_expr_try],
+
+    /*
+     * "try ok of ok, • catch"
+     * - "try ok of ok -> ok, catch {throw, T} -> T end": "catch" from try_expr
+     * - "try ok of ok -> ok, catch 42 after 57 end": "catch" from catch expression
+     */
+    [$.match_clause],
+  ],
 
   rules: {
     source_file: ($) => repeat1($.form),
@@ -198,8 +218,8 @@ module.exports = grammar({
         $.receive_expr,
         $.fun_ref_expr,
         $.fun_expr,
-        $.fun_expr_with_head
-        // $.try_expr
+        $.fun_expr_with_head,
+        $.try_expr
       ),
 
     list: ($) => choice(seq("[", repeatComma($._expr), $.list_close)),
@@ -248,7 +268,7 @@ module.exports = grammar({
 
     case_expr_begin: ($) => seq("case", $.case_expr_begin_tail),
 
-    case_expr_clauses: ($) => repeatSemicolon1($.case_receive_expr_clause),
+    case_expr_clauses: ($) => repeatSemicolon1($.match_clause),
 
     case_expr_begin_tail: ($) => seq($._expr, "of"),
 
@@ -263,7 +283,7 @@ module.exports = grammar({
         "end"
       ),
 
-    receive_expr_clauses: ($) => repeatSemicolon1($.case_receive_expr_clause),
+    receive_expr_clauses: ($) => repeatSemicolon1($.match_clause),
 
     receive_expr_after: ($) => $.receive_expr_after_clause,
 
@@ -272,11 +292,47 @@ module.exports = grammar({
 
     receive_expr_after_clause_open: ($) => seq($._expr, "->"),
 
-    case_receive_expr_clause: ($) =>
-      seq($.case_receive_expr_clause_open, repeatComma1($._expr)),
+    try_expr: ($) =>
+      seq(
+        "try",
+        $.try_expr_try,
+        optional(seq("of", $.try_expr_of)),
+        choice(
+          seq("catch", $.try_expr_catch),
+          seq("after", $.try_expr_after),
+          seq("catch", $.try_expr_catch, "after", $.try_expr_after)
+        ),
+        "end"
+      ),
 
-    case_receive_expr_clause_open: ($) =>
-      seq($._pat_expr, optional($.clause_guard), "->"),
+    try_expr_try: ($) => repeatComma1($._expr),
+
+    try_expr_of: ($) => repeatSemicolon1($.match_clause),
+
+    try_expr_catch: ($) => repeatSemicolon1($.try_expr_catch_clause),
+
+    try_expr_catch_clause: ($) =>
+      seq($.try_expr_catch_clause_open, repeatComma1($._expr)),
+
+    try_expr_catch_clause_open: ($) =>
+      seq(
+        choice(
+          $._pat_expr,
+          seq(
+            choice($._atom_or_macro, $.variable),
+            ":",
+            $._pat_expr,
+            optional(seq(":", choice($.variable, $.macro)))
+          )
+        ),
+        "->"
+      ),
+
+    try_expr_after: ($) => repeatComma1($._expr),
+
+    match_clause: ($) => seq($.match_clause_open, repeatComma1($._expr)),
+
+    match_clause_open: ($) => seq($._pat_expr, optional($.clause_guard), "->"),
 
     fun_ref_expr: ($) => seq("fun", $.fun_ref_expr_tail),
 
