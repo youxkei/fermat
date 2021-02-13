@@ -202,8 +202,8 @@ module.exports = grammar({
         $._atomic,
         $.list,
         $.binary,
-        // $.list_comprehension,
-        // $.binary_comprehension,
+        $.list_comprehension,
+        $.binary_comprehension,
         $.tuple,
         $.paren_expr,
         $.begin_end_expr,
@@ -242,6 +242,33 @@ module.exports = grammar({
           )
         )
       ),
+
+    list_comprehension: ($) => seq("[", $.list_comprehension_content, "]"),
+
+    list_comprehension_content: ($) =>
+      seq($._expr, $.comprehension_op, $.list_comprehension_clauses),
+
+    list_comprehension_clauses: ($) =>
+      repeatComma1($.list_comprehension_clause),
+
+    list_comprehension_clause: ($) =>
+      seq($._pat_expr, "<-", $.comprehension_clause_expr),
+
+    list_comprehension_clause_expr: ($) => $._expr,
+
+    binary_comprehension: ($) =>
+      seq("<<", $.binary_comprehension_content, ">>"),
+
+    binary_comprehension_content: ($) =>
+      seq($._expr, $.comprehension_op, $.binary_comprehension_clauses),
+
+    binary_comprehension_clauses: ($) =>
+      repeatComma1($.binary_comprehension_clause),
+
+    binary_comprehension_clause: ($) =>
+      seq($.pat_binary, "<=", $.comprehension_clause_expr),
+
+    comprehension_clause_expr: ($) => $._expr,
 
     tuple: ($) => seq("{", repeatComma($._expr), "}"),
 
@@ -483,6 +510,8 @@ module.exports = grammar({
     mult_op: (_) => token(choice("/", "*", "div", "rem", "band", "and")),
 
     map_op: (_) => token(choice("=>", ":=")),
+
+    comprehension_op: (_) => "||",
 
     variable: (_) => /[A-Z][a-zA-Z0-9_]*/,
 

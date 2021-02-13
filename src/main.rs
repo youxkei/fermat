@@ -84,6 +84,11 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::LIST_CLOSE
         | KindId::LIST_TAIL
         | KindId::BINARY_ELEMENT
+        | KindId::LIST_COMPREHENSION
+        | KindId::LIST_COMPREHENSION_CLAUSE
+        | KindId::BINARY_COMPREHENSION
+        | KindId::BINARY_COMPREHENSION_CLAUSE
+        | KindId::COMPREHENSION_CLAUSE_EXPR
         | KindId::PAREN_EXPR
         | KindId::IF_EXPR_CLAUSE_OPEN
         | KindId::CASE_EXPR_BEGIN
@@ -117,6 +122,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::EXPRS
         | KindId::LIST
         | KindId::BINARY
+        | KindId::LIST_COMPREHENSION_CLAUSES
+        | KindId::BINARY_COMPREHENSION_CLAUSES
         | KindId::TUPLE
         | KindId::BEGIN_END_EXPR
         | KindId::IF_EXPR
@@ -149,6 +156,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         KindId::BINARY_EXPR
         | KindId::MAP_EXPR_FIELD
         | KindId::RECORD_EXPR_FIELD
+        | KindId::LIST_COMPREHENSION_CONTENT
+        | KindId::BINARY_COMPREHENSION_CONTENT
         | KindId::PAT_BINARY_EXPR
         | KindId::PAT_MAP_EXPR_FIELD
         | KindId::PAT_RECORD_EXPR_FIELD => binary_expression_node_to_layout_expr(node, source_code),
@@ -186,6 +195,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::QUOTEDBL
         | KindId::BAR
         | KindId::NUMBERSIGN
+        | KindId::LESS_HYPHEN
+        | KindId::LESS_EQUAL
         | KindId::ORELSE_OP
         | KindId::ANDALSO_OP
         | KindId::EQUAL_OP
@@ -196,6 +207,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::MULT_OP
         | KindId::PREFIX_OP
         | KindId::MAP_OP
+        | KindId::COMPREHENSION_OP
         | KindId::VARIABLE
         | KindId::ATOM
         | KindId::MACRO
@@ -227,11 +239,14 @@ fn elements_node_to_apposed_layout_expr<'a>(
             }
 
             KindId::HYPHEN_GREATER
+            | KindId::LESS_HYPHEN
+            | KindId::LESS_EQUAL
             | KindId::WHEN
             | KindId::GUARD
             | KindId::BAR
             | KindId::OF
             | KindId::LIST_TAIL
+            | KindId::COMPREHENSION_CLAUSE_EXPR
             | KindId::PAT_LIST_TAIL
             | KindId::CASE_EXPR_BEGIN_TAIL
             | KindId::FUN_REF_EXPR_TAIL => {
@@ -543,6 +558,8 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         | KindId::EXPRS
         | KindId::LIST
         | KindId::BINARY
+        | KindId::LIST_COMPREHENSION_CLAUSES
+        | KindId::BINARY_COMPREHENSION_CLAUSES
         | KindId::TUPLE
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
@@ -621,7 +638,8 @@ fn binary_expression_node_to_layout_expr<'a>(
         | KindId::COMP_OP
         | KindId::LIST_OP
         | KindId::ADD_OP
-        | KindId::MULT_OP => {
+        | KindId::MULT_OP
+        | KindId::COMPREHENSION_OP => {
             apposition!(
                 choice!(
                     stack!(

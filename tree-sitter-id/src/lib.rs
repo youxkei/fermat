@@ -114,6 +114,8 @@ fn identize(token: &str) -> &str {
         "\"" => "QUOTEDBL",
         "|" => "BAR",
         "#" => "NUMBERSIGN",
+        "<-" => "LESS_HYPHEN",
+        "<=" => "LESS_EQUAL",
         _ => token,
     }
 }

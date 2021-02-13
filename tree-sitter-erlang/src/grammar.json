@@ -1135,6 +1135,14 @@
         },
         {
           "type": "SYMBOL",
+          "name": "list_comprehension"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "binary_comprehension"
+        },
+        {
+          "type": "SYMBOL",
           "name": "tuple"
         },
         {
@@ -1500,6 +1508,190 @@
           ]
         }
       ]
+    },
+    "list_comprehension": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "["
+        },
+        {
+          "type": "SYMBOL",
+          "name": "list_comprehension_content"
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "list_comprehension_content": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_expr"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "comprehension_op"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "list_comprehension_clauses"
+        }
+      ]
+    },
+    "list_comprehension_clauses": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "list_comprehension_clause"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "SYMBOL",
+                "name": "list_comprehension_clause"
+              }
+            ]
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "list_comprehension_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_pat_expr"
+        },
+        {
+          "type": "STRING",
+          "value": "<-"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "comprehension_clause_expr"
+        }
+      ]
+    },
+    "list_comprehension_clause_expr": {
+      "type": "SYMBOL",
+      "name": "_expr"
+    },
+    "binary_comprehension": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "<<"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "binary_comprehension_content"
+        },
+        {
+          "type": "STRING",
+          "value": ">>"
+        }
+      ]
+    },
+    "binary_comprehension_content": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_expr"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "comprehension_op"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "binary_comprehension_clauses"
+        }
+      ]
+    },
+    "binary_comprehension_clauses": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "binary_comprehension_clause"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "SYMBOL",
+                "name": "binary_comprehension_clause"
+              }
+            ]
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": ","
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
+    },
+    "binary_comprehension_clause": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "pat_binary"
+        },
+        {
+          "type": "STRING",
+          "value": "<="
+        },
+        {
+          "type": "SYMBOL",
+          "name": "comprehension_clause_expr"
+        }
+      ]
+    },
+    "comprehension_clause_expr": {
+      "type": "SYMBOL",
+      "name": "_expr"
     },
     "tuple": {
       "type": "SEQ",
@@ -3825,6 +4017,10 @@
           }
         ]
       }
+    },
+    "comprehension_op": {
+      "type": "STRING",
+      "value": "||"
     },
     "variable": {
       "type": "PATTERN",
