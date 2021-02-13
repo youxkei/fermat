@@ -16,10 +16,6 @@
           "named": true
         },
         {
-          "type": "begin_open",
-          "named": true
-        },
-        {
           "type": "binary",
           "named": true
         },
@@ -29,10 +25,6 @@
         },
         {
           "type": "case_expr",
-          "named": true
-        },
-        {
-          "type": "end_close",
           "named": true
         },
         {
@@ -523,11 +515,6 @@
     }
   },
   {
-    "type": "end_close",
-    "named": true,
-    "fields": {}
-  },
-  {
     "type": "export_attribute",
     "named": true,
     "fields": {},
@@ -979,10 +966,6 @@
       "required": true,
       "types": [
         {
-          "type": "end_close",
-          "named": true
-        },
-        {
           "type": "fun_clause",
           "named": true
         }
@@ -997,10 +980,6 @@
       "multiple": true,
       "required": true,
       "types": [
-        {
-          "type": "end_close",
-          "named": true
-        },
         {
           "type": "fun_clause_with_head",
           "named": true
@@ -4669,7 +4648,7 @@
   },
   {
     "type": "begin_open",
-    "named": true
+    "named": false
   },
   {
     "type": "case",
@@ -4689,6 +4668,10 @@
   },
   {
     "type": "end",
+    "named": false
+  },
+  {
+    "type": "end_close",
     "named": false
   },
   {

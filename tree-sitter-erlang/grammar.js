@@ -248,7 +248,11 @@ module.exports = grammar({
     paren_expr: ($) => seq("(", $._expr, ")"),
 
     begin_end_expr: ($) =>
-      seq($.begin_open, repeatComma1($._expr), $.end_close),
+      seq(
+        alias("begin", "begin_open"),
+        repeatComma1($._expr),
+        alias("end", "end_close")
+      ),
 
     if_expr: ($) => seq("if", $.if_expr_clauses, "end"),
 
@@ -346,7 +350,7 @@ module.exports = grammar({
       seq(
         alias("fun", "fun_open"),
         repeatSemicolon1($.fun_clause),
-        $.end_close
+        alias("end", "end_close")
       ),
 
     fun_clause: ($) => seq($.fun_clause_open, repeatComma1($._expr)),
@@ -357,7 +361,7 @@ module.exports = grammar({
       seq(
         alias("fun", "fun_open"),
         repeatSemicolon1($.fun_clause_with_head),
-        $.end_close
+        alias("end", "end_close")
       ),
 
     fun_clause_with_head: ($) =>
@@ -479,16 +483,6 @@ module.exports = grammar({
     mult_op: (_) => token(choice("/", "*", "div", "rem", "band", "and")),
 
     map_op: (_) => token(choice("=>", ":=")),
-
-    begin_open: (_) => "begin",
-
-    end_close: (_) => "end",
-
-    if_open: (_) => "if",
-
-    receive_open: (_) => "receive",
-
-    after_close: (_) => "after",
 
     variable: (_) => /[A-Z][a-zA-Z0-9_]*/,
 

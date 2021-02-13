@@ -1580,8 +1580,13 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "begin_open"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "begin"
+          },
+          "named": false,
+          "value": "begin_open"
         },
         {
           "type": "SEQ",
@@ -1621,8 +1626,13 @@
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "end_close"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "end"
+          },
+          "named": false,
+          "value": "end_close"
         }
       ]
     },
@@ -2563,8 +2573,13 @@
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "end_close"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "end"
+          },
+          "named": false,
+          "value": "end_close"
         }
       ]
     },
@@ -2677,8 +2692,13 @@
           ]
         },
         {
-          "type": "SYMBOL",
-          "name": "end_close"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "end"
+          },
+          "named": false,
+          "value": "end_close"
         }
       ]
     },
@@ -3805,26 +3825,6 @@
           }
         ]
       }
-    },
-    "begin_open": {
-      "type": "STRING",
-      "value": "begin"
-    },
-    "end_close": {
-      "type": "STRING",
-      "value": "end"
-    },
-    "if_open": {
-      "type": "STRING",
-      "value": "if"
-    },
-    "receive_open": {
-      "type": "STRING",
-      "value": "receive"
-    },
-    "after_close": {
-      "type": "STRING",
-      "value": "after"
     },
     "variable": {
       "type": "PATTERN",
