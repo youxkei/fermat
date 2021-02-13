@@ -985,10 +985,6 @@
         {
           "type": "fun_clause",
           "named": true
-        },
-        {
-          "type": "fun_open",
-          "named": true
         }
       ]
     }
@@ -1008,18 +1004,9 @@
         {
           "type": "fun_clause_with_head",
           "named": true
-        },
-        {
-          "type": "fun_open",
-          "named": true
         }
       ]
     }
-  },
-  {
-    "type": "fun_open",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "fun_ref_expr",
@@ -4718,6 +4705,10 @@
   },
   {
     "type": "fun",
+    "named": false
+  },
+  {
+    "type": "fun_open",
     "named": false
   },
   {

@@ -2517,8 +2517,13 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "fun_open"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "fun"
+          },
+          "named": false,
+          "value": "fun_open"
         },
         {
           "type": "SEQ",
@@ -2626,8 +2631,13 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "fun_open"
+          "type": "ALIAS",
+          "content": {
+            "type": "STRING",
+            "value": "fun"
+          },
+          "named": false,
+          "value": "fun_open"
         },
         {
           "type": "SEQ",
@@ -3816,10 +3826,6 @@
       "type": "STRING",
       "value": "after"
     },
-    "fun_open": {
-      "type": "STRING",
-      "value": "fun"
-    },
     "variable": {
       "type": "PATTERN",
       "value": "[A-Z][a-zA-Z0-9_]*"
@@ -3992,10 +3998,6 @@
     }
   ],
   "conflicts": [
-    [
-      "fun_ref_expr",
-      "fun_open"
-    ],
     [
       "try_expr_try"
     ],

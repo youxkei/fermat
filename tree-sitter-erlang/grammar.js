@@ -56,12 +56,6 @@ module.exports = grammar({
   ],
 
   conflicts: ($) => [
-    /* "fun • Var":
-       - "fun Var() -> ok end": fun_expr
-       - "fun Var:Fun/2": fun_ref_expr
-     */
-    [$.fun_ref_expr, $.fun_open],
-
     /*
      * "try ok, • catch"
      * - "try ok, catch {throw, T} -> T end": "catch" from try_expr
@@ -349,14 +343,22 @@ module.exports = grammar({
       ),
 
     fun_expr: ($) =>
-      seq($.fun_open, repeatSemicolon1($.fun_clause), $.end_close),
+      seq(
+        alias("fun", "fun_open"),
+        repeatSemicolon1($.fun_clause),
+        $.end_close
+      ),
 
     fun_clause: ($) => seq($.fun_clause_open, repeatComma1($._expr)),
 
     fun_clause_open: ($) => seq($.pat_argument_list, "->"),
 
     fun_expr_with_head: ($) =>
-      seq($.fun_open, repeatSemicolon1($.fun_clause_with_head), $.end_close),
+      seq(
+        alias("fun", "fun_open"),
+        repeatSemicolon1($.fun_clause_with_head),
+        $.end_close
+      ),
 
     fun_clause_with_head: ($) =>
       seq($.fun_clause_with_head_open, repeatComma1($._expr)),
@@ -487,8 +489,6 @@ module.exports = grammar({
     receive_open: (_) => "receive",
 
     after_close: (_) => "after",
-
-    fun_open: (_) => "fun",
 
     variable: (_) => /[A-Z][a-zA-Z0-9_]*/,
 
