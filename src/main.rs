@@ -27,11 +27,11 @@ fn main() {
     let source_code = fs::read_to_string(&args[1]).unwrap();
 
     let layout_fun_config = &LayoutFunConfig {
-        right_margin: 50,
+        right_margin: 120,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
-        max_choice_nest_level: 8,
+        max_choice_nest_level: 1,
     };
 
     println!(
@@ -211,7 +211,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::VARIABLE
         | KindId::ATOM
         | KindId::MACRO
+        | KindId::CHAR
         | KindId::INTEGER
+        | KindId::FLOAT
         | KindId::STRING
         | KindId::COMMENT
         | KindId::LINE_COMMENT => text!(&source_code[node.start_byte()..node.end_byte()]),
@@ -477,8 +479,43 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::FUNCTION_CLAUSE
-        | KindId::IF_EXPR_CLAUSE
+        KindId::FUNCTION_CLAUSE => {
+            if num_elements > 1 {
+                stack!(
+                    open,
+                    apposition!(
+                        text!("    "),
+                        stack!(
+                            stacked_elements,
+                            if last_comment { text!("") } else { unit!() }
+                        )
+                    )
+                )
+            } else {
+                choice!(
+                    stack!(
+                        open.clone(),
+                        apposition!(
+                            text!("   "),
+                            stack!(
+                                stacked_elements.clone(),
+                                if last_comment { text!("") } else { unit!() }
+                            )
+                        )
+                    ),
+                    apposition!(
+                        open,
+                        text!(" "),
+                        stack!(
+                            multi_line_cost!(stacked_elements),
+                            if last_comment { text!("") } else { unit!() }
+                        )
+                    )
+                )
+            }
+        }
+
+        KindId::IF_EXPR_CLAUSE
         | KindId::RECEIVE_EXPR_AFTER_CLAUSE
         | KindId::MATCH_CLAUSE
         | KindId::FUN_CLAUSE

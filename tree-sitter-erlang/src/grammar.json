@@ -536,10 +536,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "remote_expr"
-        },
-        {
-          "type": "SYMBOL",
           "name": "_primary_expr"
         }
       ]
@@ -923,7 +919,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "macro"
+              "name": "_primary_expr"
             }
           ]
         },
@@ -3822,11 +3818,19 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_atom_or_macro"
+          "name": "char"
         },
         {
           "type": "SYMBOL",
           "name": "integer"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "float"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_atom_or_macro"
         },
         {
           "type": "SYMBOL",
@@ -4023,8 +4027,11 @@
       "value": "||"
     },
     "variable": {
-      "type": "PATTERN",
-      "value": "[A-Z][a-zA-Z0-9_]*"
+      "type": "TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "[A-Z_][a-zA-Z0-9_]*"
+      }
     },
     "_atom_or_macro": {
       "type": "CHOICE",
@@ -4062,6 +4069,10 @@
         "value": "\\?[a-zA-Z_][a-zA-Z0-9_@]*"
       }
     },
+    "char": {
+      "type": "PATTERN",
+      "value": "\\$."
+    },
     "integer": {
       "type": "TOKEN",
       "content": {
@@ -4069,14 +4080,18 @@
         "members": [
           {
             "type": "PATTERN",
-            "value": "-?\\d[\\d_]*"
+            "value": "-?(\\d[\\d_]*)?\\d"
           },
           {
             "type": "PATTERN",
-            "value": "-?\\d+#[a-fA-F\\d][a-fA-F\\d_]*"
+            "value": "-?(\\d[\\d_]*)?\\d#([a-fA-F\\d][a-fA-F\\d_]*)?[a-fA-F\\d]"
           }
         ]
       }
+    },
+    "float": {
+      "type": "PATTERN",
+      "value": "-?(\\d[\\d_]*)?\\d\\.(\\d[\\d_]*)?\\d(e-?(\\d[\\d_]*)?\\d)?"
     },
     "strings": {
       "type": "REPEAT1",

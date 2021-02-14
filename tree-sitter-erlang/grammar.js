@@ -136,7 +136,6 @@ module.exports = grammar({
         $.function_call,
         $.record_index_expr,
         $.record_expr,
-        $.remote_expr,
         $._primary_expr
       ),
 
@@ -169,7 +168,7 @@ module.exports = grammar({
 
     function_call: ($) => seq($.function_call_open, repeatComma($._expr), ")"),
 
-    function_call_open: ($) => seq(choice($.remote_expr, $.macro), "("),
+    function_call_open: ($) => seq(choice($.remote_expr, $._primary_expr), "("),
 
     record_index_expr: ($) =>
       seq(
@@ -487,7 +486,8 @@ module.exports = grammar({
 
     pat_paren_expr: ($) => seq("(", $._pat_expr, ")"),
 
-    _atomic: ($) => choice($._atom_or_macro, $.integer, $.strings),
+    _atomic: ($) =>
+      choice($.char, $.integer, $.float, $._atom_or_macro, $.strings),
 
     prefix_op: (_) => token(choice("+", "-", "bnot", "not")),
 
@@ -513,7 +513,7 @@ module.exports = grammar({
 
     comprehension_op: (_) => "||",
 
-    variable: (_) => /[A-Z][a-zA-Z0-9_]*/,
+    variable: (_) => token(/[A-Z_][a-zA-Z0-9_]*/),
 
     _atom_or_macro: ($) => choice($.atom, $.macro),
 
@@ -521,7 +521,17 @@ module.exports = grammar({
 
     macro: (_) => token(/\?[a-zA-Z_][a-zA-Z0-9_@]*/),
 
-    integer: (_) => token(choice(/-?\d[\d_]*/, /-?\d+#[a-fA-F\d][a-fA-F\d_]*/)),
+    char: (_) => /\$./,
+
+    integer: (_) =>
+      token(
+        choice(
+          /-?(\d[\d_]*)?\d/,
+          /-?(\d[\d_]*)?\d#([a-fA-F\d][a-fA-F\d_]*)?[a-fA-F\d]/
+        )
+      ),
+
+    float: (_) => /-?(\d[\d_]*)?\d\.(\d[\d_]*)?\d(e-?(\d[\d_]*)?\d)?/,
 
     strings: ($) => repeat1($.string),
 
