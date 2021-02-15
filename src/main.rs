@@ -31,7 +31,7 @@ fn main() {
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
-        max_choice_nest_level: 1,
+        max_choice_nest_level: 10,
     };
 
     println!(
@@ -480,39 +480,16 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         }
 
         KindId::FUNCTION_CLAUSE => {
-            if num_elements > 1 {
-                stack!(
-                    open,
-                    apposition!(
-                        text!("    "),
-                        stack!(
-                            stacked_elements,
-                            if last_comment { text!("") } else { unit!() }
-                        )
-                    )
-                )
-            } else {
-                choice!(
+            stack!(
+                open,
+                apposition!(
+                    text!("    "),
                     stack!(
-                        open.clone(),
-                        apposition!(
-                            text!("   "),
-                            stack!(
-                                stacked_elements.clone(),
-                                if last_comment { text!("") } else { unit!() }
-                            )
-                        )
-                    ),
-                    apposition!(
-                        open,
-                        text!(" "),
-                        stack!(
-                            multi_line_cost!(stacked_elements),
-                            if last_comment { text!("") } else { unit!() }
-                        )
+                        stacked_elements,
+                        if last_comment { text!("") } else { unit!() }
                     )
                 )
-            }
+            )
         }
 
         KindId::IF_EXPR_CLAUSE
@@ -589,22 +566,56 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             stack!(apposition!(open, text!(" "), stacked_elements,), close)
         }
 
+        KindId::LIST | KindId::TUPLE => {
+            if has_extra || num_elements > 5 || num_elements <= 1 {
+                apposition!(
+                    open,
+                    stack!(
+                        stacked_elements,
+                        if last_comment { text!("") } else { unit!() }
+                    ),
+                    close
+                )
+            } else {
+                apposition!(
+                    open,
+                    stack!(
+                        choice!(stacked_elements, apposed_elements),
+                        if last_comment { text!("") } else { unit!() }
+                    ),
+                    close
+                )
+            }
+        }
+
         KindId::OTHER_ATTRIBUTE
         | KindId::PAT_ARGUMENT_LIST
         | KindId::GUARD
         | KindId::EXPRS
-        | KindId::LIST
         | KindId::BINARY
         | KindId::LIST_COMPREHENSION_CLAUSES
         | KindId::BINARY_COMPREHENSION_CLAUSES
-        | KindId::TUPLE
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
         | KindId::PAT_TUPLE => {
-            if num_elements > 1 {
-                apposition!(open, choice!(stacked_elements, apposed_elements), close)
+            if has_extra || num_elements <= 1 {
+                apposition!(
+                    open,
+                    stack!(
+                        stacked_elements,
+                        if last_comment { text!("") } else { unit!() }
+                    ),
+                    close
+                )
             } else {
-                apposition!(open, stacked_elements, close)
+                apposition!(
+                    open,
+                    stack!(
+                        choice!(stacked_elements, apposed_elements),
+                        if last_comment { text!("") } else { unit!() }
+                    ),
+                    close
+                )
             }
         }
 
@@ -1158,47 +1169,6 @@ mod format_test {
     }
 
     mod elements_node_to_layout_expr {
-        mod function_clauses {
-            use crate::format_test::assert_format;
-            use crate::layout_fun::Config;
-            use indoc::indoc;
-
-            #[test]
-            fn stacked() {
-                assert_format!(
-                    Config {
-                        right_margin: 80,
-                        newline_cost: 1,
-                        beyond_right_margin_cost: 10000,
-                        height_cost: 100,
-                        max_choice_nest_level: 100,
-                    },
-                    indoc! {r#"
-                        f() -> ok;
-                        f() -> error.
-                    "#},
-                )
-            }
-
-            #[test]
-            fn stacked_with_comments() {
-                assert_format!(
-                    Config {
-                        right_margin: 80,
-                        newline_cost: 1,
-                        beyond_right_margin_cost: 10000,
-                        height_cost: 100,
-                        max_choice_nest_level: 100,
-                    },
-                    indoc! {r#"
-                        f() -> ok; % comment 1
-                        f() -> error % comment 2
-                                     .
-                    "#},
-                )
-            }
-        }
-
         mod export_attribute {
             use crate::format_test::assert_format;
             use crate::layout_fun::Config;
@@ -1355,99 +1325,6 @@ mod format_test {
                                 ]).
                     "#},
                 );
-            }
-        }
-
-        mod function_clause {
-            use crate::format_test::assert_format;
-            use crate::layout_fun::Config;
-            use indoc::indoc;
-
-            #[test]
-            fn apposed() {
-                assert_format!(
-                    Config {
-                        right_margin: 80,
-                        newline_cost: 1,
-                        beyond_right_margin_cost: 10000,
-                        height_cost: 100,
-                        max_choice_nest_level: 100,
-                    },
-                    indoc! {r#"
-                        f() -> ok.
-                    "#},
-                )
-            }
-
-            #[test]
-            fn stacked_due_to_right_margin() {
-                assert_format!(
-                    Config {
-                        right_margin: 5,
-                        newline_cost: 1,
-                        beyond_right_margin_cost: 10000,
-                        height_cost: 100,
-                        max_choice_nest_level: 100,
-                    },
-                    indoc! {r#"
-                        f() ->
-                            ok.
-                    "#}
-                )
-            }
-
-            #[test]
-            fn stacked_due_to_a_comment() {
-                assert_format!(
-                    Config {
-                        right_margin: 80,
-                        newline_cost: 1,
-                        beyond_right_margin_cost: 10000,
-                        height_cost: 100,
-                        max_choice_nest_level: 100,
-                    },
-                    indoc! {r#"
-                        f() ->
-                            % comment
-                            ok.
-                    "#},
-                )
-            }
-
-            #[test]
-            fn stacked_due_to_a_line_comment() {
-                assert_format!(
-                    Config {
-                        right_margin: 80,
-                        newline_cost: 1,
-                        beyond_right_margin_cost: 10000,
-                        height_cost: 100,
-                        max_choice_nest_level: 100,
-                    },
-                    indoc! {r#"
-                        f() ->
-                            %% comment
-                            ok.
-                    "#},
-                )
-            }
-
-            #[test]
-            fn stacked_due_to_multiple_elements() {
-                assert_format!(
-                    Config {
-                        right_margin: 80,
-                        newline_cost: 1,
-                        beyond_right_margin_cost: 10000,
-                        height_cost: 100,
-                        max_choice_nest_level: 100,
-                    },
-                    indoc! {r#"
-                        f() ->
-                            foo,
-                            bar.
-                    "#},
-                )
             }
         }
 
