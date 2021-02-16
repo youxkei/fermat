@@ -72,6 +72,12 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::MODULE_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE_MFA
+        | KindId::SPEC_ATTRIBUTE
+        | KindId::TYPE_SPEC_OPEN
+        | KindId::SPEC_FUN_NAME
+        | KindId::TYPE_SIG
+        | KindId::TYPE_GUARD
+        | KindId::FUN_TYPE_OPEN
         | KindId::OTHER_ATTRIBUTE_OPEN
         | KindId::FUNCTION_CLAUSE_OPEN
         | KindId::CLAUSE_GUARD
@@ -111,6 +117,10 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
         KindId::SOURCE_FILE
         | KindId::EXPORT_ATTRIBUTE_MFAS
+        | KindId::TYPE_SPEC
+        | KindId::TYPE_GUARDS
+        | KindId::FUN_TYPE
+        | KindId::TOP_TYPES
         | KindId::OTHER_ATTRIBUTE
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE
@@ -153,7 +163,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::PAT_TUPLE
         | KindId::STRINGS => elements_node_to_layout_expr(node, source_code),
 
-        KindId::BINARY_EXPR
+        KindId::BIND_TYPE_GUARD
+        | KindId::BINARY_TOP_TYPE
+        | KindId::BINARY_EXPR
         | KindId::MAP_EXPR_FIELD
         | KindId::RECORD_EXPR_FIELD
         | KindId::LIST_COMPREHENSION_CONTENT
@@ -176,6 +188,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::FUN_OPEN
         | KindId::MODULE
         | KindId::EXPORT
+        | KindId::SPEC
+        | KindId::CALLBACK
         | KindId::WHEN
         | KindId::CATCH
         | KindId::IF
@@ -197,6 +211,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::NUMBERSIGN
         | KindId::LESS_HYPHEN
         | KindId::LESS_EQUAL
+        | KindId::PERIOD_PERIOD_PERIOD
+        | KindId::BIND_OP
+        | KindId::UNION_OP
         | KindId::ORELSE_OP
         | KindId::ANDALSO_OP
         | KindId::EQUAL_OP
@@ -247,6 +264,8 @@ fn elements_node_to_apposed_layout_expr<'a>(
             | KindId::GUARD
             | KindId::BAR
             | KindId::OF
+            | KindId::TYPE_SPEC
+            | KindId::TYPE_GUARDS
             | KindId::LIST_TAIL
             | KindId::COMPREHENSION_CLAUSE_EXPR
             | KindId::PAT_LIST_TAIL
@@ -440,7 +459,8 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
     match kind_id {
         KindId::SOURCE_FILE => stacked_elements,
 
-        KindId::FUNCTION_CLAUSES
+        KindId::TYPE_GUARDS
+        | KindId::FUNCTION_CLAUSES
         | KindId::IF_EXPR
         | KindId::CASE_EXPR
         | KindId::RECEIVE_EXPR
@@ -492,7 +512,8 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             )
         }
 
-        KindId::IF_EXPR_CLAUSE
+        KindId::FUN_TYPE
+        | KindId::IF_EXPR_CLAUSE
         | KindId::RECEIVE_EXPR_AFTER_CLAUSE
         | KindId::MATCH_CLAUSE
         | KindId::FUN_CLAUSE
@@ -528,7 +549,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         | KindId::PAT_MAP_EXPR
         | KindId::PAT_RECORD_EXPR
         | KindId::FUNCTION_CALL => {
-            let body = if has_extra {
+            let body = if has_extra || num_elements == 1 {
                 stacked_elements
             } else {
                 choice!(stacked_elements, apposed_elements)
@@ -566,7 +587,22 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             stack!(apposition!(open, text!(" "), stacked_elements,), close)
         }
 
-        KindId::LIST | KindId::TUPLE => {
+        KindId::TYPE_SPEC => {
+            apposition!(
+                open,
+                stack!(
+                    stacked_elements,
+                    if last_comment && !close.is_unit() {
+                        text!("")
+                    } else {
+                        unit!()
+                    }
+                ),
+                close
+            )
+        }
+
+        KindId::TOP_TYPES | KindId::LIST | KindId::TUPLE => {
             if has_extra || num_elements > 5 || num_elements <= 1 {
                 apposition!(
                     open,
@@ -737,6 +773,16 @@ fn binary_expression_node_to_layout_expr<'a>(
                         text!(" "),
                     )
                 ),
+                stack!(comments_between_op_and_rhs, rhs)
+            )
+        }
+
+        KindId::BIND_OP | KindId::UNION_OP => {
+            apposition!(
+                lhs,
+                text!(" "),
+                stack!(comments_between_lhs_and_op, op),
+                text!(" "),
                 stack!(comments_between_op_and_rhs, rhs)
             )
         }

@@ -116,6 +116,7 @@ fn identize(token: &str) -> &str {
         "#" => "NUMBERSIGN",
         "<-" => "LESS_HYPHEN",
         "<=" => "LESS_EQUAL",
+        "..." => "PERIOD_PERIOD_PERIOD",
         _ => token,
     }
 }
