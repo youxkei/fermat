@@ -26,18 +26,17 @@ function repeatSemicolon(rule) {
 }
 
 const PREC = {
-  catch_: 1,
+  catch: 1,
   equal_exclam: 100,
-  double_colon: 150,
   orelse: 150,
   andalso: 160,
-  bar: 170,
-  comp_op: 200,
-  range_op: 200,
-  list_op: 300,
-  add_op: 400,
-  mult_op: 500,
-  prefix_op: 600,
+  union: 170,
+  comp: 200,
+  range: 200,
+  list: 300,
+  add: 400,
+  mult: 500,
+  prefix: 600,
   numbersign: 700,
   colon: 800,
 };
@@ -138,13 +137,13 @@ module.exports = grammar({
     binary_top_type: ($) =>
       choice(
         seq(choice($.variable, $.macro), alias("::", "bind_op"), $._top_type),
-        prec(PREC.bar, seq($.type, alias("|", "union_op"), $._top_type))
+        prec(PREC.union, seq($.type, alias("|", "union_op"), $._top_type))
       ),
 
     type: ($) =>
       choice(
         $.binary_type,
-        prec(PREC.prefix_op, seq($._prefix_op, $._top_type)),
+        prec(PREC.prefix, seq($._prefix_op, $._top_type)),
         seq("(", $._top_type, ")"),
         $.variable,
         $._atom_or_macro,
@@ -168,9 +167,9 @@ module.exports = grammar({
 
     binary_type: ($) =>
       choice(
-        prec.right(PREC.range_op, seq($.type, alias("..", "range_op"), $.type)),
-        prec.right(PREC.add_op, seq($.type, $.add_op, $.type)),
-        prec.right(PREC.mult_op, seq($.type, $.mult_op, $.type))
+        prec.right(PREC.range, seq($.type, alias("..", "range_op"), $.type)),
+        prec.right(PREC.add, seq($.type, $.add_op, $.type)),
+        prec.right(PREC.mult, seq($.type, $.mult_op, $.type))
       ),
 
     other_attribute: ($) =>
@@ -217,16 +216,16 @@ module.exports = grammar({
         ),
         prec.right(PREC.orelse, seq($._expr, $.orelse_op, $._expr)),
         prec.right(PREC.andalso, seq($._expr, $.andalso_op, $._expr)),
-        prec.right(PREC.comp_op, seq($._expr, $.comp_op, $._expr)),
-        prec.right(PREC.list_op, seq($._expr, $.list_op, $._expr)),
-        prec.right(PREC.add_op, seq($._expr, $.add_op, $._expr)),
-        prec.right(PREC.mult_op, seq($._expr, $.mult_op, $._expr))
+        prec.right(PREC.comp, seq($._expr, $.comp_op, $._expr)),
+        prec.right(PREC.list, seq($._expr, $.list_op, $._expr)),
+        prec.right(PREC.add, seq($._expr, $.add_op, $._expr)),
+        prec.right(PREC.mult, seq($._expr, $.mult_op, $._expr))
       ),
 
     unary_expr: ($) =>
       choice(
-        prec(PREC.catch_, seq("catch", $._expr)),
-        prec(PREC.prefix_op, seq($._prefix_op, $._expr))
+        prec(PREC.catch, seq("catch", $._expr)),
+        prec(PREC.prefix, seq($._prefix_op, $._expr))
       ),
 
     map_expr: ($) => seq($.map_expr_open, repeatComma($.map_expr_field), "}"),
@@ -484,14 +483,14 @@ module.exports = grammar({
         ),
         prec.right(PREC.orelse, seq($._pat_expr, $.orelse_op, $._pat_expr)),
         prec.right(PREC.andalso, seq($._pat_expr, $.andalso_op, $._pat_expr)),
-        prec.nonassoc(PREC.comp_op, seq($._pat_expr, $.comp_op, $._pat_expr)),
-        prec.right(PREC.list_op, seq($._pat_expr, $.list_op, $._pat_expr)),
-        prec.right(PREC.add_op, seq($._pat_expr, $.add_op, $._pat_expr)),
-        prec.right(PREC.mult_op, seq($._pat_expr, $.mult_op, $._pat_expr))
+        prec.nonassoc(PREC.comp, seq($._pat_expr, $.comp_op, $._pat_expr)),
+        prec.right(PREC.list, seq($._pat_expr, $.list_op, $._pat_expr)),
+        prec.right(PREC.add, seq($._pat_expr, $.add_op, $._pat_expr)),
+        prec.right(PREC.mult, seq($._pat_expr, $.mult_op, $._pat_expr))
       ),
 
     pat_unary_expr: ($) =>
-      prec.right(PREC.prefix_op, seq($._prefix_op, $._pat_expr)),
+      prec.right(PREC.prefix, seq($._prefix_op, $._pat_expr)),
 
     pat_map_expr: ($) =>
       seq($.pat_map_expr_open, repeatComma($.pat_map_expr_field), "}"),
