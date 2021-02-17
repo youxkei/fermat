@@ -578,26 +578,30 @@
           ]
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "type"
-            },
-            {
-              "type": "ALIAS",
-              "content": {
-                "type": "STRING",
-                "value": "|"
+          "type": "PREC",
+          "value": 170,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "type"
               },
-              "named": false,
-              "value": "union_op"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_top_type"
-            }
-          ]
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "|"
+                },
+                "named": false,
+                "value": "union_op"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_top_type"
+              }
+            ]
+          }
         }
       ]
     },
@@ -607,6 +611,40 @@
         {
           "type": "SYMBOL",
           "name": "binary_type"
+        },
+        {
+          "type": "PREC",
+          "value": 600,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_prefix_op"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_top_type"
+              }
+            ]
+          }
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_top_type"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
         },
         {
           "type": "SYMBOL",
@@ -1337,7 +1375,7 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "prefix_op"
+                "name": "_prefix_op"
               },
               {
                 "type": "SYMBOL",
@@ -1955,7 +1993,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "prefix_op"
+              "name": "_prefix_op"
             },
             {
               "type": "BLANK"
@@ -3743,17 +3781,21 @@
       ]
     },
     "pat_unary_expr": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "prefix_op"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_pat_expr"
-        }
-      ]
+      "type": "PREC_RIGHT",
+      "value": 600,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_prefix_op"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_pat_expr"
+          }
+        ]
+      }
     },
     "pat_map_expr": {
       "type": "SEQ",
@@ -4188,7 +4230,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "prefix_op"
+              "name": "_prefix_op"
             },
             {
               "type": "BLANK"
@@ -4446,7 +4488,20 @@
         }
       ]
     },
-    "prefix_op": {
+    "_prefix_op": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "prefix_nospace_op"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "prefix_space_op"
+        }
+      ]
+    },
+    "prefix_nospace_op": {
       "type": "TOKEN",
       "content": {
         "type": "CHOICE",
@@ -4458,7 +4513,15 @@
           {
             "type": "STRING",
             "value": "-"
-          },
+          }
+        ]
+      }
+    },
+    "prefix_space_op": {
+      "type": "TOKEN",
+      "content": {
+        "type": "CHOICE",
+        "members": [
           {
             "type": "STRING",
             "value": "bnot"

@@ -382,7 +382,11 @@
           "named": true
         },
         {
-          "type": "prefix_op",
+          "type": "prefix_nospace_op",
+          "named": true
+        },
+        {
+          "type": "prefix_space_op",
           "named": true
         },
         {
@@ -3452,7 +3456,11 @@
           "named": true
         },
         {
-          "type": "prefix_op",
+          "type": "prefix_nospace_op",
+          "named": true
+        },
+        {
+          "type": "prefix_space_op",
           "named": true
         },
         {
@@ -4246,7 +4254,11 @@
           "named": true
         },
         {
-          "type": "prefix_op",
+          "type": "prefix_nospace_op",
+          "named": true
+        },
+        {
+          "type": "prefix_space_op",
           "named": true
         },
         {
@@ -5707,6 +5719,10 @@
           "named": true
         },
         {
+          "type": "binary_top_type",
+          "named": true
+        },
+        {
           "type": "binary_type",
           "named": true
         },
@@ -5727,7 +5743,19 @@
           "named": true
         },
         {
+          "type": "prefix_nospace_op",
+          "named": true
+        },
+        {
+          "type": "prefix_space_op",
+          "named": true
+        },
+        {
           "type": "top_types",
+          "named": true
+        },
+        {
+          "type": "type",
           "named": true
         },
         {
@@ -5936,7 +5964,11 @@
           "named": true
         },
         {
-          "type": "prefix_op",
+          "type": "prefix_nospace_op",
+          "named": true
+        },
+        {
+          "type": "prefix_space_op",
           "named": true
         },
         {
@@ -6175,7 +6207,11 @@
     "named": true
   },
   {
-    "type": "prefix_op",
+    "type": "prefix_nospace_op",
+    "named": true
+  },
+  {
+    "type": "prefix_space_op",
     "named": true
   },
   {

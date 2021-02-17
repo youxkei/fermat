@@ -226,7 +226,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::LIST_OP
         | KindId::ADD_OP
         | KindId::MULT_OP
-        | KindId::PREFIX_OP
+        | KindId::PREFIX_NOSPACE_OP
+        | KindId::PREFIX_SPACE_OP
         | KindId::MAP_OP
         | KindId::COMPREHENSION_OP
         | KindId::VARIABLE
@@ -284,7 +285,7 @@ fn elements_node_to_apposed_layout_expr<'a>(
                 comments = unit!();
             }
 
-            KindId::CATCH => {
+            KindId::CATCH | KindId::PREFIX_SPACE_OP => {
                 result = apposition!(node_to_layout_expr(child, source_code), text!(" "),)
             }
 

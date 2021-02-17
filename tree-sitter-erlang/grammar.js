@@ -138,12 +138,14 @@ module.exports = grammar({
     binary_top_type: ($) =>
       choice(
         seq(choice($.variable, $.macro), alias("::", "bind_op"), $._top_type),
-        seq($.type, alias("|", "union_op"), $._top_type)
+        prec(PREC.bar, seq($.type, alias("|", "union_op"), $._top_type))
       ),
 
     type: ($) =>
       choice(
         $.binary_type,
+        prec(PREC.prefix_op, seq($._prefix_op, $._top_type)),
+        seq("(", $._top_type, ")"),
         $.variable,
         $._atom_or_macro,
         seq(
@@ -216,7 +218,7 @@ module.exports = grammar({
     unary_expr: ($) =>
       choice(
         prec(PREC.catch_, seq("catch", $._expr)),
-        prec(PREC.prefix_op, seq($.prefix_op, $._expr))
+        prec(PREC.prefix_op, seq($._prefix_op, $._expr))
       ),
 
     map_expr: ($) => seq($.map_expr_open, repeatComma($.map_expr_field), "}"),
@@ -285,7 +287,7 @@ module.exports = grammar({
 
     binary_element: ($) =>
       seq(
-        optional($.prefix_op),
+        optional($._prefix_op),
         $._primary_expr,
         optional(seq(":", $._primary_expr)),
         optional(
@@ -480,7 +482,8 @@ module.exports = grammar({
         prec.right(PREC.mult_op, seq($._pat_expr, $.mult_op, $._pat_expr))
       ),
 
-    pat_unary_expr: ($) => seq($.prefix_op, $._pat_expr),
+    pat_unary_expr: ($) =>
+      prec.right(PREC.prefix_op, seq($._prefix_op, $._pat_expr)),
 
     pat_map_expr: ($) =>
       seq($.pat_map_expr_open, repeatComma($.pat_map_expr_field), "}"),
@@ -525,7 +528,7 @@ module.exports = grammar({
 
     pat_binary_element: ($) =>
       seq(
-        optional($.prefix_op),
+        optional($._prefix_op),
         $._pat_primary_expr,
         optional(seq(":", $._pat_primary_expr)),
         optional(
@@ -549,7 +552,11 @@ module.exports = grammar({
     _atomic: ($) =>
       choice($.char, $.integer, $.float, $._atom_or_macro, $.strings),
 
-    prefix_op: (_) => token(choice("+", "-", "bnot", "not")),
+    _prefix_op: ($) => choice($.prefix_nospace_op, $.prefix_space_op),
+
+    prefix_nospace_op: (_) => token(choice("+", "-")),
+
+    prefix_space_op: (_) => token(choice("bnot", "not")),
 
     equal_op: (_) => "=",
 
