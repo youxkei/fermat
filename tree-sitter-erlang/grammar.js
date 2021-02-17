@@ -146,9 +146,14 @@ module.exports = grammar({
         $.binary_type,
         $.variable,
         $._atom_or_macro,
-        seq("fun", "(", optional($.fun_type), ")"),
+        seq(
+          $._atom_or_macro,
+          optional(seq(":", $._atom_or_macro)),
+          optional(seq("(", optional($.top_types), ")"))
+        ),
         $.integer,
-        $.char
+        $.char,
+        seq("fun", "(", optional($.fun_type), ")")
       ),
 
     binary_type: ($) =>
@@ -157,6 +162,7 @@ module.exports = grammar({
         prec.right(PREC.add_op, seq($.type, $.add_op, $.type)),
         prec.right(PREC.mult_op, seq($.type, $.mult_op, $.type))
       ),
+
     other_attribute: ($) =>
       seq($.other_attribute_open, repeatComma1($._expr), ")"),
 
