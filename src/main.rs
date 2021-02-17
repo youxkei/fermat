@@ -79,6 +79,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::TYPE_SIG
         | KindId::TYPE_GUARD
         | KindId::FUN_TYPE_OPEN
+        | KindId::TYPE
         | KindId::OTHER_ATTRIBUTE_OPEN
         | KindId::FUNCTION_CLAUSE_OPEN
         | KindId::CLAUSE_GUARD
@@ -166,6 +167,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
         KindId::BIND_TYPE_GUARD
         | KindId::BINARY_TOP_TYPE
+        | KindId::BINARY_TYPE
         | KindId::BINARY_EXPR
         | KindId::MAP_EXPR_FIELD
         | KindId::RECORD_EXPR_FIELD
@@ -215,6 +217,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::PERIOD_PERIOD_PERIOD
         | KindId::BIND_OP
         | KindId::UNION_OP
+        | KindId::RANGE_OP
         | KindId::ORELSE_OP
         | KindId::ANDALSO_OP
         | KindId::EQUAL_OP
@@ -703,7 +706,10 @@ fn binary_expression_node_to_layout_expr<'a>(
     }
 
     match op_kind_id {
-        KindId::EXCLAM_OP
+        KindId::BIND_OP
+        | KindId::UNION_OP
+        | KindId::RANGE_OP
+        | KindId::EXCLAM_OP
         | KindId::ORELSE_OP
         | KindId::ANDALSO_OP
         | KindId::COMP_OP
@@ -760,16 +766,6 @@ fn binary_expression_node_to_layout_expr<'a>(
                         text!(" "),
                     )
                 ),
-                stack!(comments_between_op_and_rhs, rhs)
-            )
-        }
-
-        KindId::BIND_OP | KindId::UNION_OP => {
-            apposition!(
-                lhs,
-                text!(" "),
-                stack!(comments_between_lhs_and_op, op),
-                text!(" "),
                 stack!(comments_between_op_and_rhs, rhs)
             )
         }

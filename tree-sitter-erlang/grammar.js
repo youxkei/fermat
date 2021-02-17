@@ -33,7 +33,7 @@ const PREC = {
   andalso: 160,
   bar: 170,
   comp_op: 200,
-  doubledot: 200,
+  range_op: 200,
   list_op: 300,
   add_op: 400,
   mult_op: 500,
@@ -133,16 +133,30 @@ module.exports = grammar({
 
     top_types: ($) => repeatComma1($._top_type),
 
-    _top_type: ($) => choice($.binary_top_type, $._type),
+    _top_type: ($) => choice($.binary_top_type, $.type),
 
     binary_top_type: ($) =>
       choice(
         seq(choice($.variable, $.macro), alias("::", "bind_op"), $._top_type),
-        seq($._type, alias("|", "union_op"), $._top_type)
+        seq($.type, alias("|", "union_op"), $._top_type)
       ),
 
-    _type: ($) => choice($.variable, $.macro),
+    type: ($) =>
+      choice(
+        $.binary_type,
+        $.variable,
+        $.macro,
+        seq("fun", "(", optional($.fun_type), ")"),
+        $.integer,
+        $.char
+      ),
 
+    binary_type: ($) =>
+      choice(
+        prec.right(PREC.range_op, seq($.type, alias("..", "range_op"), $.type)),
+        prec.right(PREC.add_op, seq($.type, $.add_op, $.type)),
+        prec.right(PREC.mult_op, seq($.type, $.mult_op, $.type))
+      ),
     other_attribute: ($) =>
       seq($.other_attribute_open, repeatComma1($._expr), ")"),
 
@@ -187,7 +201,7 @@ module.exports = grammar({
         ),
         prec.right(PREC.orelse, seq($._expr, $.orelse_op, $._expr)),
         prec.right(PREC.andalso, seq($._expr, $.andalso_op, $._expr)),
-        prec.nonassoc(PREC.comp_op, seq($._expr, $.comp_op, $._expr)),
+        prec.right(PREC.comp_op, seq($._expr, $.comp_op, $._expr)),
         prec.right(PREC.list_op, seq($._expr, $.list_op, $._expr)),
         prec.right(PREC.add_op, seq($._expr, $.add_op, $._expr)),
         prec.right(PREC.mult_op, seq($._expr, $.mult_op, $._expr))

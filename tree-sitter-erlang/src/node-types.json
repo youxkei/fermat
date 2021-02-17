@@ -576,7 +576,34 @@
           "named": true
         },
         {
+          "type": "type",
+          "named": true
+        },
+        {
           "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "binary_type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "add_op",
+          "named": true
+        },
+        {
+          "type": "mult_op",
+          "named": true
+        },
+        {
+          "type": "type",
           "named": true
         }
       ]
@@ -596,6 +623,10 @@
         },
         {
           "type": "macro",
+          "named": true
+        },
+        {
+          "type": "type",
           "named": true
         },
         {
@@ -1479,11 +1510,7 @@
           "named": true
         },
         {
-          "type": "macro",
-          "named": true
-        },
-        {
-          "type": "variable",
+          "type": "type",
           "named": true
         }
       ]
@@ -5049,11 +5076,7 @@
           "named": true
         },
         {
-          "type": "macro",
-          "named": true
-        },
-        {
-          "type": "variable",
+          "type": "type",
           "named": true
         }
       ]
@@ -5672,6 +5695,41 @@
     }
   },
   {
+    "type": "type",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "binary_type",
+          "named": true
+        },
+        {
+          "type": "char",
+          "named": true
+        },
+        {
+          "type": "fun_type",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "macro",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "type_guard",
     "named": true,
     "fields": {},
@@ -6111,6 +6169,10 @@
   {
     "type": "prefix_op",
     "named": true
+  },
+  {
+    "type": "range_op",
+    "named": false
   },
   {
     "type": "receive",
