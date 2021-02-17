@@ -5703,6 +5703,10 @@
       "required": false,
       "types": [
         {
+          "type": "atom",
+          "named": true
+        },
+        {
           "type": "binary_type",
           "named": true
         },

@@ -145,7 +145,7 @@ module.exports = grammar({
       choice(
         $.binary_type,
         $.variable,
-        $.macro,
+        $._atom_or_macro,
         seq("fun", "(", optional($.fun_type), ")"),
         $.integer,
         $.char

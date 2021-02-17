@@ -614,7 +614,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro"
+          "name": "_atom_or_macro"
         },
         {
           "type": "SEQ",
