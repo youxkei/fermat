@@ -73,7 +73,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE_MFA
         | KindId::SPEC_ATTRIBUTE
-        | KindId::TYPE_SPEC_OPEN
+        | KindId::TYPE_SPEC
+        | KindId::TYPE_SPEC_WITH_PAREN
         | KindId::SPEC_FUN_NAME
         | KindId::TYPE_SIG
         | KindId::TYPE_GUARD
@@ -117,7 +118,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
         KindId::SOURCE_FILE
         | KindId::EXPORT_ATTRIBUTE_MFAS
-        | KindId::TYPE_SPEC
+        | KindId::TYPE_SIGS
         | KindId::TYPE_GUARDS
         | KindId::FUN_TYPE
         | KindId::TOP_TYPES
@@ -459,7 +460,8 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
     match kind_id {
         KindId::SOURCE_FILE => stacked_elements,
 
-        KindId::TYPE_GUARDS
+        KindId::TYPE_SIGS
+        | KindId::TYPE_GUARDS
         | KindId::FUNCTION_CLAUSES
         | KindId::IF_EXPR
         | KindId::CASE_EXPR
@@ -585,21 +587,6 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
 
         KindId::FUN_EXPR_WITH_HEAD => {
             stack!(apposition!(open, text!(" "), stacked_elements,), close)
-        }
-
-        KindId::TYPE_SPEC => {
-            apposition!(
-                open,
-                stack!(
-                    stacked_elements,
-                    if last_comment && !close.is_unit() {
-                        text!("")
-                    } else {
-                        unit!()
-                    }
-                ),
-                close
-            )
         }
 
         KindId::TOP_TYPES | KindId::LIST | KindId::TUPLE => {

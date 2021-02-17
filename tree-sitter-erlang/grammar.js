@@ -102,18 +102,18 @@ module.exports = grammar({
     export_attribute_mfa: ($) =>
       seq($._atom_or_macro, "/", choice($.integer, $.macro)),
 
-    spec_attribute: ($) => seq("-", choice("spec", "callback"), $.type_spec),
-
-    type_spec: ($) =>
-      choice(
-        seq($.type_spec_open, repeatSemicolon1($.type_sig), ")"),
-        seq(
-          alias($.spec_fun_name, $.type_spec_open),
-          repeatSemicolon1($.type_sig)
-        )
+    spec_attribute: ($) =>
+      seq(
+        "-",
+        choice("spec", "callback"),
+        choice($.type_spec, $.type_spec_with_paren)
       ),
 
-    type_spec_open: ($) => seq("(", $.spec_fun_name),
+    type_spec: ($) => seq($.spec_fun_name, $.type_sigs),
+
+    type_spec_with_paren: ($) => seq("(", $.spec_fun_name, $.type_sigs, ")"),
+
+    type_sigs: ($) => repeatSemicolon1($.type_sig),
 
     spec_fun_name: ($) =>
       seq($._atom_or_macro, optional(seq(":", $._atom_or_macro))),

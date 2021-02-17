@@ -11,6 +11,8 @@
 %% ハローワールド
 -spec main(Var) -> Var when Var :: Var, Var :: Var,;
           (?VAR) -> ?VAR when ?VAR :: ?VAR, ?VAR :: ?VAR,;.
+-spec(main(Var) -> Var when Var :: Var, Var :: Var,;
+          (?VAR) -> ?VAR when ?VAR :: ?VAR, ?VAR :: ?VAR,;).
 main(Parameter1 = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 0 + 1 + 2 + 3,
      Parameter2 = 12345678901234567890 + 12345678901234567890,
      Parameter3 = [1, [2, [3, [4, [5, [6, [7, [8, [9, [10, [11, [12]]]]]]]]]]]]
