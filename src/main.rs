@@ -27,7 +27,7 @@ fn main() {
     let source_code = fs::read_to_string(&args[1]).unwrap();
 
     let layout_fun_config = &LayoutFunConfig {
-        right_margin: 120,
+        right_margin: 50,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,

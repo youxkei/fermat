@@ -71,12 +71,10 @@ module.exports = grammar({
     [$.match_clause],
   ],
 
-  inline: ($) => [$.top_type, $.type],
-
   rules: {
     source_file: ($) => repeat1($.form),
 
-    form: ($) => seq(choice($._attribute, $._function_or_macro), "."),
+    form: ($) => seq(choice($._attribute, $.function_clauses), "."),
 
     _attribute: ($) =>
       choice(
@@ -126,31 +124,29 @@ module.exports = grammar({
       choice(seq($._atom_or_macro, "(", $.top_types, ")"), $.bind_type_guard),
 
     bind_type_guard: ($) =>
-      seq(choice($.variable, $.macro), alias("::", "bind_op"), $.top_type),
+      seq(choice($.variable, $.macro), alias("::", "bind_op"), $._top_type),
 
-    fun_type: ($) => seq($.fun_type_open, $.top_type),
+    fun_type: ($) => seq($.fun_type_open, $._top_type),
 
     fun_type_open: ($) =>
       seq("(", optional(choice($.top_types, "...")), ")", "->"),
 
-    top_types: ($) => repeatComma1($.top_type),
+    top_types: ($) => repeatComma1($._top_type),
 
-    top_type: ($) => choice($.binary_top_type, $.type),
+    _top_type: ($) => choice($.binary_top_type, $._type),
 
     binary_top_type: ($) =>
       choice(
-        seq(choice($.variable, $.macro), alias("::", "bind_op"), $.top_type),
-        seq($.type, alias("|", "union_op"), $.top_type)
+        seq(choice($.variable, $.macro), alias("::", "bind_op"), $._top_type),
+        seq($._type, alias("|", "union_op"), $._top_type)
       ),
 
-    type: ($) => choice($.variable, $.macro),
+    _type: ($) => choice($.variable, $.macro),
 
     other_attribute: ($) =>
       seq($.other_attribute_open, repeatComma1($._expr), ")"),
 
     other_attribute_open: ($) => seq("-", $._atom_or_macro, "("),
-
-    _function_or_macro: ($) => choice($.function_clauses /*, $.macro*/),
 
     function_clauses: ($) => repeatSemicolon1($.function_clause),
 
