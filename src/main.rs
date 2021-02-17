@@ -230,6 +230,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::PREFIX_SPACE_OP
         | KindId::MAP_OP
         | KindId::COMPREHENSION_OP
+        | KindId::LIST_TYPE_TAIL
         | KindId::VARIABLE
         | KindId::ATOM
         | KindId::MACRO
@@ -272,6 +273,7 @@ fn elements_node_to_apposed_layout_expr<'a>(
             | KindId::TYPE_SPEC
             | KindId::TYPE_GUARDS
             | KindId::LIST_TAIL
+            | KindId::LIST_TYPE_TAIL
             | KindId::COMPREHENSION_CLAUSE_EXPR
             | KindId::PAT_LIST_TAIL
             | KindId::CASE_EXPR_BEGIN_TAIL

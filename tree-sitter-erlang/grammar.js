@@ -153,6 +153,14 @@ module.exports = grammar({
           optional(seq(":", $._atom_or_macro)),
           optional(seq("(", optional($.top_types), ")"))
         ),
+        seq(
+          "[",
+          optional(
+            seq($._top_type, optional(seq(",", alias("...", "list_type_tail"))))
+          ),
+          "]"
+        ),
+        seq("{", $.top_types, "}"),
         $.integer,
         $.char,
         seq("fun", "(", optional($.fun_type), ")")

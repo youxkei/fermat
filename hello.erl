@@ -13,6 +13,7 @@
           (1 + 2) -> (bnot 3 * +4 .. 5);
           (foobar) -> fun((12345678901234567890) -> 12345678901234567890);
           (integer()) -> fun((hello:some_type()) -> hello:another_type(integer()));
+          () -> {[], [], [integer()], [integer(), ...]};
           (?VAR) -> ?VAR when ?VAR :: ?VAR, ?VAR :: ?VAR,;.
 -spec(main(Var) -> Var when Var :: Var, Var :: Var,;
           (?VAR) -> ?VAR when ?VAR :: ?VAR, ?VAR :: ?VAR,;).
