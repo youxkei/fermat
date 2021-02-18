@@ -49,6 +49,10 @@
         {
           "type": "SYMBOL",
           "name": "other_attribute"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "no_paren_attribute"
         }
       ]
     },
@@ -1223,6 +1227,19 @@
         {
           "type": "STRING",
           "value": "("
+        }
+      ]
+    },
+    "no_paren_attribute": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "-"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_atom_or_macro"
         }
       ]
     },

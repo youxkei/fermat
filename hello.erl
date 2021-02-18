@@ -6,6 +6,9 @@
         ]).
 -include_lib("somelib",).
 
+-ifdef(TEST).
+-else.
+-endif.
 
 
 %% ハローワールド

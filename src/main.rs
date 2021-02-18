@@ -84,6 +84,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::BINARY_BASE_TYPE
         | KindId::BINARY_UNIT_TYPE
         | KindId::OTHER_ATTRIBUTE_OPEN
+        | KindId::NO_PAREN_ATTRIBUTE
         | KindId::FUNCTION_CLAUSE_OPEN
         | KindId::CLAUSE_GUARD
         | KindId::UNARY_EXPR

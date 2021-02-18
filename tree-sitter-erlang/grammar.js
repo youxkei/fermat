@@ -81,11 +81,11 @@ module.exports = grammar({
         $.export_attribute,
         //$.import_attribute,
         //$.record_attribute,
-        //$.file_attribute,
         //$.type_attribute,
         //$.opaque_attribute,
         $.spec_attribute,
-        $.other_attribute
+        $.other_attribute,
+        $.no_paren_attribute
       ),
 
     module_attribute: ($) => seq("-", "module", "(", $._atom_or_macro, ")"),
@@ -205,6 +205,8 @@ module.exports = grammar({
       seq($.other_attribute_open, repeatComma1($._expr), ")"),
 
     other_attribute_open: ($) => seq("-", $._atom_or_macro, "("),
+
+    no_paren_attribute: ($) => seq("-", $._atom_or_macro),
 
     function_clauses: ($) => repeatSemicolon1($.function_clause),
 
