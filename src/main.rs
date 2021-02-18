@@ -80,6 +80,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::TYPE_GUARD
         | KindId::FUN_TYPE_OPEN
         | KindId::TYPE
+        | KindId::BINARY_EXPR_TYPE
+        | KindId::BINARY_BASE_TYPE
+        | KindId::BINARY_UNIT_TYPE
         | KindId::OTHER_ATTRIBUTE_OPEN
         | KindId::FUNCTION_CLAUSE_OPEN
         | KindId::CLAUSE_GUARD
@@ -219,6 +222,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::LESS_HYPHEN
         | KindId::LESS_EQUAL
         | KindId::PERIOD_PERIOD_PERIOD
+        | KindId::ASTERISK
+        | KindId::UNDERSCORE
         | KindId::TYPE_BIND_OP
         | KindId::MAP_TYPE_OP
         | KindId::UNION_OP

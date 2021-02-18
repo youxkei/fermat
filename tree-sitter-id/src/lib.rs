@@ -22,8 +22,10 @@ pub fn define_kind_id(_item: TokenStream) -> TokenStream {
     for kind_id in 1..num_node_kinds {
         let kind_name = language.node_kind_for_id(kind_id).unwrap();
 
-        if language.node_kind_is_visible(kind_id) && &kind_name[0..1] != "_" {
-            kind_ids.push((kind_id, identize(kind_name).to_ascii_uppercase()));
+        if language.node_kind_is_visible(kind_id) {
+            if kind_name.len() == 1 || (kind_name.len() > 1 && &kind_name[0..1] != "_") {
+                kind_ids.push((kind_id, identize(kind_name).to_ascii_uppercase()));
+            }
         }
     }
 
@@ -117,6 +119,8 @@ fn identize(token: &str) -> &str {
         "<-" => "LESS_HYPHEN",
         "<=" => "LESS_EQUAL",
         "..." => "PERIOD_PERIOD_PERIOD",
+        "*" => "ASTERISK",
+        "_" => "UNDERSCORE",
         _ => token,
     }
 }

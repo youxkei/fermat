@@ -162,6 +162,7 @@ module.exports = grammar({
         seq("#", "{", optional($.map_field_types), "}"),
         seq("{", $.top_types, "}"),
         seq("#", $._atom_or_macro, "{", optional($.record_field_types), "}"),
+        $.binary_expr_type,
         $.integer,
         $.char,
         seq("fun", "(", optional($.fun_type), ")")
@@ -182,6 +183,23 @@ module.exports = grammar({
 
     record_field_type: ($) =>
       seq($._atom_or_macro, $.type_bind_op, $._top_type),
+
+    binary_expr_type: ($) =>
+      seq(
+        "<<",
+        optional(
+          choice(
+            $.binary_base_type,
+            $.binary_unit_type,
+            seq($.binary_base_type, ",", $.binary_unit_type)
+          )
+        ),
+        ">>"
+      ),
+
+    binary_base_type: ($) => seq("_", ":", $.type),
+
+    binary_unit_type: ($) => seq("_", ":", "_", "*", $.type),
 
     other_attribute: ($) =>
       seq($.other_attribute_open, repeatComma1($._expr), ")"),
