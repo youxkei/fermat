@@ -123,6 +123,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::TYPE_GUARDS
         | KindId::FUN_TYPE
         | KindId::TOP_TYPES
+        | KindId::MAP_FIELD_TYPES
+        | KindId::RECORD_FIELD_TYPES
         | KindId::OTHER_ATTRIBUTE
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE
@@ -168,6 +170,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         KindId::BIND_TYPE_GUARD
         | KindId::BINARY_TOP_TYPE
         | KindId::BINARY_TYPE
+        | KindId::MAP_FIELD_TYPE
+        | KindId::RECORD_FIELD_TYPE
         | KindId::BINARY_EXPR
         | KindId::MAP_EXPR_FIELD
         | KindId::RECORD_EXPR_FIELD
@@ -215,7 +219,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::LESS_HYPHEN
         | KindId::LESS_EQUAL
         | KindId::PERIOD_PERIOD_PERIOD
-        | KindId::BIND_OP
+        | KindId::TYPE_BIND_OP
+        | KindId::MAP_TYPE_OP
         | KindId::UNION_OP
         | KindId::RANGE_OP
         | KindId::ORELSE_OP
@@ -468,6 +473,8 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
 
         KindId::TYPE_SIGS
         | KindId::TYPE_GUARDS
+        | KindId::MAP_FIELD_TYPES
+        | KindId::RECORD_FIELD_TYPES
         | KindId::FUNCTION_CLAUSES
         | KindId::IF_EXPR
         | KindId::CASE_EXPR
@@ -709,8 +716,7 @@ fn binary_expression_node_to_layout_expr<'a>(
     }
 
     match op_kind_id {
-        KindId::BIND_OP
-        | KindId::UNION_OP
+        KindId::UNION_OP
         | KindId::RANGE_OP
         | KindId::EXCLAM_OP
         | KindId::ORELSE_OP
@@ -747,7 +753,7 @@ fn binary_expression_node_to_layout_expr<'a>(
             )
         }
 
-        KindId::EQUAL_OP | KindId::MAP_OP => {
+        KindId::TYPE_BIND_OP | KindId::MAP_TYPE_OP | KindId::EQUAL_OP | KindId::MAP_OP => {
             apposition!(
                 choice!(
                     stack!(

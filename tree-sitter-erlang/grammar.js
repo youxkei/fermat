@@ -123,7 +123,7 @@ module.exports = grammar({
       choice(seq($._atom_or_macro, "(", $.top_types, ")"), $.bind_type_guard),
 
     bind_type_guard: ($) =>
-      seq(choice($.variable, $.macro), alias("::", "bind_op"), $._top_type),
+      seq(choice($.variable, $.macro), $.type_bind_op, $._top_type),
 
     fun_type: ($) => seq($.fun_type_open, $._top_type),
 
@@ -136,7 +136,7 @@ module.exports = grammar({
 
     binary_top_type: ($) =>
       choice(
-        seq(choice($.variable, $.macro), alias("::", "bind_op"), $._top_type),
+        seq(choice($.variable, $.macro), $.type_bind_op, $._top_type),
         prec(PREC.union, seq($.type, alias("|", "union_op"), $._top_type))
       ),
 
@@ -159,7 +159,9 @@ module.exports = grammar({
           ),
           "]"
         ),
+        seq("#", "{", optional($.map_field_types), "}"),
         seq("{", $.top_types, "}"),
+        seq("#", $._atom_or_macro, "{", optional($.record_field_types), "}"),
         $.integer,
         $.char,
         seq("fun", "(", optional($.fun_type), ")")
@@ -171,6 +173,15 @@ module.exports = grammar({
         prec.right(PREC.add, seq($.type, $.add_op, $.type)),
         prec.right(PREC.mult, seq($.type, $.mult_op, $.type))
       ),
+
+    map_field_types: ($) => repeatComma1($.map_field_type),
+
+    map_field_type: ($) => seq($._top_type, $.map_type_op, $._top_type),
+
+    record_field_types: ($) => repeatComma1($.record_field_type),
+
+    record_field_type: ($) =>
+      seq($._atom_or_macro, $.type_bind_op, $._top_type),
 
     other_attribute: ($) =>
       seq($.other_attribute_open, repeatComma1($._expr), ")"),
@@ -586,6 +597,10 @@ module.exports = grammar({
     map_op: (_) => token(choice("=>", ":=")),
 
     comprehension_op: (_) => "||",
+
+    type_bind_op: (_) => "::",
+
+    map_type_op: (_) => token(choice("=>", ":=")),
 
     variable: (_) => token(/[A-Z_][a-zA-Z0-9_]*/),
 
