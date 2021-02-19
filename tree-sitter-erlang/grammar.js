@@ -507,7 +507,8 @@ module.exports = grammar({
 
     fun_clause: ($) => seq($.fun_clause_open, repeatComma1($._expr)),
 
-    fun_clause_open: ($) => seq($.pat_parameters, "->"),
+    fun_clause_open: ($) =>
+      seq($.pat_parameters, optional($.clause_guard), "->"),
 
     fun_expr_with_head: ($) =>
       seq(
@@ -519,7 +520,8 @@ module.exports = grammar({
     fun_clause_with_head: ($) =>
       seq($.fun_clause_with_head_open, repeatComma1($._expr)),
 
-    fun_clause_with_head_open: ($) => seq($.variable, $.pat_parameters, "->"),
+    fun_clause_with_head_open: ($) =>
+      seq($.variable, $.pat_parameters, optional($.clause_guard), "->"),
 
     _pat_expr: ($) =>
       choice(
