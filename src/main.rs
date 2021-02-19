@@ -72,6 +72,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::MODULE_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE_MFA
+        | KindId::TYPE_ATTRIBUTE_BEGIN
+        | KindId::TYPE_ATTRIBUTE_NAME
         | KindId::SPEC_ATTRIBUTE
         | KindId::TYPE_SPEC
         | KindId::TYPE_SPEC_WITH_PAREN
@@ -123,6 +125,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
 
         KindId::SOURCE_FILE
         | KindId::EXPORT_ATTRIBUTE_MFAS
+        | KindId::TYPE_ATTRIBUTE_PARAMETERS
         | KindId::TYPE_SIGS
         | KindId::TYPE_GUARDS
         | KindId::FUN_TYPE
@@ -171,7 +174,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::PAT_TUPLE
         | KindId::STRINGS => elements_node_to_layout_expr(node, source_code),
 
-        KindId::BIND_TYPE_GUARD
+        KindId::TYPE_ATTRIBUTE
+        | KindId::BIND_TYPE_GUARD
         | KindId::BINARY_TOP_TYPE
         | KindId::BINARY_TYPE
         | KindId::MAP_FIELD_TYPE
@@ -199,6 +203,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::FUN_OPEN
         | KindId::MODULE
         | KindId::EXPORT
+        | KindId::TYPE_OR_OPAQUE
         | KindId::SPEC
         | KindId::CALLBACK
         | KindId::WHEN
@@ -281,6 +286,7 @@ fn elements_node_to_apposed_layout_expr<'a>(
             | KindId::GUARD
             | KindId::BAR
             | KindId::OF
+            | KindId::TYPE_ATTRIBUTE_NAME
             | KindId::TYPE_SPEC
             | KindId::TYPE_GUARDS
             | KindId::LIST_TAIL
@@ -630,7 +636,8 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::OTHER_ATTRIBUTE
+        KindId::TYPE_ATTRIBUTE_PARAMETERS
+        | KindId::OTHER_ATTRIBUTE
         | KindId::PAT_ARGUMENT_LIST
         | KindId::GUARD
         | KindId::EXPRS

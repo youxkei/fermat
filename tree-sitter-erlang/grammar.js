@@ -81,8 +81,7 @@ module.exports = grammar({
         $.export_attribute,
         //$.import_attribute,
         //$.record_attribute,
-        //$.type_attribute,
-        //$.opaque_attribute,
+        $.type_attribute,
         $.spec_attribute,
         $.other_attribute,
         $.no_paren_attribute
@@ -98,6 +97,22 @@ module.exports = grammar({
 
     export_attribute_mfa: ($) =>
       seq($._atom_or_macro, "/", choice($.integer, $.macro)),
+
+    type_attribute: ($) =>
+      seq($.type_attribute_begin, $.type_bind_op, $._top_type),
+
+    type_attribute_begin: ($) =>
+      seq(
+        "-",
+        alias(token(choice("type", "opaque")), "type_or_opaque"),
+        $.type_attribute_name,
+        $.type_attribute_parameters
+      ),
+
+    type_attribute_name: ($) => $._atom_or_macro,
+
+    type_attribute_parameters: ($) =>
+      seq("(", repeatComma(choice($.variable, $.macro)), ")"),
 
     spec_attribute: ($) =>
       seq(

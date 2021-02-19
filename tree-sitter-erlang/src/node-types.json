@@ -1202,6 +1202,10 @@
         {
           "type": "spec_attribute",
           "named": true
+        },
+        {
+          "type": "type_attribute",
+          "named": true
         }
       ]
     }
@@ -5952,6 +5956,90 @@
     }
   },
   {
+    "type": "type_attribute",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "binary_top_type",
+          "named": true
+        },
+        {
+          "type": "type",
+          "named": true
+        },
+        {
+          "type": "type_attribute_begin",
+          "named": true
+        },
+        {
+          "type": "type_bind_op",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "type_attribute_begin",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "type_attribute_name",
+          "named": true
+        },
+        {
+          "type": "type_attribute_parameters",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "type_attribute_name",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "macro",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "type_attribute_parameters",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "macro",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "type_guard",
     "named": true,
     "fields": {},
@@ -6423,6 +6511,10 @@
   {
     "type": "type_bind_op",
     "named": true
+  },
+  {
+    "type": "type_or_opaque",
+    "named": false
   },
   {
     "type": "union_op",

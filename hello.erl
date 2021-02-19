@@ -10,6 +10,9 @@
 -else.
 -endif.
 
+-type some_type(Var,) :: integer() | string().
+-opaque opaque_type() :: integer() | string().
+
 
 %% ハローワールド
 -spec main(Var) -> Var when Var :: Var, Var :: Var,;
