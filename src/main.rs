@@ -82,7 +82,6 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::TYPE_GUARD
         | KindId::FUN_TYPE_OPEN
         | KindId::TYPE
-        | KindId::BINARY_EXPR_TYPE
         | KindId::BINARY_BASE_TYPE
         | KindId::BINARY_UNIT_TYPE
         | KindId::OTHER_ATTRIBUTE_OPEN
@@ -132,6 +131,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::TOP_TYPES
         | KindId::MAP_FIELD_TYPES
         | KindId::RECORD_FIELD_TYPES
+        | KindId::BINARY_EXPR_TYPE
         | KindId::OTHER_ATTRIBUTE
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE
@@ -637,6 +637,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
         }
 
         KindId::TYPE_ATTRIBUTE_PARAMETERS
+        | KindId::BINARY_EXPR_TYPE
         | KindId::OTHER_ATTRIBUTE
         | KindId::PAT_PARAMETERS
         | KindId::GUARD
