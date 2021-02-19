@@ -135,7 +135,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::OTHER_ATTRIBUTE
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE
-        | KindId::PAT_ARGUMENT_LIST
+        | KindId::PAT_PARAMETERS
         | KindId::MAP_EXPR
         | KindId::FUNCTION_CALL
         | KindId::RECORD_EXPR
@@ -638,7 +638,7 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
 
         KindId::TYPE_ATTRIBUTE_PARAMETERS
         | KindId::OTHER_ATTRIBUTE
-        | KindId::PAT_ARGUMENT_LIST
+        | KindId::PAT_PARAMETERS
         | KindId::GUARD
         | KindId::EXPRS
         | KindId::BINARY

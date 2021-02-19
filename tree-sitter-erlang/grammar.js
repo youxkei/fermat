@@ -228,14 +228,9 @@ module.exports = grammar({
     function_clause: ($) => seq($.function_clause_open, repeatComma1($._expr)),
 
     function_clause_open: ($) =>
-      seq(
-        $._atom_or_macro,
-        $.pat_argument_list,
-        optional($.clause_guard),
-        "->"
-      ),
+      seq($._atom_or_macro, $.pat_parameters, optional($.clause_guard), "->"),
 
-    pat_argument_list: ($) => seq("(", repeatComma($._pat_expr), ")"),
+    pat_parameters: ($) => seq("(", repeatComma($._pat_expr), ")"),
 
     clause_guard: ($) => seq("when", $.guard),
 
@@ -496,7 +491,7 @@ module.exports = grammar({
 
     fun_clause: ($) => seq($.fun_clause_open, repeatComma1($._expr)),
 
-    fun_clause_open: ($) => seq($.pat_argument_list, "->"),
+    fun_clause_open: ($) => seq($.pat_parameters, "->"),
 
     fun_expr_with_head: ($) =>
       seq(
@@ -508,8 +503,7 @@ module.exports = grammar({
     fun_clause_with_head: ($) =>
       seq($.fun_clause_with_head_open, repeatComma1($._expr)),
 
-    fun_clause_with_head_open: ($) =>
-      seq($.variable, $.pat_argument_list, "->"),
+    fun_clause_with_head_open: ($) => seq($.variable, $.pat_parameters, "->"),
 
     _pat_expr: ($) =>
       choice(
