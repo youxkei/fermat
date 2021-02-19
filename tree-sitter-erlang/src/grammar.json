@@ -2241,6 +2241,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "record_expr"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "record_index_expr"
                 }
               ]
             },

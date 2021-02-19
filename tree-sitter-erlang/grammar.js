@@ -298,7 +298,7 @@ module.exports = grammar({
 
     record_index_expr: ($) =>
       seq(
-        optional(choice($._primary_expr, $.record_expr)),
+        optional(choice($._primary_expr, $.record_expr, $.record_index_expr)),
         "#",
         $._atom_or_macro,
         ".",

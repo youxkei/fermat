@@ -5424,6 +5424,10 @@
           "named": true
         },
         {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
           "type": "strings",
           "named": true
         },
