@@ -72,6 +72,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::MODULE_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE_MFA
+        | KindId::RECORD_ATTRIBUTE_OPEN
         | KindId::TYPE_ATTRIBUTE_BEGIN
         | KindId::TYPE_ATTRIBUTE_NAME
         | KindId::SPEC_ATTRIBUTE
@@ -125,6 +126,8 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         KindId::SOURCE_FILE
         | KindId::EXPORT_ATTRIBUTE_MFAS
         | KindId::TYPE_ATTRIBUTE_PARAMETERS
+        | KindId::RECORD_ATTRIBUTE
+        | KindId::RECORD_FIELDS
         | KindId::TYPE_SIGS
         | KindId::TYPE_GUARDS
         | KindId::FUN_TYPE
@@ -174,7 +177,9 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::PAT_TUPLE
         | KindId::STRINGS => elements_node_to_layout_expr(node, source_code),
 
-        KindId::TYPE_ATTRIBUTE
+        KindId::RECORD_FIELD
+        | KindId::RECORD_FIELD_NAME_WITH_DEFAULT_VALUE
+        | KindId::TYPE_ATTRIBUTE
         | KindId::BIND_TYPE_GUARD
         | KindId::BINARY_TOP_TYPE
         | KindId::BINARY_TYPE
@@ -203,6 +208,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::FUN_OPEN
         | KindId::MODULE
         | KindId::EXPORT
+        | KindId::RECORD
         | KindId::TYPE_OR_OPAQUE
         | KindId::SPEC
         | KindId::CALLBACK
@@ -636,7 +642,9 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
             }
         }
 
-        KindId::TYPE_ATTRIBUTE_PARAMETERS
+        KindId::RECORD_ATTRIBUTE
+        | KindId::RECORD_FIELDS
+        | KindId::TYPE_ATTRIBUTE_PARAMETERS
         | KindId::BINARY_EXPR_TYPE
         | KindId::OTHER_ATTRIBUTE
         | KindId::PAT_PARAMETERS
@@ -792,6 +800,8 @@ fn binary_expression_node_to_layout_expr<'a>(
                 stack!(comments_between_op_and_rhs, rhs)
             )
         }
+
+        KindId::ERROR => lhs,
 
         _ => panic!("{:?} is not covered", op_kind_id),
     }

@@ -80,7 +80,7 @@ module.exports = grammar({
         $.module_attribute,
         $.export_attribute,
         //$.import_attribute,
-        //$.record_attribute,
+        $.record_attribute,
         $.type_attribute,
         $.spec_attribute,
         $.other_attribute,
@@ -97,6 +97,22 @@ module.exports = grammar({
 
     export_attribute_mfa: ($) =>
       seq($._atom_or_macro, "/", choice($.integer, $.macro)),
+
+    record_attribute: ($) =>
+      seq($.record_attribute_open, $._atom_or_macro, ",", $.record_fields, ")"),
+
+    record_attribute_open: ($) => seq("-", "record", "("),
+
+    record_fields: ($) => seq("{", repeatComma($.record_field), "}"),
+
+    record_field: ($) =>
+      seq(
+        $.record_field_name_with_default_value,
+        optional(seq($.type_bind_op, $._top_type))
+      ),
+
+    record_field_name_with_default_value: ($) =>
+      seq($._atom_or_macro, optional(seq($.equal_op, $._expr))),
 
     type_attribute: ($) =>
       seq($.type_attribute_begin, $.type_bind_op, $._top_type),

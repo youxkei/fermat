@@ -13,6 +13,11 @@
 -type some_type(Var,) :: integer() | string().
 -opaque opaque_type() :: integer() | string().
 
+-record(some_record, {field1,
+                      field2 = field2,
+                      field3 :: fieled3,
+                      field4 = field4 :: field4,}).
+
 
 %% ハローワールド
 -spec main(Var) -> Var when Var :: Var, Var :: Var,;

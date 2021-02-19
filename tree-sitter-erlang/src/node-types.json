@@ -1200,6 +1200,10 @@
           "named": true
         },
         {
+          "type": "record_attribute",
+          "named": true
+        },
+        {
           "type": "spec_attribute",
           "named": true
         },
@@ -4700,6 +4704,38 @@
     }
   },
   {
+    "type": "record_attribute",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "macro",
+          "named": true
+        },
+        {
+          "type": "record_attribute_open",
+          "named": true
+        },
+        {
+          "type": "record_fields",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_attribute_open",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "record_expr",
     "named": true,
     "fields": {},
@@ -4941,6 +4977,156 @@
     }
   },
   {
+    "type": "record_field",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "binary_top_type",
+          "named": true
+        },
+        {
+          "type": "record_field_name_with_default_value",
+          "named": true
+        },
+        {
+          "type": "type",
+          "named": true
+        },
+        {
+          "type": "type_bind_op",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_field_name_with_default_value",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
+          "type": "binary",
+          "named": true
+        },
+        {
+          "type": "binary_comprehension",
+          "named": true
+        },
+        {
+          "type": "binary_expr",
+          "named": true
+        },
+        {
+          "type": "case_expr",
+          "named": true
+        },
+        {
+          "type": "char",
+          "named": true
+        },
+        {
+          "type": "equal_op",
+          "named": true
+        },
+        {
+          "type": "float",
+          "named": true
+        },
+        {
+          "type": "fun_expr",
+          "named": true
+        },
+        {
+          "type": "fun_expr_with_head",
+          "named": true
+        },
+        {
+          "type": "fun_ref_expr",
+          "named": true
+        },
+        {
+          "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "if_expr",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "list_comprehension",
+          "named": true
+        },
+        {
+          "type": "macro",
+          "named": true
+        },
+        {
+          "type": "map_expr",
+          "named": true
+        },
+        {
+          "type": "paren_expr",
+          "named": true
+        },
+        {
+          "type": "receive_expr",
+          "named": true
+        },
+        {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
+          "type": "strings",
+          "named": true
+        },
+        {
+          "type": "try_expr",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "unary_expr",
+          "named": true
+        },
+        {
+          "type": "variable",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "record_field_type",
     "named": true,
     "fields": {},
@@ -4981,6 +5167,21 @@
       "types": [
         {
           "type": "record_field_type",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "record_fields",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "record_field",
           "named": true
         }
       ]
@@ -6498,6 +6699,10 @@
   },
   {
     "type": "receive",
+    "named": false
+  },
+  {
+    "type": "record",
     "named": false
   },
   {
