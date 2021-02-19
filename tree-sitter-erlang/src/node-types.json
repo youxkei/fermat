@@ -172,11 +172,115 @@
       "required": true,
       "types": [
         {
+          "type": "atom",
+          "named": true
+        },
+        {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
+          "type": "binary",
+          "named": true
+        },
+        {
+          "type": "binary_comprehension",
+          "named": true
+        },
+        {
+          "type": "binary_expr",
+          "named": true
+        },
+        {
+          "type": "case_expr",
+          "named": true
+        },
+        {
+          "type": "char",
+          "named": true
+        },
+        {
           "type": "comprehension_clause_expr",
           "named": true
         },
         {
-          "type": "pat_binary",
+          "type": "float",
+          "named": true
+        },
+        {
+          "type": "fun_expr",
+          "named": true
+        },
+        {
+          "type": "fun_expr_with_head",
+          "named": true
+        },
+        {
+          "type": "fun_ref_expr",
+          "named": true
+        },
+        {
+          "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "if_expr",
+          "named": true
+        },
+        {
+          "type": "integer",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "list_comprehension",
+          "named": true
+        },
+        {
+          "type": "macro",
+          "named": true
+        },
+        {
+          "type": "map_expr",
+          "named": true
+        },
+        {
+          "type": "paren_expr",
+          "named": true
+        },
+        {
+          "type": "receive_expr",
+          "named": true
+        },
+        {
+          "type": "record_expr",
+          "named": true
+        },
+        {
+          "type": "record_index_expr",
+          "named": true
+        },
+        {
+          "type": "strings",
+          "named": true
+        },
+        {
+          "type": "try_expr",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "unary_expr",
+          "named": true
+        },
+        {
+          "type": "variable",
           "named": true
         }
       ]
@@ -2340,6 +2444,26 @@
           "named": true
         },
         {
+          "type": "begin_end_expr",
+          "named": true
+        },
+        {
+          "type": "binary",
+          "named": true
+        },
+        {
+          "type": "binary_comprehension",
+          "named": true
+        },
+        {
+          "type": "binary_expr",
+          "named": true
+        },
+        {
+          "type": "case_expr",
+          "named": true
+        },
+        {
           "type": "char",
           "named": true
         },
@@ -2352,7 +2476,35 @@
           "named": true
         },
         {
+          "type": "fun_expr",
+          "named": true
+        },
+        {
+          "type": "fun_expr_with_head",
+          "named": true
+        },
+        {
+          "type": "fun_ref_expr",
+          "named": true
+        },
+        {
+          "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "if_expr",
+          "named": true
+        },
+        {
           "type": "integer",
+          "named": true
+        },
+        {
+          "type": "list",
+          "named": true
+        },
+        {
+          "type": "list_comprehension",
           "named": true
         },
         {
@@ -2360,43 +2512,39 @@
           "named": true
         },
         {
-          "type": "pat_binary",
+          "type": "map_expr",
           "named": true
         },
         {
-          "type": "pat_binary_expr",
+          "type": "paren_expr",
           "named": true
         },
         {
-          "type": "pat_list",
+          "type": "receive_expr",
           "named": true
         },
         {
-          "type": "pat_map_expr",
+          "type": "record_expr",
           "named": true
         },
         {
-          "type": "pat_paren_expr",
-          "named": true
-        },
-        {
-          "type": "pat_record_expr",
-          "named": true
-        },
-        {
-          "type": "pat_record_index_expr",
-          "named": true
-        },
-        {
-          "type": "pat_tuple",
-          "named": true
-        },
-        {
-          "type": "pat_unary_expr",
+          "type": "record_index_expr",
           "named": true
         },
         {
           "type": "strings",
+          "named": true
+        },
+        {
+          "type": "try_expr",
+          "named": true
+        },
+        {
+          "type": "tuple",
+          "named": true
+        },
+        {
+          "type": "unary_expr",
           "named": true
         },
         {

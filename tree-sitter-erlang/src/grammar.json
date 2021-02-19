@@ -2877,15 +2877,28 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_pat_expr"
+          "name": "_expr"
         },
         {
-          "type": "STRING",
-          "value": "<-"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "comprehension_clause_expr"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "<-"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "comprehension_clause_expr"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },
@@ -2969,15 +2982,28 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "pat_binary"
+          "name": "_expr"
         },
         {
-          "type": "STRING",
-          "value": "<="
-        },
-        {
-          "type": "SYMBOL",
-          "name": "comprehension_clause_expr"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "<="
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "comprehension_clause_expr"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
       ]
     },

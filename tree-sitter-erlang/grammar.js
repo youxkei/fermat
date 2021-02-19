@@ -377,7 +377,7 @@ module.exports = grammar({
       repeatComma1($.list_comprehension_clause),
 
     list_comprehension_clause: ($) =>
-      seq($._pat_expr, "<-", $.comprehension_clause_expr),
+      seq($._expr, optional(seq("<-", $.comprehension_clause_expr))),
 
     list_comprehension_clause_expr: ($) => $._expr,
 
@@ -391,7 +391,7 @@ module.exports = grammar({
       repeatComma1($.binary_comprehension_clause),
 
     binary_comprehension_clause: ($) =>
-      seq($.pat_binary, "<=", $.comprehension_clause_expr),
+      seq($._expr, optional(seq("<=", $.comprehension_clause_expr))),
 
     comprehension_clause_expr: ($) => $._expr,
 
