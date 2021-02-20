@@ -635,8 +635,13 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "STRING",
-                  "value": "when"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "STRING",
+                    "value": "when"
+                  },
+                  "named": false,
+                  "value": "when_op"
                 },
                 {
                   "type": "SYMBOL",

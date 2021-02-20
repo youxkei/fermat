@@ -6894,6 +6894,10 @@
     "named": false
   },
   {
+    "type": "when_op",
+    "named": false
+  },
+  {
     "type": "{",
     "named": false
   },

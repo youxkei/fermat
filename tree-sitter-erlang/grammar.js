@@ -146,7 +146,8 @@ module.exports = grammar({
     spec_fun_name: ($) =>
       seq($._atom_or_macro, optional(seq(":", $._atom_or_macro))),
 
-    type_sig: ($) => seq($.fun_type, optional(seq("when", $.type_guards))),
+    type_sig: ($) =>
+      seq($.fun_type, optional(seq(alias("when", "when_op"), $.type_guards))),
 
     type_guards: ($) => repeatComma1($.type_guard),
 

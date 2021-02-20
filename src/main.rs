@@ -79,7 +79,6 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::TYPE_SPEC
         | KindId::TYPE_SPEC_WITH_PAREN
         | KindId::SPEC_FUN_NAME
-        | KindId::TYPE_SIG
         | KindId::TYPE_GUARD
         | KindId::FUN_TYPE_OPEN
         | KindId::TYPE
@@ -180,6 +179,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         KindId::RECORD_FIELD
         | KindId::RECORD_FIELD_NAME_WITH_DEFAULT_VALUE
         | KindId::TYPE_ATTRIBUTE
+        | KindId::TYPE_SIG
         | KindId::BIND_TYPE_GUARD
         | KindId::BINARY_TOP_TYPE
         | KindId::BINARY_TYPE
@@ -252,6 +252,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::PREFIX_SPACE_OP
         | KindId::MAP_OP
         | KindId::COMPREHENSION_OP
+        | KindId::WHEN_OP
         | KindId::LIST_TYPE_TAIL
         | KindId::VARIABLE
         | KindId::ATOM
@@ -747,7 +748,8 @@ fn binary_expression_node_to_layout_expr<'a>(
         | KindId::LIST_OP
         | KindId::ADD_OP
         | KindId::MULT_OP
-        | KindId::COMPREHENSION_OP => {
+        | KindId::COMPREHENSION_OP
+        | KindId::WHEN_OP => {
             apposition!(
                 choice!(
                     stack!(
