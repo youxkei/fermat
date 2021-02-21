@@ -133,6 +133,7 @@ main(Parameter1 = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 0 + 1 + 2 + 3,
     [
      %% comment
     ],
+    "This is a string literal. \b \d \e \f \e \r \s \t \v \123 \23 \3 \xFE \^C \^V \' \" \\",
     io:format("Lorem ipsum dolor sit amet") % comment 1
     , % comment 2
     ; % comment 3

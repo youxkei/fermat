@@ -101,7 +101,7 @@ module.exports = grammar({
     record_attribute: ($) =>
       seq($.record_attribute_open, $._atom_or_macro, ",", $.record_fields, ")"),
 
-    record_attribute_open: ($) => seq("-", "record", "("),
+    record_attribute_open: (_) => seq("-", "record", "("),
 
     record_fields: ($) => seq("{", repeatComma($.record_field), "}"),
 
@@ -675,13 +675,8 @@ module.exports = grammar({
     string: ($) =>
       seq(
         '"',
-        repeat(choice(token.immediate(prec(1, /[^"\\]+/)), $._escape_sequence)),
+        repeat(token.immediate(choice(prec(1, /[^"\\]+/), seq("\\", /./)))),
         '"'
-      ),
-
-    _escape_sequence: (_) =>
-      token.immediate(
-        seq("\\", choice(/[^xuU]/, /\d{1,3}/, /x[0-9a-fA-F]{1,}/))
       ),
 
     comment: (_) => /%[^%].*/,
