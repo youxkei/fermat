@@ -8,6 +8,8 @@ edition = "2018"
 tree-sitter = "0.17"
 itertools = "0.10.0"
 tree-sitter-id = { path = "tree-sitter-id" }
+structopt = { version = "0.3", features = [ "paw" ] }
+paw = "1.0"
 
 [build-dependencies]
 cc = "1.0"

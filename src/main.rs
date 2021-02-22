@@ -4,10 +4,11 @@ mod avltree;
 mod layout_expr;
 mod layout_fun;
 
-use std::env::args;
 use std::fs;
-use std::iter::repeat;
+use std::path::PathBuf;
 use std::rc::Rc;
+
+use structopt::{clap::ArgGroup, StructOpt};
 
 use tree_sitter::{Language, Node, Parser};
 
@@ -22,9 +23,29 @@ extern "C" {
 
 tree_sitter_id::define_kind_id! {}
 
-fn main() {
-    let args: Vec<String> = args().collect();
-    let source_code = fs::read_to_string(&args[1]).unwrap();
+/// A source code formatter for Erlang.
+/// By default, output is written to stdout.
+#[derive(StructOpt)]
+struct Args {
+    /// Check if the given file is formatted or not.
+    /// When the file is not formatted, fermat exits with the status code 1.
+    /// With this option, fermat doesn't write output to stdout.
+    #[structopt(short, long, conflicts_with("write"))]
+    check: bool,
+
+    /// Edit file in-place.
+    /// With this option, fermat doesn't write output to stdout.
+    #[structopt(short, long, conflicts_with("check"))]
+    write: bool,
+
+    /// A file to be formatted
+    #[structopt(name = "FILE", parse(from_os_str))]
+    file: PathBuf,
+}
+
+#[paw::main]
+fn main(args: Args) -> std::io::Result<()> {
+    let source_code = fs::read_to_string(&args.file)?;
 
     let layout_fun_config = &LayoutFunConfig {
         right_margin: 120,
@@ -34,13 +55,24 @@ fn main() {
         max_choice_nest_level: 10,
     };
 
-    println!(
-        "{}|\n{}",
-        repeat(' ')
-            .take((layout_fun_config.right_margin - 1) as usize)
-            .collect::<String>(),
-        format(&source_code, layout_fun_config)
-    );
+    let formatted = format(&source_code, layout_fun_config);
+
+    if args.check {
+        if source_code == formatted {
+            std::process::exit(0);
+        } else {
+            std::process::exit(1);
+        }
+    }
+
+    if args.write {
+        fs::write(&args.file, formatted)?;
+        return Ok(());
+    }
+
+    print!("{}", formatted);
+
+    Ok(())
 }
 
 fn format(source_code: &str, layout_fun_config: &LayoutFunConfig) -> String {
