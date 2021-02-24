@@ -8,7 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use structopt::{clap::ArgGroup, StructOpt};
+use structopt::StructOpt;
 
 use tree_sitter::{Language, Node, Parser};
 
@@ -81,7 +81,7 @@ fn format(source_code: &str, layout_fun_config: &LayoutFunConfig) -> String {
 
     let calculated = layout_fun.at(0);
 
-    calculated.layout_expr.format(0, false).0
+    calculated.layout_expr.format(0, false).0 + "\n"
 }
 
 fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
@@ -1251,14 +1251,14 @@ mod format_test {
             let source_code = $source_code;
 
             pretty_assertions::assert_eq!(
-                format(source_code, &$layout_fun_config) + "\n",
+                format(source_code, &$layout_fun_config),
                 source_code
             )
         }},
 
         ($layout_fun_config:expr, $source_code:expr, $expected:expr $(,)?) => {
             pretty_assertions::assert_eq!(
-                format($source_code, &$layout_fun_config) + "\n",
+                format($source_code, &$layout_fun_config),
                 $expected
             )
         },
