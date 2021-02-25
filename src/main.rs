@@ -240,6 +240,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::FUN_OPEN
         | KindId::MODULE
         | KindId::EXPORT
+        | KindId::EXPORT_TYPE
         | KindId::RECORD
         | KindId::TYPE_OR_OPAQUE
         | KindId::SPEC

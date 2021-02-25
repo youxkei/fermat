@@ -90,7 +90,13 @@ module.exports = grammar({
     module_attribute: ($) => seq("-", "module", "(", $._atom_or_macro, ")"),
 
     export_attribute: ($) =>
-      seq("-", "export", "(", $.export_attribute_mfas, ")"),
+      seq(
+        "-",
+        choice("export", "export_type"),
+        "(",
+        $.export_attribute_mfas,
+        ")"
+      ),
 
     export_attribute_mfas: ($) =>
       seq("[", repeatComma1($.export_attribute_mfa), "]"),
