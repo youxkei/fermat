@@ -1,6 +1,6 @@
 ---
 source: src/layout_fun.rs
-expression: "LayoutFun::text(\"foo\",\n                &Config{right_margin: 5,\n                        newline_cost: 1,\n                        beyond_right_margin_cost: 100,\n                        height_cost: 10000,}).to_vec()"
+expression: "LayoutFun::text(\"foo\", 3,\n                &Config{right_margin: 5,\n                        newline_cost: 1,\n                        beyond_right_margin_cost: 100,\n                        height_cost: 10000,\n                        max_choice_nest_level: 100,}).to_vec()"
 ---
 [
     (
@@ -8,6 +8,7 @@ expression: "LayoutFun::text(\"foo\",\n                &Config{right_margin: 5,\
         Layout {
             layout_expr: Text(
                 "foo",
+                3,
             ),
             span: 3,
             height: 1,
@@ -20,6 +21,7 @@ expression: "LayoutFun::text(\"foo\",\n                &Config{right_margin: 5,\
         Layout {
             layout_expr: Text(
                 "foo",
+                3,
             ),
             span: 3,
             height: 1,

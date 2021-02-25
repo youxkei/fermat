@@ -4,7 +4,7 @@ use std::rc::Rc;
 #[derive(PartialEq, Clone, Debug)]
 pub enum LayoutExpr<'a> {
     Unit,
-    Text(&'a str),
+    Text(&'a str, i32),
     Stack(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Apposition(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
     Choice(Rc<LayoutExpr<'a>>, Rc<LayoutExpr<'a>>),
@@ -16,9 +16,9 @@ impl<'a> LayoutExpr<'a> {
         match self {
             LayoutExpr::Unit => panic!("Unit should not be occured"),
 
-            LayoutExpr::Text("") => ("".to_string(), indent, indented),
+            LayoutExpr::Text("", _) => ("".to_string(), indent, indented),
 
-            LayoutExpr::Text(text) => {
+            LayoutExpr::Text(text, _) => {
                 if indented {
                     (text.to_string(), indent + text.len(), true)
                 } else {
@@ -58,7 +58,7 @@ impl<'a> LayoutExpr<'a> {
 
     pub fn is_empty(&self) -> bool {
         match self {
-            LayoutExpr::Text("") => true,
+            LayoutExpr::Text("", _) => true,
             _ => false,
         }
     }
@@ -87,9 +87,11 @@ macro layout_expr_helper {
 }
 
 pub macro layout_expr {
-    ($x:literal) => {
-        Rc::new(LayoutExpr::Text($x))
-    },
+    ($text:literal) => {{
+        let text = $text;
+        let length = text.len() as i32;
+        Rc::new(LayoutExpr::Text(text, length))
+    }},
 
     (stack ($x:tt $($xs:tt)*) $(,)?) => {
         layout_expr_helper!(Stack, $x $($xs)*)
@@ -116,8 +118,16 @@ pub macro unit() {
     Rc::new(LayoutExpr::Unit)
 }
 
-pub macro text($x:expr) {
-    Rc::new(LayoutExpr::Text($x))
+pub macro text {
+    ($text:expr) => {{
+        let text = $text;
+        let length = text.len() as i32;
+        Rc::new(LayoutExpr::Text(text, length))
+    }},
+
+    ($text:expr, $length:expr) => {
+        Rc::new(LayoutExpr::Text($text, $length as i32))
+    },
 }
 
 pub macro stack {

@@ -1,6 +1,6 @@
 ---
 source: src/layout_fun.rs
-expression: "LayoutFun::multi_line_cost(LayoutFun::text(\"foo\", config), config).to_vec()"
+expression: "LayoutFun::multi_line_cost(LayoutFun::text(\"foo\", 3, config), config).to_vec()"
 ---
 [
     (
@@ -8,6 +8,7 @@ expression: "LayoutFun::multi_line_cost(LayoutFun::text(\"foo\", config), config
         Layout {
             layout_expr: Text(
                 "foo",
+                3,
             ),
             span: 3,
             height: 1,
@@ -20,6 +21,7 @@ expression: "LayoutFun::multi_line_cost(LayoutFun::text(\"foo\", config), config
         Layout {
             layout_expr: Text(
                 "foo",
+                3,
             ),
             span: 3,
             height: 1,

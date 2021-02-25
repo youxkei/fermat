@@ -293,9 +293,11 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
         | KindId::CHAR
         | KindId::INTEGER
         | KindId::FLOAT
-        | KindId::STRING
-        | KindId::COMMENT
-        | KindId::LINE_COMMENT => text!(&source_code[node.start_byte()..node.end_byte()]),
+        | KindId::STRING => text!(&source_code[node.start_byte()..node.end_byte()]),
+
+        KindId::COMMENT | KindId::LINE_COMMENT => {
+            text!(&source_code[node.start_byte()..node.end_byte()], 0)
+        }
 
         KindId::MULTIPLE_NEWLINES => text!(""),
 
@@ -1598,7 +1600,7 @@ mod format_test {
             fn stacked_with_stacked_elements_due_to_comments() {
                 assert_format!(
                     Config {
-                        right_margin: 27,
+                        right_margin: 22,
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,
@@ -1621,7 +1623,7 @@ mod format_test {
             fn stacked_with_stacked_elements_due_to_line_comments() {
                 assert_format!(
                     Config {
-                        right_margin: 27,
+                        right_margin: 22,
                         newline_cost: 1,
                         beyond_right_margin_cost: 10000,
                         height_cost: 100,

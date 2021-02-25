@@ -9,13 +9,16 @@ expression: "LayoutFun::from_layout_expr(&*equal_expr, config).to_vec()"
             layout_expr: Stack(
                 Text(
                     "Result =",
+                    8,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Text(
                         "12345678901234567890 + 12345678901234567890",
+                        43,
                     ),
                 ),
             ),
@@ -31,13 +34,16 @@ expression: "LayoutFun::from_layout_expr(&*equal_expr, config).to_vec()"
             layout_expr: Apposition(
                 Text(
                     "Result = ",
+                    9,
                 ),
                 Stack(
                     Text(
                         "12345678901234567890",
+                        20,
                     ),
                     Text(
                         "+ 12345678901234567890",
+                        22,
                     ),
                 ),
             ),
@@ -53,13 +59,16 @@ expression: "LayoutFun::from_layout_expr(&*equal_expr, config).to_vec()"
             layout_expr: Apposition(
                 Text(
                     "Result = ",
+                    9,
                 ),
                 Stack(
                     Text(
                         "12345678901234567890",
+                        20,
                     ),
                     Text(
                         "+ 12345678901234567890",
+                        22,
                     ),
                 ),
             ),
@@ -75,17 +84,21 @@ expression: "LayoutFun::from_layout_expr(&*equal_expr, config).to_vec()"
             layout_expr: Stack(
                 Text(
                     "Result =",
+                    8,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Stack(
                         Text(
                             "12345678901234567890",
+                            20,
                         ),
                         Text(
                             "+ 12345678901234567890",
+                            22,
                         ),
                     ),
                 ),
@@ -102,17 +115,21 @@ expression: "LayoutFun::from_layout_expr(&*equal_expr, config).to_vec()"
             layout_expr: Stack(
                 Text(
                     "Result =",
+                    8,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Stack(
                         Text(
                             "12345678901234567890",
+                            20,
                         ),
                         Text(
                             "+ 12345678901234567890",
+                            22,
                         ),
                     ),
                 ),
@@ -129,17 +146,21 @@ expression: "LayoutFun::from_layout_expr(&*equal_expr, config).to_vec()"
             layout_expr: Stack(
                 Text(
                     "Result =",
+                    8,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Stack(
                         Text(
                             "12345678901234567890",
+                            20,
                         ),
                         Text(
                             "+ 12345678901234567890",
+                            22,
                         ),
                     ),
                 ),
@@ -156,17 +177,21 @@ expression: "LayoutFun::from_layout_expr(&*equal_expr, config).to_vec()"
             layout_expr: Stack(
                 Text(
                     "Result =",
+                    8,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Stack(
                         Text(
                             "12345678901234567890",
+                            20,
                         ),
                         Text(
                             "+ 12345678901234567890",
+                            22,
                         ),
                     ),
                 ),

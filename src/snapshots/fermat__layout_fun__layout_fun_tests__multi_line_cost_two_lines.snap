@@ -1,6 +1,6 @@
 ---
 source: src/layout_fun.rs
-expression: "LayoutFun::multi_line_cost(LayoutFun::stack(LayoutFun::text(\"foo\", config),\n                                            LayoutFun::text(\"bar\", config),\n                                            config), config).to_vec()"
+expression: "LayoutFun::multi_line_cost(LayoutFun::stack(LayoutFun::text(\"foo\", 3, config),\n                                            LayoutFun::text(\"bar\", 3, config),\n                                            config), config).to_vec()"
 ---
 [
     (
@@ -9,9 +9,11 @@ expression: "LayoutFun::multi_line_cost(LayoutFun::stack(LayoutFun::text(\"foo\"
             layout_expr: Stack(
                 Text(
                     "foo",
+                    3,
                 ),
                 Text(
                     "bar",
+                    3,
                 ),
             ),
             span: 3,
@@ -26,9 +28,11 @@ expression: "LayoutFun::multi_line_cost(LayoutFun::stack(LayoutFun::text(\"foo\"
             layout_expr: Stack(
                 Text(
                     "foo",
+                    3,
                 ),
                 Text(
                     "bar",
+                    3,
                 ),
             ),
             span: 3,

@@ -1,6 +1,6 @@
 ---
 source: src/layout_fun.rs
-expression: "LayoutFun::choice(LayoutFun::text(\"if(foo) bar();\", config),\n                  LayoutFun::stack(LayoutFun::text(\"if(foo)\", config),\n                                   LayoutFun::text(\"    bar();\", config),\n                                   config)).to_vec()"
+expression: "LayoutFun::choice(LayoutFun::text(\"if(foo) bar();\", 14, config),\n                  LayoutFun::stack(LayoutFun::text(\"if(foo)\", 7, config),\n                                   LayoutFun::text(\"    bar();\", 10, config),\n                                   config)).to_vec()"
 ---
 [
     (
@@ -8,6 +8,7 @@ expression: "LayoutFun::choice(LayoutFun::text(\"if(foo) bar();\", config),\n   
         Layout {
             layout_expr: Text(
                 "if(foo) bar();",
+                14,
             ),
             span: 14,
             height: 1,
@@ -20,6 +21,7 @@ expression: "LayoutFun::choice(LayoutFun::text(\"if(foo) bar();\", config),\n   
         Layout {
             layout_expr: Text(
                 "if(foo) bar();",
+                14,
             ),
             span: 14,
             height: 1,
@@ -33,9 +35,11 @@ expression: "LayoutFun::choice(LayoutFun::text(\"if(foo) bar();\", config),\n   
             layout_expr: Stack(
                 Text(
                     "if(foo)",
+                    7,
                 ),
                 Text(
                     "    bar();",
+                    10,
                 ),
             ),
             span: 10,
@@ -50,9 +54,11 @@ expression: "LayoutFun::choice(LayoutFun::text(\"if(foo) bar();\", config),\n   
             layout_expr: Stack(
                 Text(
                     "if(foo)",
+                    7,
                 ),
                 Text(
                     "    bar();",
+                    10,
                 ),
             ),
             span: 10,
@@ -67,9 +73,11 @@ expression: "LayoutFun::choice(LayoutFun::text(\"if(foo) bar();\", config),\n   
             layout_expr: Stack(
                 Text(
                     "if(foo)",
+                    7,
                 ),
                 Text(
                     "    bar();",
+                    10,
                 ),
             ),
             span: 10,

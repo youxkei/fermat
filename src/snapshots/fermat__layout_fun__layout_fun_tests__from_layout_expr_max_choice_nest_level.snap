@@ -9,9 +9,11 @@ expression: "LayoutFun::from_layout_expr(&expr, config).to_vec()"
             layout_expr: Stack(
                 Text(
                     "foo",
+                    3,
                 ),
                 Text(
                     "bar",
+                    3,
                 ),
             ),
             span: 3,
@@ -26,9 +28,11 @@ expression: "LayoutFun::from_layout_expr(&expr, config).to_vec()"
             layout_expr: Stack(
                 Text(
                     "foo",
+                    3,
                 ),
                 Text(
                     "bar",
+                    3,
                 ),
             ),
             span: 3,

@@ -71,9 +71,11 @@ impl<'a> LayoutFun<'a> {
     ) -> Self {
         match layout_expr {
             LayoutExpr::Unit => Self::Unit,
-            LayoutExpr::Text(text) => {
-                Self::apposition(Self::text(text, config), trailing_layout_fun, config)
-            }
+            LayoutExpr::Text(text, length) => Self::apposition(
+                Self::text(text, *length, config),
+                trailing_layout_fun,
+                config,
+            ),
             LayoutExpr::Stack(lhs, rhs) => Self::stack(
                 Self::from_layout_expr_with_trailing(lhs, Self::Unit, config, choice_nest_level),
                 Self::from_layout_expr_with_trailing(
@@ -132,11 +134,11 @@ impl<'a> LayoutFun<'a> {
         }
     }
 
-    fn text(text: &'a str, config: &Config) -> Self {
-        let span = text.len() as i32;
+    fn text(text: &'a str, length: i32, config: &Config) -> Self {
+        let span = length;
 
         if span < config.right_margin {
-            let layout_expr = LayoutExpr::Text(text);
+            let layout_expr = LayoutExpr::Text(text, length);
 
             LayoutFun::Fun(Rc::new(
                 AvlTree::new()
@@ -165,7 +167,7 @@ impl<'a> LayoutFun<'a> {
             LayoutFun::Fun(Rc::new(AvlTree::new().insert(
                 0,
                 Layout {
-                    layout_expr: LayoutExpr::Text(text),
+                    layout_expr: LayoutExpr::Text(text, length),
                     span,
                     height: 1,
                     cost: (span - config.right_margin),
@@ -398,6 +400,7 @@ mod layout_fun_tests {
 
         assert_debug_snapshot!(LayoutFun::text(
             "foo",
+            3,
             &Config {
                 right_margin: 5,
                 newline_cost: 1,
@@ -438,8 +441,8 @@ mod layout_fun_tests {
         };
 
         assert_debug_snapshot!(LayoutFun::stack(
-            LayoutFun::text("foobar", config),
-            LayoutFun::text("baz", config),
+            LayoutFun::text("foobar", 6, config),
+            LayoutFun::text("baz", 3, config),
             config
         )
         .to_vec())
@@ -471,8 +474,8 @@ mod layout_fun_tests {
         };
 
         assert_debug_snapshot!(LayoutFun::apposition(
-            LayoutFun::text("foo", config),
-            LayoutFun::text("bar", config),
+            LayoutFun::text("foo", 3, config),
+            LayoutFun::text("bar", 3, config),
             config
         )
         .to_vec())
@@ -513,10 +516,10 @@ mod layout_fun_tests {
         };
 
         assert_debug_snapshot!(LayoutFun::choice(
-            LayoutFun::text("if(foo) bar();", config),
+            LayoutFun::text("if(foo) bar();", 14, config),
             LayoutFun::stack(
-                LayoutFun::text("if(foo)", config),
-                LayoutFun::text("    bar();", config),
+                LayoutFun::text("if(foo)", 7, config),
+                LayoutFun::text("    bar();", 10, config),
                 config,
             ),
         )
@@ -544,9 +547,11 @@ mod layout_fun_tests {
             max_choice_nest_level: 100,
         };
 
-        assert_debug_snapshot!(
-            LayoutFun::multi_line_cost(LayoutFun::text("foo", config), config,).to_vec()
-        );
+        assert_debug_snapshot!(LayoutFun::multi_line_cost(
+            LayoutFun::text("foo", 3, config),
+            config,
+        )
+        .to_vec());
     }
 
     #[test]
@@ -574,8 +579,8 @@ mod layout_fun_tests {
 
         assert_debug_snapshot!(LayoutFun::multi_line_cost(
             LayoutFun::stack(
-                LayoutFun::text("foo", config),
-                LayoutFun::text("bar", config),
+                LayoutFun::text("foo", 3, config),
+                LayoutFun::text("bar", 3, config),
                 config
             ),
             config

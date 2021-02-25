@@ -1,6 +1,6 @@
 ---
 source: src/layout_fun.rs
-expression: "LayoutFun::apposition(LayoutFun::text(\"foo\", config),\n                      LayoutFun::text(\"bar\", config), config).to_vec()"
+expression: "LayoutFun::apposition(LayoutFun::text(\"foo\", 3, config),\n                      LayoutFun::text(\"bar\", 3, config), config).to_vec()"
 ---
 [
     (
@@ -9,9 +9,11 @@ expression: "LayoutFun::apposition(LayoutFun::text(\"foo\", config),\n          
             layout_expr: Apposition(
                 Text(
                     "foo",
+                    3,
                 ),
                 Text(
                     "bar",
+                    3,
                 ),
             ),
             span: 6,
@@ -26,9 +28,11 @@ expression: "LayoutFun::apposition(LayoutFun::text(\"foo\", config),\n          
             layout_expr: Apposition(
                 Text(
                     "foo",
+                    3,
                 ),
                 Text(
                     "bar",
+                    3,
                 ),
             ),
             span: 6,
@@ -43,9 +47,11 @@ expression: "LayoutFun::apposition(LayoutFun::text(\"foo\", config),\n          
             layout_expr: Apposition(
                 Text(
                     "foo",
+                    3,
                 ),
                 Text(
                     "bar",
+                    3,
                 ),
             ),
             span: 6,

@@ -9,21 +9,26 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Apposition(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         " ",
+                        1,
                     ),
                     Apposition(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Apposition(
                             Text(
                                 "field = 1",
+                                9,
                             ),
                             Text(
                                 "}",
+                                1,
                             ),
                         ),
                     ),
@@ -41,21 +46,26 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Apposition(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         " ",
+                        1,
                     ),
                     Apposition(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Apposition(
                             Text(
                                 "field = 1",
+                                9,
                             ),
                             Text(
                                 "}",
+                                1,
                             ),
                         ),
                     ),
@@ -73,21 +83,26 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Stack(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Apposition(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Apposition(
                             Text(
                                 "field = 1",
+                                9,
                             ),
                             Text(
                                 "}",
+                                1,
                             ),
                         ),
                     ),
@@ -105,21 +120,26 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Stack(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Apposition(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Apposition(
                             Text(
                                 "field = 1",
+                                9,
                             ),
                             Text(
                                 "}",
+                                1,
                             ),
                         ),
                     ),
@@ -137,30 +157,37 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Stack(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Stack(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Stack(
                             Apposition(
                                 Text(
                                     "   ",
+                                    3,
                                 ),
                                 Text(
                                     "field = 1",
+                                    9,
                                 ),
                             ),
                             Apposition(
                                 Text(
                                     "  ",
+                                    2,
                                 ),
                                 Text(
                                     "}",
+                                    1,
                                 ),
                             ),
                         ),
@@ -179,30 +206,37 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Stack(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Stack(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Stack(
                             Apposition(
                                 Text(
                                     "   ",
+                                    3,
                                 ),
                                 Text(
                                     "field = 1",
+                                    9,
                                 ),
                             ),
                             Apposition(
                                 Text(
                                     "  ",
+                                    2,
                                 ),
                                 Text(
                                     "}",
+                                    1,
                                 ),
                             ),
                         ),
@@ -221,30 +255,37 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Stack(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Stack(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Stack(
                             Apposition(
                                 Text(
                                     "   ",
+                                    3,
                                 ),
                                 Text(
                                     "field = 1",
+                                    9,
                                 ),
                             ),
                             Apposition(
                                 Text(
                                     "  ",
+                                    2,
                                 ),
                                 Text(
                                     "}",
+                                    1,
                                 ),
                             ),
                         ),
@@ -263,30 +304,37 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Stack(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Stack(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Stack(
                             Apposition(
                                 Text(
                                     "   ",
+                                    3,
                                 ),
                                 Text(
                                     "field = 1",
+                                    9,
                                 ),
                             ),
                             Apposition(
                                 Text(
                                     "  ",
+                                    2,
                                 ),
                                 Text(
                                     "}",
+                                    1,
                                 ),
                             ),
                         ),
@@ -305,30 +353,37 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Stack(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Stack(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Stack(
                             Apposition(
                                 Text(
                                     "   ",
+                                    3,
                                 ),
                                 Text(
                                     "field = 1",
+                                    9,
                                 ),
                             ),
                             Apposition(
                                 Text(
                                     "  ",
+                                    2,
                                 ),
                                 Text(
                                     "}",
+                                    1,
                                 ),
                             ),
                         ),
@@ -347,21 +402,26 @@ expression: "LayoutFun::from_layout_expr(&*layout_expr!(apposition(choice(apposi
             layout_expr: Stack(
                 Text(
                     "Foobarbaz =",
+                    11,
                 ),
                 Apposition(
                     Text(
                         "    ",
+                        4,
                     ),
                     Apposition(
                         Text(
                             "#record{",
+                            8,
                         ),
                         Apposition(
                             Text(
                                 "field = 1",
+                                9,
                             ),
                             Text(
                                 "}",
+                                1,
                             ),
                         ),
                     ),
