@@ -299,7 +299,7 @@ fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExp
             text!(&source_code[node.start_byte()..node.end_byte()], 0)
         }
 
-        KindId::MULTIPLE_NEWLINES => text!(""),
+        KindId::SPACES | KindId::NEWLINE | KindId::MULTIPLE_NEWLINES => text!(""),
 
         KindId::ERROR => panic!("syntax error {:?}", node),
     }
@@ -315,7 +315,7 @@ fn elements_node_to_apposed_layout_expr<'a>(
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         match self::kind_id(child) {
-            KindId::MULTIPLE_NEWLINES => {}
+            KindId::SPACES | KindId::NEWLINE | KindId::MULTIPLE_NEWLINES => {}
 
             KindId::COMMENT | KindId::LINE_COMMENT => {
                 comments = stack!(comments, node_to_layout_expr(child, source_code))
@@ -393,6 +393,8 @@ fn elements_node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         match self::kind_id(child) {
+            KindId::SPACES | KindId::NEWLINE => {}
+
             KindId::COMMENT => {
                 after_open = false;
 
@@ -738,7 +740,7 @@ fn binary_expression_node_to_layout_expr<'a>(
     for child in node.children(&mut cursor) {
         match phase {
             Phase::Lhs => match self::kind_id(child) {
-                KindId::MULTIPLE_NEWLINES => {}
+                KindId::SPACES | KindId::NEWLINE | KindId::MULTIPLE_NEWLINES => {}
 
                 KindId::COMMENT | KindId::LINE_COMMENT => {
                     comments_between_lhs_and_op = stack!(
@@ -759,7 +761,7 @@ fn binary_expression_node_to_layout_expr<'a>(
             },
 
             Phase::Rhs => match self::kind_id(child) {
-                KindId::MULTIPLE_NEWLINES => {}
+                KindId::SPACES | KindId::NEWLINE | KindId::MULTIPLE_NEWLINES => {}
 
                 KindId::COMMENT | KindId::LINE_COMMENT => {
                     comments_between_op_and_rhs = stack!(

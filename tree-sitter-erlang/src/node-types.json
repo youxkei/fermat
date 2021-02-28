@@ -6842,6 +6842,10 @@
     "named": true
   },
   {
+    "type": "newline",
+    "named": true
+  },
+  {
     "type": "of",
     "named": false
   },
@@ -6868,6 +6872,10 @@
   {
     "type": "record",
     "named": false
+  },
+  {
+    "type": "spaces",
+    "named": true
   },
   {
     "type": "spec",

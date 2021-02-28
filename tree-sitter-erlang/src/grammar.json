@@ -5562,7 +5562,7 @@
       "type": "PATTERN",
       "value": "%%.*"
     },
-    "_newline": {
+    "newline": {
       "type": "STRING",
       "value": "\n"
     },
@@ -5570,9 +5570,9 @@
       "type": "PATTERN",
       "value": "\\n\\n+"
     },
-    "_spaces": {
+    "spaces": {
       "type": "PATTERN",
-      "value": "[ \\t\\r]"
+      "value": "[ \\t\\r]+"
     }
   },
   "extras": [
@@ -5590,11 +5590,11 @@
     },
     {
       "type": "SYMBOL",
-      "name": "_newline"
+      "name": "newline"
     },
     {
       "type": "SYMBOL",
-      "name": "_spaces"
+      "name": "spaces"
     }
   ],
   "conflicts": [

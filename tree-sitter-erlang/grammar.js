@@ -50,8 +50,8 @@ module.exports = grammar({
     $.comment,
     $.line_comment,
     $.multiple_newlines,
-    $._newline,
-    $._spaces,
+    $.newline,
+    $.spaces,
   ],
 
   conflicts: ($) => [
@@ -687,9 +687,9 @@ module.exports = grammar({
 
     comment: (_) => /%[^%].*/,
     line_comment: (_) => /%%.*/,
-    _newline: (_) => "\n",
+    newline: (_) => "\n",
     multiple_newlines: (_) => /\n\n+/,
-    _spaces: (_) => /[ \t\r]/,
+    spaces: (_) => /[ \t\r]+/,
   },
 });
 // vim: ts=2 sw=2 sts=2
