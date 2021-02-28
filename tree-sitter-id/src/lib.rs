@@ -65,27 +65,27 @@ pub fn define_kind_id(_item: TokenStream) -> TokenStream {
     (quote! {
         #[repr(u16)]
         #[derive(Debug, Copy, Clone, PartialEq)]
-        enum KindId {
+        pub enum KindId {
             #(#kind_id_variants)*
             ERROR = 65535,
         }
 
         impl KindId {
-            fn is_open(&self) -> bool {
+            pub fn is_open(&self) -> bool {
                 match self {
                     #(KindId::#open_kind_id_idents)|* => true,
                     _ => false,
                 }
             }
 
-            fn is_close(&self) -> bool {
+            pub fn is_close(&self) -> bool {
                 match self {
                     #(KindId::#close_kind_id_idents)|* => true,
                     _ => false,
                 }
             }
 
-            fn is_op(&self) -> bool {
+            pub fn is_op(&self) -> bool {
                 match self {
                     #(KindId::#op_kind_id_idents)|* => true,
                     _ => false,

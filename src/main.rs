@@ -3,6 +3,8 @@
 mod avltree;
 mod layout_expr;
 mod layout_fun;
+mod node;
+mod trailing_separator_remover;
 
 use std::fs;
 use std::path::PathBuf;
@@ -10,23 +12,21 @@ use std::rc::Rc;
 
 use structopt::StructOpt;
 
-use tree_sitter::{Language, Node, Parser};
-
 use layout_expr::{
     apposition, apposition_sep, choice, multi_line_cost, stack, text, unit, LayoutExpr,
 };
 use layout_fun::{Config as LayoutFunConfig, LayoutFun};
-
-extern "C" {
-    fn tree_sitter_erlang() -> Language;
-}
-
-tree_sitter_id::define_kind_id! {}
+use node::{kind_id, KindId, Node, Tree};
 
 /// A source code formatter for Erlang.
 /// By default, output is written to stdout.
 #[derive(StructOpt)]
 struct Args {
+    /// Do not format but remove trailing separators.
+    /// This option works with check and write options.
+    #[structopt(short, long, conflicts_with("write"))]
+    no_format: bool,
+
     /// Check if the given file is formatted or not.
     /// When the file is not formatted, fermat exits with the status code 1.
     /// With this option, fermat doesn't write output to stdout.
@@ -55,10 +55,16 @@ fn main(args: Args) -> std::io::Result<()> {
         max_choice_nest_level: 10,
     };
 
-    let formatted = format(&source_code, layout_fun_config);
+    let parse_tree = node::parse(&source_code);
+
+    let formatted_code = if args.no_format {
+        trailing_separator_remover::remove_trailing_separators(parse_tree, &source_code)
+    } else {
+        format(parse_tree, &source_code, layout_fun_config)
+    };
 
     if args.check {
-        if source_code == formatted {
+        if source_code == formatted_code {
             std::process::exit(0);
         } else {
             std::process::exit(1);
@@ -66,34 +72,22 @@ fn main(args: Args) -> std::io::Result<()> {
     }
 
     if args.write {
-        fs::write(&args.file, formatted)?;
+        fs::write(&args.file, formatted_code)?;
         return Ok(());
     }
 
-    print!("{}", formatted);
+    print!("{}", formatted_code);
 
     Ok(())
 }
 
-fn format(source_code: &str, layout_fun_config: &LayoutFunConfig) -> String {
-    let layout_expr = parse(source_code);
+fn format(tree: Tree, source_code: &str, layout_fun_config: &LayoutFunConfig) -> String {
+    let layout_expr = node_to_layout_expr(tree.root_node(), source_code);
     let layout_fun = LayoutFun::from_layout_expr(&layout_expr, layout_fun_config);
 
     let calculated = layout_fun.at(0);
 
     calculated.layout_expr.format(0, false).0 + "\n"
-}
-
-fn parse(source_code: &str) -> Rc<LayoutExpr<'_>> {
-    let mut parser = Parser::new();
-
-    let language = unsafe { tree_sitter_erlang() };
-    parser.set_language(language).unwrap();
-
-    let tree = parser.parse(source_code, None).unwrap();
-    let root_node = tree.root_node();
-
-    node_to_layout_expr(root_node, source_code)
 }
 
 fn node_to_layout_expr<'a>(node: Node<'_>, source_code: &'a str) -> Rc<LayoutExpr<'a>> {
@@ -844,10 +838,6 @@ fn binary_expression_node_to_layout_expr<'a>(
 
         _ => panic!("{:?} is not covered", op_kind_id),
     }
-}
-
-fn kind_id(node: Node<'_>) -> KindId {
-    unsafe { std::mem::transmute(node.kind_id()) }
 }
 
 #[cfg(test)]
