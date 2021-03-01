@@ -79,7 +79,16 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
         | KindId::PAT_BINARY_EXPR
         | KindId::PAT_MAP_EXPR_FIELD
         | KindId::PAT_RECORD_EXPR_FIELD
-        | KindId::STRINGS => elements_node_to_removed_code(node, source_code),
+        | KindId::STRINGS => {
+            let mut result = String::new();
+
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                write!(&mut result, "{}", node_to_removed_code(child, source_code));
+            }
+
+            result
+        }
 
         KindId::EXPORT_ATTRIBUTE_MFAS
         | KindId::TYPE_ATTRIBUTE_PARAMETERS
@@ -131,7 +140,31 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
         | KindId::PAT_RECORD_EXPR
         | KindId::PAT_LIST
         | KindId::PAT_BINARY
-        | KindId::PAT_TUPLE => elements_node_to_removed_code(node, source_code),
+        | KindId::PAT_TUPLE => {
+            let mut result = String::new();
+            let mut element = String::new();
+            let mut separator = String::new();
+
+            let mut cursor = node.walk();
+            for child in node.children(&mut cursor) {
+                match kind_id(child) {
+                    KindId::COMMA | KindId::SEMICOLON => {
+                        write!(&mut result, "{}{}", separator, element);
+
+                        separator = node_to_removed_code(child, source_code);
+                        element = String::new();
+                    }
+
+                    _ => {
+                        write!(&mut element, "{}", node_to_removed_code(child, source_code));
+                    }
+                }
+            }
+
+            write!(&mut result, "{}", element);
+
+            result
+        }
 
         KindId::SPACES
         | KindId::COMMENT
@@ -209,15 +242,4 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
 
         KindId::ERROR => panic!("syntax error {:?}", node),
     }
-}
-
-fn elements_node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
-    let mut result = String::new();
-
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        write!(&mut result, "{}", node_to_removed_code(child, source_code));
-    }
-
-    result
 }
