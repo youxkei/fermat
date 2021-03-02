@@ -1,0 +1,44 @@
+{
+    name: "Periodic",
+
+    on: {
+        schedule: [
+            { cron: "28 6 * * *" },
+        ],
+    },
+
+    env: {
+        CARGO_TERM_COLOR: "always",
+    },
+
+    jobs: {
+        build: {
+            strategy: {
+                matrix: {
+                    os: ["ubuntu-latest"],
+                    rust: ["nightly"],
+                },
+            },
+
+            runs-on: "${{ matrix.os }}",
+
+            steps: [
+                {
+                    name: "Setup Rust",
+                    uses: "hecrj/setup-rust-action@v1",
+                    with: {
+                        rust-version: "${{ matrix.rust }}",
+                    },
+                },
+                {
+                    name: "Checkout",
+                    uses: "actions/checkout@v2",
+                },
+                {
+                    name: "Run tests",
+                    run: "cargo test",
+                },
+            ],
+        },
+    },
+}
