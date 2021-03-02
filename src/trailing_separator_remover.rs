@@ -84,7 +84,7 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
-                write!(&mut result, "{}", node_to_removed_code(child, source_code));
+                write!(&mut result, "{}", node_to_removed_code(child, source_code)).unwrap();
             }
 
             result
@@ -149,19 +149,20 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
             for child in node.children(&mut cursor) {
                 match kind_id(child) {
                     KindId::COMMA | KindId::SEMICOLON => {
-                        write!(&mut result, "{}{}", separator, element);
+                        write!(&mut result, "{}{}", separator, element).unwrap();
 
                         separator = node_to_removed_code(child, source_code);
                         element = String::new();
                     }
 
                     _ => {
-                        write!(&mut element, "{}", node_to_removed_code(child, source_code));
+                        write!(&mut element, "{}", node_to_removed_code(child, source_code))
+                            .unwrap();
                     }
                 }
             }
 
-            write!(&mut result, "{}", element);
+            write!(&mut result, "{}", element).unwrap();
 
             result
         }
