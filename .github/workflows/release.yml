@@ -1,0 +1,73 @@
+{
+    name: "Release",
+
+    on: {
+        push: {
+            tags: ["v*.*.*"],
+        },
+    },
+
+    env: {
+        CARGO_TERM_COLOR: "always",
+    },
+
+    jobs: {
+        build: {
+            strategy: {
+                matrix: {
+                    os: ["ubuntu-latest", "windows-latest", "macOS-latest"],
+                    rust: ["nightly"],
+                },
+            },
+
+            runs-on: "${{ matrix.os }}",
+
+            steps: [
+                {
+                    name: "Setup Rust",
+                    uses: "hecrj/setup-rust-action@v1",
+                    with: {
+                        rust-version: "${{ matrix.rust }}",
+                    },
+                },
+                {
+                    name: "Checkout",
+                    uses: "actions/checkout@v2",
+                },
+                {
+                    name: "Setup musl",
+                    if: "matrix.os == 'ubuntu-latest'",
+                    run: "
+                        rustup target add x86_64-unknown-linux-musl &&
+                        sudo apt install -qq musl-tools
+                    ",
+                },
+                {
+                    name: "Build for Linux",
+                    if: "matrix.os == 'ubuntu-latest'",
+                    run: "make fermat-linux",
+                },
+                {
+                    name: "Build for Windows",
+                    if: "matrix.os == 'windows-latest'",
+                    run: "make fermat-windows.exe",
+                },
+                {
+                    name: "Build for macOS",
+                    if: "matrix.os == 'macOS-latest'",
+                    run: "make fermat-mac",
+                },
+                {
+                    name: "Release",
+                    uses: "softprops/action-gh-release@v1",
+                    with: {
+                        files: "fermat-*",
+                    },
+                    env: {
+                        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}",
+                    }
+                }
+            ],
+        },
+    },
+}

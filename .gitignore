@@ -1,3 +1,7 @@
 /target
 /tree-sitter-id/target
 /tree-sitter-erlang/otp/
+
+/fermat-linux
+/fermat-windows
+/fermat-mac
