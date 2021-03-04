@@ -144,22 +144,44 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
             let mut result = String::new();
             let mut element = String::new();
             let mut separator = String::new();
+            let mut has_non_extra = false;
 
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
-                match kind_id(child) {
+                let kind_id = kind_id(child);
+
+                match kind_id {
                     KindId::COMMA | KindId::SEMICOLON => {
                         write!(&mut result, "{}{}", separator, element).unwrap();
 
                         separator = node_to_removed_code(child, source_code);
                         element = String::new();
+                        has_non_extra = false;
                     }
 
                     _ => {
                         write!(&mut element, "{}", node_to_removed_code(child, source_code))
                             .unwrap();
+
+                        if kind_id.is_close() {
+                            continue;
+                        }
+
+                        match kind_id {
+                            KindId::COMMENT
+                            | KindId::LINE_COMMENT
+                            | KindId::NEWLINE
+                            | KindId::MULTIPLE_NEWLINES
+                            | KindId::SPACES => {}
+
+                            _ => has_non_extra = true,
+                        }
                     }
                 }
+            }
+
+            if has_non_extra {
+                write!(&mut result, "{}", separator).unwrap();
             }
 
             write!(&mut result, "{}", element).unwrap();
