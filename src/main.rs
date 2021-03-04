@@ -20,7 +20,7 @@ use layout_fun::Config;
 struct Args {
     /// Do not format but remove trailing separators.
     /// This option works with check and write options.
-    #[structopt(short, long, conflicts_with("write"))]
+    #[structopt(short, long)]
     no_format: bool,
 
     /// Check if the given file is formatted or not.
