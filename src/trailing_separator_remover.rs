@@ -13,6 +13,7 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
         | KindId::MODULE_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE
         | KindId::EXPORT_ATTRIBUTE_MFA
+        | KindId::RECORD_ATTRIBUTE
         | KindId::RECORD_ATTRIBUTE_OPEN
         | KindId::TYPE_ATTRIBUTE_BEGIN
         | KindId::TYPE_ATTRIBUTE_NAME
@@ -21,8 +22,10 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
         | KindId::TYPE_SPEC_WITH_PAREN
         | KindId::SPEC_FUN_NAME
         | KindId::TYPE_GUARD
+        | KindId::FUN_TYPE
         | KindId::FUN_TYPE_OPEN
         | KindId::TYPE
+        | KindId::BINARY_EXPR_TYPE
         | KindId::BINARY_BASE_TYPE
         | KindId::BINARY_UNIT_TYPE
         | KindId::OTHER_ATTRIBUTE_OPEN
@@ -44,15 +47,21 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
         | KindId::BINARY_COMPREHENSION_CLAUSE
         | KindId::COMPREHENSION_CLAUSE_EXPR
         | KindId::PAREN_EXPR
+        | KindId::IF_EXPR
         | KindId::IF_EXPR_CLAUSE_OPEN
+        | KindId::CASE_EXPR
         | KindId::CASE_EXPR_BEGIN
         | KindId::CASE_EXPR_BEGIN_TAIL
+        | KindId::RECEIVE_EXPR
+        | KindId::RECEIVE_EXPR_AFTER
+        | KindId::RECEIVE_EXPR_AFTER_CLAUSE
         | KindId::RECEIVE_EXPR_AFTER_CLAUSE_OPEN
         | KindId::MATCH_CLAUSE_OPEN
         | KindId::FUN_REF_EXPR
         | KindId::FUN_REF_EXPR_TAIL
         | KindId::FUN_CLAUSE_OPEN
         | KindId::FUN_CLAUSE_WITH_HEAD_OPEN
+        | KindId::TRY_EXPR
         | KindId::TRY_EXPR_CATCH_CLAUSE_OPEN
         | KindId::PAT_UNARY_EXPR
         | KindId::PAT_MAP_EXPR_OPEN
@@ -92,15 +101,12 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
 
         KindId::EXPORT_ATTRIBUTE_MFAS
         | KindId::TYPE_ATTRIBUTE_PARAMETERS
-        | KindId::RECORD_ATTRIBUTE
         | KindId::RECORD_FIELDS
         | KindId::TYPE_SIGS
         | KindId::TYPE_GUARDS
-        | KindId::FUN_TYPE
         | KindId::TOP_TYPES
         | KindId::MAP_FIELD_TYPES
         | KindId::RECORD_FIELD_TYPES
-        | KindId::BINARY_EXPR_TYPE
         | KindId::OTHER_ATTRIBUTE
         | KindId::FUNCTION_CLAUSES
         | KindId::FUNCTION_CLAUSE
@@ -116,21 +122,15 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
         | KindId::BINARY_COMPREHENSION_CLAUSES
         | KindId::TUPLE
         | KindId::BEGIN_END_EXPR
-        | KindId::IF_EXPR
         | KindId::IF_EXPR_CLAUSES
         | KindId::IF_EXPR_CLAUSE
-        | KindId::CASE_EXPR
         | KindId::CASE_EXPR_CLAUSES
-        | KindId::RECEIVE_EXPR
         | KindId::RECEIVE_EXPR_CLAUSES
-        | KindId::RECEIVE_EXPR_AFTER
-        | KindId::RECEIVE_EXPR_AFTER_CLAUSE
         | KindId::MATCH_CLAUSE
         | KindId::FUN_EXPR
         | KindId::FUN_CLAUSE
         | KindId::FUN_EXPR_WITH_HEAD
         | KindId::FUN_CLAUSE_WITH_HEAD
-        | KindId::TRY_EXPR
         | KindId::TRY_EXPR_TRY
         | KindId::TRY_EXPR_OF
         | KindId::TRY_EXPR_CATCH
@@ -264,5 +264,159 @@ fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
         | KindId::STRING => source_code[node.start_byte()..node.end_byte()].to_string(),
 
         KindId::ERROR => panic!("syntax error {:?}", node),
+    }
+}
+
+#[cfg(test)]
+mod remove_trailing_separators_test {
+    use crate::node::parse;
+    use crate::trailing_separator_remover::remove_trailing_separators;
+    use indoc::indoc;
+
+    macro assert_remove($source_code:expr, $expected:expr $(,)?) {{
+        let source_code = $source_code;
+
+        pretty_assertions::assert_eq!(
+            remove_trailing_separators(parse(source_code), source_code),
+            $expected
+        )
+    }}
+
+    #[test]
+    fn test() {
+        assert_remove!(
+            indoc! {r#"
+                -export([foo/1, bar/2,]).
+
+                -type foo(Foo,) :: {Foo, foo(Foo,), #{foo => bar,}, #record{foo :: bar,},}.
+
+                -record(foo, {bar,}).
+
+                -spec f(foo,) -> ok;
+                       (foo,) -> Error when Error :: error,;.
+
+                -other_attribute(foo,).
+
+                f(Foo,) -> ok,;
+                f(Foo,) when true,; ->
+                    #{foo => bar,},
+
+                    foo:bar(foo,),
+
+                    #record{foo = bar,},
+
+                    [foo,],
+
+                    <<"foo",>>,
+
+                    [foo || foo,],
+
+                    <<"foo" || foo,>>,
+
+                    {foo,},
+
+                    begin foo, end,
+
+                    if
+                        false -> ok,;
+                        true -> ok,;
+                    end,
+
+                    case foo of
+                        false -> ok,;
+                        true -> ok,;
+                    end,
+
+                    receive
+                        foo -> foo,;
+                    end,
+
+                    fun() -> ok,;
+                       () -> error,; end,
+
+                    fun F() -> ok,;
+                        F() -> error,; end,
+
+                    try
+                        foo,
+                    of
+                        foo -> catch foo,;
+                    catch
+                        E:R:S -> {E, R, S,},;
+                    after
+                        foo,
+                    end,
+
+                    {#{foo := bar,}, #record{foo = bar,}, [foo,], <<"foo",>>,} = ok,
+
+                    error,;.
+            "#},
+            indoc! {r#"
+                -export([foo/1, bar/2]).
+
+                -type foo(Foo) :: {Foo, foo(Foo), #{foo => bar}, #record{foo :: bar}}.
+
+                -record(foo, {bar}).
+
+                -spec f(foo) -> ok;
+                       (foo) -> Error when Error :: error.
+
+                -other_attribute(foo).
+
+                f(Foo) -> ok;
+                f(Foo) when true ->
+                    #{foo => bar},
+
+                    foo:bar(foo),
+
+                    #record{foo = bar},
+
+                    [foo],
+
+                    <<"foo">>,
+
+                    [foo || foo],
+
+                    <<"foo" || foo>>,
+
+                    {foo},
+
+                    begin foo end,
+
+                    if
+                        false -> ok;
+                        true -> ok
+                    end,
+
+                    case foo of
+                        false -> ok;
+                        true -> ok
+                    end,
+
+                    receive
+                        foo -> foo
+                    end,
+
+                    fun() -> ok;
+                       () -> error end,
+
+                    fun F() -> ok;
+                        F() -> error end,
+
+                    try
+                        foo
+                    of
+                        foo -> catch foo
+                    catch
+                        E:R:S -> {E, R, S}
+                    after
+                        foo
+                    end,
+
+                    {#{foo := bar}, #record{foo = bar}, [foo], <<"foo">>} = ok,
+
+                    error.
+            "#},
+        )
     }
 }
