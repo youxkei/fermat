@@ -18,18 +18,23 @@ use layout_fun::Config;
 /// By default, output is written to stdout.
 #[derive(StructOpt)]
 struct Args {
-    /// Do not format but remove trailing separators.
+    /// Specifies the line length that fermat will wrap on.
+    /// Notice that lengths of comments are treated as zero.
+    #[structopt(short, long, default_value = "120")]
+    length: i32,
+
+    /// Does not format but remove trailing separators.
     /// This option works with check and write options.
     #[structopt(short, long)]
     no_format: bool,
 
-    /// Check if the given file is formatted or not.
+    /// Checks if the given file is formatted or not.
     /// When the file is not formatted, fermat exits with the status code 1.
     /// With this option, fermat doesn't write output to stdout.
     #[structopt(short, long, conflicts_with("write"))]
     check: bool,
 
-    /// Edit file in-place.
+    /// Edits file in-place.
     /// With this option, fermat doesn't write output to stdout.
     #[structopt(short, long, conflicts_with("check"))]
     write: bool,
@@ -44,7 +49,7 @@ fn main(args: Args) -> std::io::Result<()> {
     let source_code = fs::read_to_string(&args.file)?;
 
     let config = &Config {
-        right_margin: 120,
+        right_margin: args.length,
         newline_cost: 1,
         beyond_right_margin_cost: 10000,
         height_cost: 100,
