@@ -3,7 +3,13 @@ use std::fmt::Write;
 use crate::node::{kind_id, KindId, Node, Tree};
 
 pub fn remove_trailing_separators(tree: Tree, source_code: &str) -> String {
-    node_to_removed_code(tree.root_node(), source_code)
+    let mut result = node_to_removed_code(tree.root_node(), source_code);
+
+    if result.chars().last().unwrap() != '\n' {
+        write!(&mut result, "\n").unwrap();
+    }
+
+    result
 }
 
 fn node_to_removed_code(node: Node<'_>, source_code: &str) -> String {
@@ -349,8 +355,7 @@ mod remove_trailing_separators_test {
 
                     {#{foo := bar,}, #record{foo = bar,}, [foo,], <<"foo",>>,} = ok,
 
-                    error,;.
-            "#},
+                    error,;."#},
             indoc! {r#"
                 -export([foo/1, bar/2]).
 
