@@ -1,6 +1,6 @@
 [package]
 name = "fermat"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Hisayuki Mima <youxkei@gmail.com>"]
 edition = "2018"
 
