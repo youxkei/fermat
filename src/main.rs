@@ -28,26 +28,24 @@ struct Args {
     #[structopt(short, long)]
     no_format: bool,
 
-    /// Checks if the given file is formatted or not.
-    /// When the file is not formatted, fermat exits with the status code 1.
+    /// Checks if the given files are formatted or not.
+    /// When one of the given files is not formatted, fermat exits with the status code 1.
     /// With this option, fermat doesn't write output to stdout.
     #[structopt(short, long, conflicts_with("write"))]
     check: bool,
 
-    /// Edits file in-place.
+    /// Edits files in-place.
     /// With this option, fermat doesn't write output to stdout.
     #[structopt(short, long, conflicts_with("check"))]
     write: bool,
 
-    /// A file to be formatted
+    /// Files to be formatted
     #[structopt(name = "FILE", parse(from_os_str))]
-    file: PathBuf,
+    files: Vec<PathBuf>,
 }
 
 #[paw::main]
 fn main(args: Args) -> std::io::Result<()> {
-    let source_code = fs::read_to_string(&args.file)?;
-
     let config = &Config {
         right_margin: args.length,
         newline_cost: 1,
@@ -56,28 +54,33 @@ fn main(args: Args) -> std::io::Result<()> {
         max_choice_nest_level: 10,
     };
 
-    let parse_tree = node::parse(&source_code);
+    for file in args.files {
+        let source_code = fs::read_to_string(&file)?;
 
-    let formatted_code = if args.no_format {
-        trailing_separator_remover::remove_trailing_separators(parse_tree, &source_code)
-    } else {
-        formatter::format(parse_tree, &source_code, config)
-    };
+        let parse_tree = node::parse(&source_code);
 
-    if args.check {
-        if source_code == formatted_code {
-            std::process::exit(0);
+        let formatted_code = if args.no_format {
+            trailing_separator_remover::remove_trailing_separators(parse_tree, &source_code)
         } else {
-            std::process::exit(1);
+            formatter::format(parse_tree, &source_code, config)
+        };
+
+        if args.check {
+            if source_code != formatted_code {
+                std::process::exit(1);
+            }
+
+            continue;
         }
-    }
 
-    if args.write {
-        fs::write(&args.file, formatted_code)?;
-        return Ok(());
-    }
+        if args.write {
+            fs::write(&file, formatted_code)?;
 
-    print!("{}", formatted_code);
+            continue;
+        }
+
+        print!("{}", formatted_code);
+    }
 
     Ok(())
 }
